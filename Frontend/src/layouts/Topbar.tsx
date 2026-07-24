@@ -1,9 +1,9 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, IconButton, Box, Button, Divider } from '@mui/material';
+import { AppBar, Toolbar, Typography, IconButton, Box, Button, Divider, Breadcrumbs, Link } from '@mui/material';
 import { DarkMode, LightMode, Logout, Person } from '@mui/icons-material';
 import { useThemeStore } from '../store/useThemeStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import styles from './Topbar.module.css';
 
 const drawerWidth = 280;
@@ -12,6 +12,8 @@ export const Topbar: React.FC = () => {
   const { mode, toggleTheme } = useThemeStore();
   const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
+  const location = useLocation();
+  const pathnames = location.pathname.split('/').filter((x) => x);
 
   const handleLogout = () => {
     logout();
@@ -47,14 +49,39 @@ export const Topbar: React.FC = () => {
     >
       <Toolbar sx={{ minHeight: '70px !important' }}>
         <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-          <Typography 
-            variant="h6" 
-            noWrap 
-            component="div" 
-            sx={{ fontWeight: 700, letterSpacing: '-0.5px' }}
-          >
-            SoftPMS Dashboard
-          </Typography>
+          <Breadcrumbs aria-label="breadcrumb">
+            <Link 
+              component={RouterLink} 
+              to="/" 
+              color={pathnames.length === 0 ? "text.primary" : "inherit"}
+              underline="hover"
+              sx={{ fontWeight: pathnames.length === 0 ? 700 : 500 }}
+            >
+              Dashboard
+            </Link>
+            {pathnames.map((value, index) => {
+              const last = index === pathnames.length - 1;
+              const to = `/${pathnames.slice(0, index + 1).join('/')}`;
+              const label = value.length > 20 ? 'Details' : value.charAt(0).toUpperCase() + value.slice(1);
+
+              return last ? (
+                <Typography color="text.primary" key={to} sx={{ fontWeight: 700, letterSpacing: '-0.5px' }}>
+                  {label}
+                </Typography>
+              ) : (
+                <Link 
+                  component={RouterLink} 
+                  to={to} 
+                  color="inherit" 
+                  underline="hover" 
+                  key={to}
+                  sx={{ fontWeight: 500 }}
+                >
+                  {label}
+                </Link>
+              );
+            })}
+          </Breadcrumbs>
         </Box>
         
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -81,6 +108,11 @@ export const Topbar: React.FC = () => {
             startIcon={<Person />}
             className={styles.profileButton}
             sx={{ display: { xs: 'none', sm: 'flex' } }}
+            onClick={() => {
+              if (currentUser?.id && permissions.includes('Users.Read')) {
+                navigate(`/users/${currentUser.id}`);
+              }
+            }}
           >
             <Box 
               component="span" 

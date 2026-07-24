@@ -567,16 +567,18 @@ export const UserDetail = () => {
                   {passwordError}
                 </Typography>
               )}
-              <TextField
-                label="Old Password"
-                type="password"
-                autoComplete="off"
-                value={passwordForm.oldPassword}
-                onChange={(e) => setPasswordForm({ ...passwordForm, oldPassword: e.target.value })}
-                fullWidth
-                size="small"
-                sx={premiumInputSx}
-              />
+              {currentUser?.id === id && (
+                <TextField
+                  label="Old Password"
+                  type="password"
+                  autoComplete="off"
+                  value={passwordForm.oldPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, oldPassword: e.target.value })}
+                  fullWidth
+                  size="small"
+                  sx={premiumInputSx}
+                />
+              )}
               <TextField
                 label="New Password"
                 type="password"
@@ -601,7 +603,12 @@ export const UserDetail = () => {
                 <Button 
                   type="submit"
                   variant="contained" 
-                  disabled={isChangingPassword || !passwordForm.oldPassword || !passwordForm.newPassword}
+                  disabled={
+                    isChangingPassword || 
+                    !passwordForm.newPassword || 
+                    (currentUser?.id === id && !passwordForm.oldPassword) ||
+                    (currentUser?.id !== id && !hasPermission('Users.ChangePassword'))
+                  }
                   sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}
                 >
                   {isChangingPassword ? 'Changing...' : 'Update Password'}

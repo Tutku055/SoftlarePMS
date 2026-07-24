@@ -95,7 +95,6 @@ public sealed class UsersController : ApiControllerBase
 
     /// <summary>Change a user's password.</summary>
     [HttpPost("{id:guid}/change-password")]
-    [HasPermission("Users.ChangePassword")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

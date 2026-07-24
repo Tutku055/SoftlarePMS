@@ -12,18 +12,30 @@ public sealed class ChangePasswordCommandHandler(
 {
     public async Task<Unit> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
     {
-        if (currentUserService.UserId != request.UserId)
-        {
-            throw new DomainException("You can only change your own password.");
-        }
-
         var user = await context.Users
             .FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken)
             ?? throw new NotFoundException(nameof(Domain.Entities.User), request.UserId);
 
-        if (!BCrypt.Net.BCrypt.Verify(request.OldPassword, user.PasswordHash))
+        bool isChangingOwnPassword = currentUserService.UserId == request.UserId;
+
+        if (!isChangingOwnPassword)
         {
-            throw new DomainException("Invalid old password.");
+            if (!currentUserService.Permissions.Any(p => string.Equals(p, "Users.ChangePassword", StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new DomainException("You do not have permission to change other users' passwords.");
+            }
+
+            if (user.IsSystemUser)
+            {
+                throw new DomainException("System Administrator password can only be changed by themselves.");
+            }
+        }
+        else
+        {
+            if (!BCrypt.Net.BCrypt.Verify(request.OldPassword, user.PasswordHash))
+            {
+                throw new DomainException("Invalid old password.");
+            }
         }
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
