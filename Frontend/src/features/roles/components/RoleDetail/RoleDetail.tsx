@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../../../store/useAuthStore';
 import { PopupDialog } from '../../../../components/PopupDialog/PopupDialog';
 import { getAdaptedRoleColor } from '../../../../theme/colorUtils';
@@ -45,8 +44,6 @@ import {
   DeleteRounded,
   BadgeRounded,
   SecurityRounded,
-  CheckCircleRounded,
-  CancelRounded,
   CheckRounded,
   ExpandMoreRounded
 } from '@mui/icons-material';

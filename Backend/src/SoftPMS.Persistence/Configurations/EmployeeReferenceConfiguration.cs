@@ -21,6 +21,10 @@ public class EmployeeReferenceConfiguration : IEntityTypeConfiguration<EmployeeR
         builder.Property(r => r.Title)
             .HasMaxLength(100);
 
+        builder.Property(r => r.Relationship)
+            .IsRequired()
+            .HasConversion<int>();
+
         builder.Property(r => r.Phone)
             .HasMaxLength(50);
 

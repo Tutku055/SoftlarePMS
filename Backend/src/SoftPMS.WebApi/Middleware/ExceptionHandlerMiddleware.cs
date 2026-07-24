@@ -60,6 +60,10 @@ public sealed class ExceptionHandlerMiddleware(
                 (StatusCodes.Status401Unauthorized, "Unauthorized",
                  (object)new { message = unauthorizedEx.Message }),
 
+            ForbiddenAccessException forbiddenEx =>
+                (StatusCodes.Status403Forbidden, "Forbidden",
+                 (object)new { message = forbiddenEx.Message }),
+
             DomainException domainEx =>
                 (StatusCodes.Status422UnprocessableEntity, "Business Rule Violation",
                  (object)new { message = domainEx.Message }),

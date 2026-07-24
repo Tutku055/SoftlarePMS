@@ -47,7 +47,6 @@ const menuConfig: MenuItem[] = [
       { title: 'Roster', path: '/employees/roster', permission: 'Employees.Read' },
       { title: 'Create Employee', path: '/employees/create', permission: 'Employees.Create' },
       { title: 'Time & Attendance', path: '/employees/time-tracking', permission: 'Employees.Read' },
-      { title: 'Notes & References', path: '/employees/notes', permission: 'Employees.Read' }
     ]
   },
   { 

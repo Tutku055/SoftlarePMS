@@ -1,3 +1,78 @@
+export const NoteCategory = {
+  General: 1,
+  HrInternal: 2,
+  Performance: 3,
+  Disciplinary: 4,
+  InterviewAndOnboarding: 5,
+} as const;
+
+export type NoteCategory = (typeof NoteCategory)[keyof typeof NoteCategory];
+
+export const ReferenceRelationship = {
+  FormerManager: 1,
+  Colleague: 2,
+  DirectReport: 3,
+  Client: 4,
+  Academic: 5,
+  Other: 6,
+} as const;
+
+export type ReferenceRelationship = (typeof ReferenceRelationship)[keyof typeof ReferenceRelationship];
+
+export interface EmployeeNoteDto {
+  id: string;
+  title: string;
+  content: string;
+  category: NoteCategory;
+  isConfidential: boolean;
+  createdAt: string;
+}
+
+export interface CreateEmployeeNoteDto {
+  title: string;
+  content: string;
+  category: NoteCategory;
+  isConfidential: boolean;
+}
+
+export interface UpdateEmployeeNoteDto {
+  title: string;
+  content: string;
+  category: NoteCategory;
+  isConfidential: boolean;
+}
+
+export interface EmployeeReferenceDto {
+  id: string;
+  fullName: string;
+  company: string;
+  title: string;
+  relationship: ReferenceRelationship;
+  phoneNumber: string;
+  email: string;
+  notes?: string;
+}
+
+export interface CreateEmployeeReferenceDto {
+  fullName: string;
+  company: string;
+  title: string;
+  relationship: ReferenceRelationship;
+  phoneNumber: string;
+  email: string;
+  notes?: string;
+}
+
+export interface UpdateEmployeeReferenceDto {
+  fullName: string;
+  company: string;
+  title: string;
+  relationship: ReferenceRelationship;
+  phoneNumber: string;
+  email: string;
+  notes: string;
+}
+
 export interface PaginatedList<T> {
   items: T[];
   pageNumber: number;
@@ -107,8 +182,8 @@ export interface EmployeeDetailDto {
   addresses: EmployeeAddressDto[];
   compensations: any[];
   documents: any[];
-  notes: any[];
-  references: any[];
+  notes: EmployeeNoteDto[];
+  references: EmployeeReferenceDto[];
 }
 
 export interface UpdateEmployeeCommand {

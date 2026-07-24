@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SoftPMS.Domain.Entities;
+using SoftPMS.Domain.Enums;
 
 namespace SoftPMS.Persistence.Configurations;
 
@@ -18,6 +19,14 @@ public class EmployeeNoteConfiguration : IEntityTypeConfiguration<EmployeeNote>
             .IsRequired()
             .HasColumnType("nvarchar(max)");
 
+        builder.Property(n => n.Category)
+            .IsRequired()
+            .HasConversion<int>();
+
+        builder.Property(n => n.IsConfidential)
+            .IsRequired()
+            .HasDefaultValue(false);
+
         // FK to Employee — cascade delete removes notes when employee is hard-deleted
         builder.HasOne(n => n.Employee)
             .WithMany(e => e.Notes)
@@ -28,6 +37,7 @@ public class EmployeeNoteConfiguration : IEntityTypeConfiguration<EmployeeNote>
         builder.HasOne(n => n.CreatedByUser)
             .WithMany(u => u.CreatedNotes)
             .HasForeignKey(n => n.CreatedByUserId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Global query filter to match Employee soft delete

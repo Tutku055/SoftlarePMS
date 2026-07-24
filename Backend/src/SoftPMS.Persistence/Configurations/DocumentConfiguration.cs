@@ -37,6 +37,7 @@ public class DocumentConfiguration : IEntityTypeConfiguration<Document>
         builder.HasOne(d => d.CreatedByUser)
             .WithMany(u => u.CreatedDocuments)
             .HasForeignKey(d => d.CreatedByUserId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Remove the soft delete filter since ReferenceId can belong to any entity,

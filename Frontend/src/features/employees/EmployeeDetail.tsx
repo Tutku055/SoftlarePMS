@@ -13,6 +13,7 @@ import { DataTable } from '../../components/DataTable/DataTable';
 import type { CustomFilterValue } from '../../components/DataTable/DataTable';
 import { parseDocumentFilters } from '../documents/utils/filterUtils';
 import { PopupDialog } from '../../components/PopupDialog/PopupDialog';
+import { NotesAndReferences } from './components/NotesAndReferences/NotesAndReferences';
 
 import {
   Box,
@@ -708,21 +709,7 @@ export const EmployeeDetail = () => {
 
       {/* ── TAB 4: NOTES & REFERENCES ─────────────────────────────────────── */}
       <TabPanel value={activeTab} index={3}>
-        <Box className={styles.actionCardsGrid}>
-          <Box sx={{ ...glassPanelSx, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>References & Notes</Typography>
-              <Typography variant="body2" color="text.secondary">Previous employers, contact persons, and internal HR notes.</Typography>
-            </Box>
-            <Divider sx={{ opacity: 0.5 }} />
-            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="body1" sx={{ fontWeight: 600 }}>2 References • 1 Internal Note</Typography>
-              <Button variant="outlined" endIcon={<OpenInNewRounded />} sx={actionButtonSx}>
-                Manage Records
-              </Button>
-            </Stack>
-          </Box>
-        </Box>
+        {id && <NotesAndReferences employeeId={id} />}
       </TabPanel>
 
       <Dialog open={uploadOpen} onClose={() => setUploadOpen(false)} maxWidth="sm" fullWidth>

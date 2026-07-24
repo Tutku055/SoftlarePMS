@@ -1,3 +1,5 @@
+using SoftPMS.Domain.Enums;
+
 namespace SoftPMS.Domain.Entities;
 
 public class EmployeeReference: BaseEntity
@@ -9,6 +11,8 @@ public class EmployeeReference: BaseEntity
     public string ContactPerson { get; set; } = string.Empty;
 
     public string Title { get; set; } = string.Empty;
+
+    public ReferenceRelationship Relationship { get; set; } = ReferenceRelationship.Other;
 
     public string Phone { get; set; } = string.Empty;
 
