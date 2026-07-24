@@ -5,14 +5,21 @@ import {
   Button, 
   CircularProgress, 
   Alert, 
-  useTheme 
+  useTheme,
+  InputAdornment
 } from '@mui/material';
-import { CheckCircleOutlined } from '@mui/icons-material';
+import { PersonOutlined, LockOutlined } from '@mui/icons-material';
 import { useLogin } from '../../hooks/useLogin';
 import styles from './Login.module.css';
+
+// Arkaplanlar
 import darkBg from '../../../../assets/images/DarkThemeLoginBackground.png';
 import lightBg from '../../../../assets/images/LightThemeLoginBackground.png';
 import logoImg from '../../../../assets/images/SoftPMSLogo.png';
+
+// Yeni 3D İllüstrasyonlar (Light ve Dark Mode için)
+import illustrationLight from '../../../../assets/images/illustration-light.png';
+import illustrationDark from '../../../../assets/images/illustration-dark.png';
 
 export const Login = () => {
   const [username, setUsername] = useState('');
@@ -24,7 +31,7 @@ export const Login = () => {
   const wrapperClass = isDark ? styles.wrapperDark : styles.wrapperLight;
 
   const getErrorMessage = () => {
-    if (!error) return 'Invalid credentials. Please try again.';
+    if (!error) return 'Login failed. Please check your credentials.';
     const anyErr = error as any;
     const responseData = anyErr.response?.data;
     const serverMsg =
@@ -36,7 +43,7 @@ export const Login = () => {
     if (typeof serverMsg === 'string' && serverMsg.trim()) {
       return serverMsg;
     }
-    return 'Invalid credentials. Please try again.';
+    return 'Login failed. Please check your credentials.';
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -46,50 +53,52 @@ export const Login = () => {
     }
   };
 
+  // Temaya göre arkaplan ve illüstrasyon seçimi
   const bgImage = isDark ? darkBg : lightBg;
+  const currentIllustration = isDark ? illustrationDark : illustrationLight;
 
   return (
     <div 
       className={`${styles.wrapper} ${wrapperClass}`}
       style={{ 
         backgroundImage: `url(${bgImage})`,
-        backgroundSize: 'cover',
+        backgroundSize: '100% 100%',
         backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed'
       }}
     >
       <div className={styles.authCard}>
         
+        {/* Sol Panel - Form */}
         <div className={styles.formSection}>
           <div className={styles.brand}>
-            <img src={logoImg} alt="SoftPMS Logo" className={styles.brandLogo} />
-            <span style={{ color: isDark ? '#fafafa' : '#09090b', fontSize: '1.5rem', fontWeight: 800 }}>SoftPMS</span>
+            <img src={logoImg} alt="Logo" className={styles.brandLogo} />
+            <span className={styles.brandText}>SoftPMS</span>
           </div>
 
           <div className={styles.formWrapper}>
-            <h1 className={styles.headerText}>Sign in</h1>
-            <p className={styles.subHeaderText}>Enter your credentials to continue.</p>
+            <div className={styles.headerGroup}>
+              <h1 className={styles.headerText}>Welcome Back</h1>
+              <p className={styles.subHeaderText}>Enter your credentials to access the system.</p>
+            </div>
 
             {isError && (
               <Alert 
                 severity="error" 
+                className={styles.alertBox}
                 sx={{ 
-                  width: '100%', 
-                  mb: 3, 
-                  borderRadius: '8px',
-                  border: `1px solid ${isDark ? '#7f1d1d' : '#fecaca'}`,
-                  backgroundColor: isDark ? '#450a0a' : '#fef2f2',
+                  backgroundColor: isDark ? 'rgba(69, 10, 10, 0.4)' : '#fef2f2',
+                  borderColor: isDark ? 'rgba(127, 29, 29, 0.5)' : '#fecaca',
                   color: isDark ? '#fca5a5' : '#991b1b',
-                  '& .MuiAlert-icon': {
-                    color: isDark ? '#f87171' : '#dc2626'
-                  }
+                  '& .MuiAlert-icon': { color: isDark ? '#f87171' : '#dc2626' }
                 }}
               >
                 {getErrorMessage()}
               </Alert>
             )}
 
-            <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+            <form onSubmit={handleSubmit} className={styles.form}>
               <TextField
                 fullWidth
                 placeholder="Username"
@@ -99,28 +108,16 @@ export const Login = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 autoComplete="username"
                 required
-                sx={{
-                  mb: 2,
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '8px',
-                    backgroundColor: isDark ? '#18181b' : '#ffffff',
-                    '& fieldset': {
-                      borderColor: isDark ? '#27272a' : '#e4e4e7',
-                      transition: 'border-color 0.2s ease',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: isDark ? '#3f3f46' : '#d4d4d8',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: isDark ? '#fafafa' : '#18181b',
-                      borderWidth: '1px',
-                    },
-                    '& input': {
-                      color: isDark ? '#fafafa' : '#09090b',
-                      padding: '12px 14px',
-                    }
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonOutlined sx={{ color: isDark ? '#a1a1aa' : '#71717a' }} />
+                      </InputAdornment>
+                    ),
                   }
                 }}
+                sx={textFieldStyles(isDark)}
               />
               <TextField
                 fullWidth
@@ -131,79 +128,57 @@ export const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
                 required
-                sx={{ 
-                  mb: 4,
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '8px',
-                    backgroundColor: isDark ? '#18181b' : '#ffffff',
-                    '& fieldset': {
-                      borderColor: isDark ? '#27272a' : '#e4e4e7',
-                      transition: 'border-color 0.2s ease',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: isDark ? '#3f3f46' : '#d4d4d8',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: isDark ? '#fafafa' : '#18181b',
-                      borderWidth: '1px',
-                    },
-                    '& input': {
-                      color: isDark ? '#fafafa' : '#09090b',
-                      padding: '12px 14px',
-                    }
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LockOutlined sx={{ color: isDark ? '#a1a1aa' : '#71717a' }} />
+                      </InputAdornment>
+                    ),
                   }
                 }}
+                sx={textFieldStyles(isDark)}
               />
               
-              <Button
-                fullWidth
-                variant="contained"
-                type="submit"
-                disabled={isPending}
-                disableElevation
-                sx={{ 
-                  py: 1.2, 
-                  borderRadius: '8px', 
-                  fontWeight: 500,
-                  textTransform: 'none',
-                  fontSize: '0.95rem',
-                  backgroundColor: isDark ? '#fafafa' : '#18181b',
-                  color: isDark ? '#09090b' : '#ffffff',
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    backgroundColor: isDark ? '#e4e4e7' : '#27272a',
-                  },
-                  '&.Mui-disabled': {
-                    backgroundColor: isDark ? '#27272a' : '#e4e4e7',
-                    color: isDark ? '#52525b' : '#a1a1aa',
-                  }
-                }}
-              >
-                {isPending ? <CircularProgress size={24} color="inherit" /> : 'Sign in'}
-              </Button>
+              <div className={styles.actionWrapper}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  type="submit"
+                  disabled={isPending}
+                  disableElevation
+                  className={styles.submitBtn}
+                  sx={{
+                    backgroundColor: isDark ? '#ffffff' : '#0f172a',
+                    color: isDark ? '#0f172a' : '#ffffff',
+                    '&:hover': {
+                      backgroundColor: isDark ? '#e4e4e7' : '#1e293b',
+                    },
+                    '&.Mui-disabled': {
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.1)',
+                      color: isDark ? '#52525b' : '#94a3b8',
+                    }
+                  }}
+                >
+                  {isPending ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
+                </Button>
+              </div>
             </form>
           </div>
           
-          {/* Spacer for flex layout */}
-          <div style={{ marginTop: 'auto' }}></div>
+          <div className={styles.footer}>
+            <p>&copy; {new Date().getFullYear()} SoftPMS. All rights reserved.</p>
+          </div>
         </div>
 
+        {/* Sağ Panel - 3D Görsel Alanı */}
         <div className={styles.visualSection}>
           <div className={styles.visualContent}>
-            <div className={styles.textContent}>
-              <h2 className={styles.premiumTitle}>Elevate Your Workforce</h2>
-              <ul className={styles.featureList}>
-                <li className={styles.featureItem}>
-                  <CheckCircleOutlined className={styles.featureIcon} /> Next-Gen Analytics
-                </li>
-                <li className={styles.featureItem}>
-                  <CheckCircleOutlined className={styles.featureIcon} /> Seamless Onboarding
-                </li>
-                <li className={styles.featureItem}>
-                  <CheckCircleOutlined className={styles.featureIcon} /> Intelligent Tracking
-                </li>
-              </ul>
-            </div>
+            <img 
+              src={currentIllustration} 
+              alt="System Overview" 
+              className={styles.illustration} 
+            />
           </div>
         </div>
 
@@ -211,3 +186,30 @@ export const Login = () => {
     </div>
   );
 };
+
+// MUI TextField ortak stilleri
+const textFieldStyles = (isDark: boolean) => ({
+  mb: 2.5,
+  '& .MuiOutlinedInput-root': {
+    borderRadius: '10px',
+    backgroundColor: isDark ? 'rgba(24, 24, 27, 0.6)' : '#ffffff',
+    backdropFilter: isDark ? 'blur(10px)' : 'none',
+    '& fieldset': {
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0',
+      transition: 'all 0.3s ease',
+    },
+    '&:hover fieldset': {
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#cbd5e1',
+    },
+    '&.Mui-focused fieldset': {
+      borderColor: isDark ? '#38bdf8' : '#0284c7',
+      borderWidth: '1.5px',
+    },
+    '& input': {
+      color: isDark ? '#f8fafc' : '#0f172a',
+      padding: '14px 16px',
+      fontSize: '0.95rem',
+      fontWeight: 500,
+    }
+  }
+});
