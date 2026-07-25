@@ -24,11 +24,12 @@ public sealed class EmployeeNotesController : ApiControllerBase
 
     [HttpPost]
     [HasPermission("EmployeeNotes.Create")]
+    [ProducesResponseType(typeof(EmployeeNoteDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create(Guid employeeId, [FromBody] CreateEmployeeNoteDto dto, CancellationToken ct)
     {
         var command = new CreateEmployeeNoteCommand(employeeId, dto);
         var result = await Sender.Send(command, ct);
-        return Ok(result);
+        return Created($"/api/employees/{employeeId}/notes", result);
     }
 
     [HttpPut("{id:guid}")]

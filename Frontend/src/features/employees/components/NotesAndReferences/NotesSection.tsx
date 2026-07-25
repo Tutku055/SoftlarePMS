@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import { Add, Edit, Delete, Lock, ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useAuthStore } from '../../../../store/useAuthStore';
+import { PopupDialog } from '../../../../components/PopupDialog/PopupDialog';
 import { 
   createEmployeeNote, updateEmployeeNote, deleteEmployeeNote, getEmployeeNotes
 } from '../../api/notesApi';
@@ -30,6 +31,16 @@ export const NotesSection: React.FC<NotesSectionProps> = ({ employeeId }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<EmployeeNoteDto | null>(null);
   
+  // Popup Dialog State
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [popupConfig, setPopupConfig] = useState<{
+    title: string;
+    content: string;
+    confirmColor: 'success' | 'error' | 'warning' | 'info' | 'primary';
+    onConfirm?: () => void;
+    hideCancel?: boolean;
+  }>({ title: '', content: '', confirmColor: 'info' });
+
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState<NoteCategory>(NoteCategory.General);
@@ -102,22 +113,51 @@ export const NotesSection: React.FC<NotesSectionProps> = ({ employeeId }) => {
       }
       setIsDialogOpen(false);
       fetchNotes();
+
+      setPopupConfig({
+        title: 'Success',
+        content: 'Note saved successfully.',
+        confirmColor: 'primary',
+        onConfirm: () => setPopupOpen(false),
+        hideCancel: true
+      });
+      setPopupOpen(true);
     } catch (error) {
       console.error("Failed to save note", error);
-      alert("Failed to save note. Ensure you have the required permissions.");
+      setPopupConfig({
+        title: 'Error',
+        content: 'Failed to save note. Ensure you have the required permissions.',
+        confirmColor: 'primary',
+        onConfirm: () => setPopupOpen(false),
+        hideCancel: true
+      });
+      setPopupOpen(true);
     }
   };
 
-  const handleDelete = async (noteId: string) => {
-    if (window.confirm('Are you sure you want to delete this note?')) {
-      try {
-        await deleteEmployeeNote(employeeId, noteId);
-        fetchNotes();
-      } catch (error) {
-        console.error("Failed to delete note", error);
-        alert("Failed to delete note. Ensure you have the required permissions.");
+  const handleDelete = (noteId: string) => {
+    setPopupConfig({
+      title: 'Delete Note',
+      content: 'Are you sure you want to delete this note? This action cannot be undone.',
+      confirmColor: 'error',
+      onConfirm: async () => {
+        try {
+          await deleteEmployeeNote(employeeId, noteId);
+          fetchNotes();
+          setPopupOpen(false);
+        } catch (error) {
+          console.error("Failed to delete note", error);
+          setPopupConfig({
+            title: 'Error',
+            content: 'Failed to delete note. Ensure you have the required permissions.',
+            confirmColor: 'primary',
+            onConfirm: () => setPopupOpen(false),
+            hideCancel: true
+          });
+        }
       }
-    }
+    });
+    setPopupOpen(true);
   };
 
   const pageNotes = filteredNotes.slice(page * notesPerPage, (page + 1) * notesPerPage);
@@ -322,6 +362,17 @@ export const NotesSection: React.FC<NotesSectionProps> = ({ employeeId }) => {
           <Button variant="contained" onClick={handleSave} disabled={!title || !content}>Save</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Global Popup Dialog */}
+      <PopupDialog
+        open={popupOpen}
+        title={popupConfig.title}
+        content={popupConfig.content}
+        confirmColor={popupConfig.confirmColor}
+        onClose={() => setPopupOpen(false)}
+        onConfirm={popupConfig.onConfirm}
+        hideCancel={popupConfig.hideCancel}
+      />
     </Box>
   );
 };

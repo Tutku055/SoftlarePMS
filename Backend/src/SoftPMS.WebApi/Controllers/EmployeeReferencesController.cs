@@ -23,11 +23,12 @@ public sealed class EmployeeReferencesController : ApiControllerBase
 
     [HttpPost]
     [HasPermission("EmployeeReferences.Create")]
+    [ProducesResponseType(typeof(EmployeeReferenceDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create(Guid employeeId, [FromBody] CreateEmployeeReferenceDto dto, CancellationToken ct)
     {
         var command = new CreateEmployeeReferenceCommand(employeeId, dto);
         var result = await Sender.Send(command, ct);
-        return Ok(result);
+        return Created($"/api/employees/{employeeId}/references", result);
     }
 
     [HttpPut("{id:guid}")]

@@ -77,7 +77,7 @@ public sealed class DocumentsController : ApiControllerBase
     [HttpPost("upload")]
     [DisableRequestSizeLimit]
     [HasPermission("Documents.Create")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UploadDocument(
         [FromForm] IFormFile file,
@@ -106,7 +106,7 @@ public sealed class DocumentsController : ApiControllerBase
         };
         
         var documentId = await Sender.Send(command, ct);
-        return Ok(new { Id = documentId });
+        return CreatedAtAction(nameof(GetDocument), new { id = documentId }, new { Id = documentId });
     }
 
     /// <summary>Upload a document chunk to the vault.</summary>
