@@ -15,6 +15,10 @@ import { UsersPage } from '../features/users/UsersPage';
 import { UserDetail } from '../features/users/UserDetail';
 import { RoleList } from '../features/roles/components/RoleList/RoleList';
 import { RoleDetail } from '../features/roles/components/RoleDetail/RoleDetail';
+import { TimesheetList } from '../features/finance/components/Timesheets/TimesheetList';
+import { TimesheetDetailMatrix } from '../features/finance/components/Timesheets/TimesheetDetailMatrix';
+import { PayrollList } from '../features/finance/components/Payrolls/PayrollList';
+import { PayrollDetail } from '../features/finance/components/Payrolls/PayrollDetail';
 
 import { useLocation } from 'react-router-dom';
 
@@ -105,6 +109,27 @@ export const router = createBrowserRouter([
                 element: <RoleDetail />,
               },
             ],
+          },
+          {
+            path: 'finance',
+            children: [
+              {
+                path: 'timesheets',
+                element: <TimesheetList />,
+              },
+              {
+                path: 'timesheets/:employeeId',
+                element: <TimesheetDetailMatrix />,
+              },
+              {
+                path: 'payrolls',
+                element: <PayrollList />,
+              },
+              {
+                path: 'payrolls/:employeeId',
+                element: <PayrollDetail />,
+              }
+            ]
           },
           {
             path: 'users',

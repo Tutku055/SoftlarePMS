@@ -14,6 +14,9 @@ public interface IApplicationDbContext
     DbSet<Employee> Employees { get; }
     DbSet<EmployeeAddress> EmployeeAddresses { get; }
     DbSet<EmployeeCompensation> EmployeeCompensations { get; }
+    DbSet<MonthlyTimesheet> MonthlyTimesheets { get; }
+    DbSet<TimesheetEntry> TimesheetEntries { get; }
+    DbSet<PayrollSlip> PayrollSlips { get; }
     DbSet<Document> Documents { get; }
     DbSet<EmployeeNote> EmployeeNotes { get; }
     DbSet<EmployeeReference> EmployeeReferences { get; }

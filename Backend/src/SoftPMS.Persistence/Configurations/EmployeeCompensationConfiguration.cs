@@ -19,19 +19,21 @@ public class EmployeeCompensationConfiguration : IEntityTypeConfiguration<Employ
             .HasConversion<int>()
             .IsRequired();
 
+        builder.Property(c => c.Currency)
+            .HasConversion<string>()
+            .IsRequired();
+
+
         builder.Property(c => c.PayGrade)
             .HasMaxLength(50);
 
         builder.Property(c => c.EffectiveDate)
             .IsRequired();
 
-        // EndDate is null when this is the currently active rate
-        builder.Property(c => c.EndDate)
-            .IsRequired(false);
-
-        // Composite index on (EmployeeId, EndDate) for fast "active rate" lookups
-        builder.HasIndex(c => new { c.EmployeeId, c.EndDate })
-            .HasDatabaseName("IX_EmployeeCompensations_EmployeeId_EndDate");
+        // Unique index on EmployeeId since it's 1-to-1
+        builder.HasIndex(c => c.EmployeeId)
+            .HasDatabaseName("IX_EmployeeCompensations_EmployeeId")
+            .IsUnique();
 
         // FK to creating User — restrict to avoid accidental cascade
         builder.HasOne(c => c.CreatedByUser)

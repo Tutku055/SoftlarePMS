@@ -8,8 +8,7 @@ import {
   SaveRounded, ArrowBackRounded, BadgeRounded, PersonRounded, 
   PublicRounded, WorkRounded, 
   AccessTimeRounded, FlightTakeoffRounded, 
-  HomeRounded, LocationCityRounded, MapRounded, MarkunreadMailboxRounded, 
-  AttachMoneyRounded, StarRounded
+  HomeRounded, LocationCityRounded, MapRounded, MarkunreadMailboxRounded
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useCreateEmployee } from './hooks/useCreateEmployee';
@@ -100,9 +99,6 @@ export const EmployeeCreation: React.FC = () => {
     city: '',
     state: '',
     country: '',
-    baseSalary: 0,
-    salaryType: 2, 
-    payGrade: ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -111,7 +107,7 @@ export const EmployeeCreation: React.FC = () => {
     const { name, value } = e.target;
     setFormState(prev => ({
       ...prev,
-      [name]: ['workingHoursPerWeek', 'vacationDaysTotal', 'baseSalary'].includes(name)
+      [name]: ['workingHoursPerWeek', 'vacationDaysTotal'].includes(name)
         ? (value === '' ? 0 : Number(value))
         : value
     }));
@@ -165,10 +161,6 @@ export const EmployeeCreation: React.FC = () => {
 
     if (!formState.country.trim()) newErrors.country = 'Required';
     else if (formState.country.length > 100) newErrors.country = 'Max 100 chars';
-
-    if (formState.baseSalary <= 0) newErrors.baseSalary = '> 0';
-
-    if (formState.payGrade && formState.payGrade.length > 50) newErrors.payGrade = 'Max 50 chars';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -539,66 +531,6 @@ export const EmployeeCreation: React.FC = () => {
               slotProps={{
                 input: {
                   startAdornment: <InputAdornment position="start"><PublicRounded fontSize="small" /></InputAdornment>,
-                }
-              }}
-            />
-          </div>
-        </Box>
-
-        {/* SECTION 4: Initial Compensation */}
-        <Box sx={glassPanelSx}>
-          <Stack direction="row" spacing={1} sx={{ mb: 2, alignItems: 'center' }}>
-            <AttachMoneyRounded color="primary" />
-            <Typography variant="h6" className={styles.sectionTitle} sx={{ m: 0 }}>
-              Initial Compensation
-            </Typography>
-          </Stack>
-          <Divider sx={{ mb: 3, opacity: 0.5 }} />
-
-          <div className={styles.formGrid}>
-            <TextField
-              label="Base Salary *"
-              name="baseSalary"
-              type="number"
-              value={formState.baseSalary || ''}
-              onChange={handleInputChange}
-              error={!!errors.baseSalary}
-              helperText={errors.baseSalary}
-              sx={getPremiumInputSx(true, !!errors.baseSalary)}
-              fullWidth
-              slotProps={{
-                input: {
-                  startAdornment: <InputAdornment position="start"><AttachMoneyRounded fontSize="small" /></InputAdornment>,
-                }
-              }}
-            />
-
-            <FormControl fullWidth error={!!errors.salaryType} sx={getPremiumInputSx(true, !!errors.salaryType)}>
-              <InputLabel id="salary-type-label">Salary Type *</InputLabel>
-              <Select
-                labelId="salary-type-label"
-                value={formState.salaryType}
-                label="Salary Type *"
-                onChange={(e) => handleSelectChange('salaryType', e.target.value)}
-              >
-                <MenuItem value={1}>Hourly</MenuItem>
-                <MenuItem value={2}>Monthly</MenuItem>
-              </Select>
-              {errors.salaryType && <FormHelperText>{errors.salaryType}</FormHelperText>}
-            </FormControl>
-
-            <TextField
-              label="Pay Grade"
-              name="payGrade"
-              value={formState.payGrade}
-              onChange={handleInputChange}
-              error={!!errors.payGrade}
-              helperText={errors.payGrade}
-              sx={getPremiumInputSx(false, !!errors.payGrade)}
-              fullWidth
-              slotProps={{
-                input: {
-                  startAdornment: <InputAdornment position="start"><StarRounded fontSize="small" /></InputAdornment>,
                 }
               }}
             />

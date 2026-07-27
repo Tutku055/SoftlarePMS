@@ -27,7 +27,7 @@ public record EmployeeDetailDto
     public DepartmentDto? Department { get; init; }
 
     public List<EmployeeAddressDto> Addresses { get; init; } = new();
-    public List<EmployeeCompensationDto> Compensations { get; init; } = new();
+    public EmployeeCompensationDto? Compensation { get; init; }
 
     public List<EmployeeNoteDto> Notes { get; init; } = new();
     public List<EmployeeReferenceDto> References { get; init; } = new();

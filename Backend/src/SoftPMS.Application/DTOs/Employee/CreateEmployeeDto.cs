@@ -1,6 +1,4 @@
-﻿using SoftPMS.Domain.Enums;
-using SoftPMS.Application.DTOs.EmployeeAddress;
-using SoftPMS.Application.DTOs.EmployeeCompensation;
+using SoftPMS.Domain.Enums;
 
 namespace SoftPMS.Application.DTOs.Employee;
 
@@ -16,8 +14,12 @@ public record CreateEmployeeDto(
     DateTime HireDate,
     decimal WorkingHoursPerWeek,
     int VacationDaysTotal,
+    Guid? DepartmentId,
 
-    // Related sub-records
-    List<CreateEmployeeAddressDto> Addresses,
-    List<CreateEmployeeCompensationDto> Compensations
+    // Initial primary address (saved as separate EmployeeAddress entity)
+    string AddressLine,
+    string PostalCode,
+    string City,
+    string State,
+    string Country
 );

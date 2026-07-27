@@ -14,6 +14,7 @@ import type { CustomFilterValue } from '../../components/DataTable/DataTable';
 import { parseDocumentFilters } from '../documents/utils/filterUtils';
 import { PopupDialog } from '../../components/PopupDialog/PopupDialog';
 import { NotesAndReferences } from './components/NotesAndReferences/NotesAndReferences';
+import { CompensationModal } from './components/Compensation/CompensationModal';
 
 import {
   Box,
@@ -182,6 +183,8 @@ export const EmployeeDetail = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploadingChunk, setIsUploadingChunk] = useState(false);
   const [errorDialog, setErrorDialog] = useState({ open: false, title: '', message: '' });
+  
+  const [isCompensationModalOpen, setIsCompensationModalOpen] = useState(false);
   
   const queryClient = useQueryClient();
 
@@ -517,9 +520,17 @@ export const EmployeeDetail = () => {
             <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
               <Box>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Current Base Salary</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: 'success.main' }}>15,29 € <Typography component="span" variant="body2" color="text.secondary">/ Hour</Typography></Typography>
+                <Typography variant="h5" sx={{ fontWeight: 700, color: 'success.main' }}>
+                  {employee.compensation 
+                    ? (() => {
+                        const comp = employee.compensation;
+                        const currencyMap: Record<number, string> = { 1: 'TRY', 2: 'USD', 3: 'EUR', 4: 'GBP' };
+                        return `${comp.baseSalary} ${currencyMap[comp.currency] || ''}`;
+                      })()
+                    : 'Not Set'}
+                </Typography>
               </Box>
-              <Button variant="outlined" endIcon={<OpenInNewRounded />} sx={actionButtonSx}>
+              <Button variant="outlined" endIcon={<OpenInNewRounded />} onClick={() => setIsCompensationModalOpen(true)} sx={actionButtonSx}>
                 Manage Salaries
               </Button>
             </Stack>
@@ -763,6 +774,14 @@ export const EmployeeDetail = () => {
         onConfirm={() => setErrorDialog(prev => ({ ...prev, open: false }))}
         confirmText="Close"
         hideCancel
+      />
+
+      <CompensationModal
+        open={isCompensationModalOpen}
+        onClose={() => setIsCompensationModalOpen(false)}
+        employeeId={id || ''}
+        currentBaseSalary={employee.compensation?.baseSalary || 0}
+        currentCurrency={employee.compensation?.currency || 1}
       />
     </Box>
   );

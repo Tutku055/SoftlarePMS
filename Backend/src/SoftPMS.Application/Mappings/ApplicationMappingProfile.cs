@@ -47,9 +47,8 @@ public class ApplicationMappingProfile : Profile
 
         // Employee compensation mappings
         CreateMap<EmployeeCompensation, EmployeeCompensationDto>()
-            .ForMember(d => d.IsActive, o => o.MapFrom(s => s.EndDate == null));
+            .ForMember(d => d.IsActive, o => o.MapFrom(s => true));
         CreateMap<CreateEmployeeCompensationDto, EmployeeCompensation>()
-            .ForMember(d => d.EndDate, o => o.Ignore())
             .ForMember(d => d.EmployeeId, o => o.Ignore())
             .ForMember(d => d.CreatedByUserId, o => o.Ignore())
             .ForMember(d => d.Employee, o => o.Ignore())

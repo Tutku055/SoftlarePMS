@@ -12,9 +12,11 @@ public class EmployeeCompensation: BaseEntity
 
     public SalaryType SalaryType { get; set; } = SalaryType.Monthly;
 
+    public Currency Currency { get; set; } = Currency.TRY;
+
     public DateTime EffectiveDate { get; set; }
 
-    public DateTime? EndDate { get; set; }
+
 
     public Guid CreatedByUserId { get; set; }
 

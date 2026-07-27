@@ -28,34 +28,32 @@ public sealed class UpdateEmployeeRateCommandHandler(
         if (!employeeExists)
             throw new NotFoundException(nameof(Employee), request.EmployeeId);
 
-        // Step 1: Close the current active compensation record
         var activeCompensation = await context.EmployeeCompensations
-            .FirstOrDefaultAsync(
-                c => c.EmployeeId == request.EmployeeId && c.EndDate == null,
-                cancellationToken);
+            .FirstOrDefaultAsync(c => c.EmployeeId == request.EmployeeId, cancellationToken);
 
         if (activeCompensation is not null)
         {
-            // EndDate is one day before the new rate becomes effective
-            activeCompensation.EndDate = request.NewEffectiveDate.AddDays(-1).Date;
+            activeCompensation.BaseSalary = request.BaseSalary;
+            activeCompensation.SalaryType = request.SalaryType;
+            activeCompensation.PayGrade = request.PayGrade;
+            activeCompensation.EffectiveDate = request.NewEffectiveDate.Date;
+            context.EmployeeCompensations.Update(activeCompensation);
+        }
+        else
+        {
+            var newCompensation = new EmployeeCompensation
+            {
+                EmployeeId      = request.EmployeeId,
+                BaseSalary      = request.BaseSalary,
+                SalaryType      = request.SalaryType,
+                PayGrade        = request.PayGrade,
+                EffectiveDate   = request.NewEffectiveDate.Date,
+                CreatedByUserId = currentUser.UserId,
+                CreatedAt       = dateTime.UtcNow
+            };
+            await context.EmployeeCompensations.AddAsync(newCompensation, cancellationToken);
         }
 
-        // Step 2: Insert new active compensation record
-        var newCompensation = new EmployeeCompensation
-        {
-            EmployeeId      = request.EmployeeId,
-            BaseSalary      = request.BaseSalary,
-            SalaryType      = request.SalaryType,
-            PayGrade        = request.PayGrade,
-            EffectiveDate   = request.NewEffectiveDate.Date,
-            EndDate         = null,
-            CreatedByUserId = currentUser.UserId,
-            CreatedAt       = dateTime.UtcNow
-        };
-
-        await context.EmployeeCompensations.AddAsync(newCompensation, cancellationToken);
-
-        // Commit the close + insert atomically
         await context.SaveChangesAsync(cancellationToken);
 
         return Unit.Value;

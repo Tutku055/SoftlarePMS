@@ -4,8 +4,9 @@ using SoftPMS.Domain.Enums;
 namespace SoftPMS.Application.Features.Employees.Commands.CreateEmployee;
 
 /// <summary>
-/// Command to create a new employee record together with their initial address
-/// and compensation entry. Returns the new employee's identity.
+/// Command to create a new employee record together with their initial address.
+/// Compensation is managed separately via UpdateEmployeeCompensation.
+/// Returns the new employee's identity.
 /// </summary>
 public sealed record CreateEmployeeCommand(
     // --- Core employee fields ---
@@ -27,11 +28,6 @@ public sealed record CreateEmployeeCommand(
     string City,
     string State,
     string Country,
-
-    // --- Initial compensation (Stundenlohn or monthly) ---
-    decimal BaseSalary,
-    SalaryType SalaryType,
-    string PayGrade,
 
     // --- Department ---
     Guid? DepartmentId

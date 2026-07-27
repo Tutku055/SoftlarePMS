@@ -43,7 +43,7 @@ public class Employee: BaseEntity
 
     public virtual ICollection<EmployeeAddress> Addresses { get; set; } = new HashSet<EmployeeAddress>();
 
-    public virtual ICollection<EmployeeCompensation> Compensations { get; set; } = new HashSet<EmployeeCompensation>();
+    public virtual EmployeeCompensation? Compensation { get; set; }
 
     public virtual ICollection<EmployeeNote> Notes { get; set; } = new HashSet<EmployeeNote>();
 

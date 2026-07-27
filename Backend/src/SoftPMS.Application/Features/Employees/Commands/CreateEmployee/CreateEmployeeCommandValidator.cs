@@ -54,12 +54,5 @@ public sealed class CreateEmployeeCommandValidator : AbstractValidator<CreateEmp
         RuleFor(x => x.Country)
             .NotEmpty().WithMessage("Country is required.")
             .MaximumLength(100).WithMessage("Country must not exceed 100 characters.");
-
-        // Initial compensation
-        RuleFor(x => x.BaseSalary)
-            .GreaterThan(0).WithMessage("Base salary (Stundenlohn/monthly rate) must be greater than 0.");
-
-        RuleFor(x => x.PayGrade)
-            .MaximumLength(50).WithMessage("Pay grade must not exceed 50 characters.");
     }
 }

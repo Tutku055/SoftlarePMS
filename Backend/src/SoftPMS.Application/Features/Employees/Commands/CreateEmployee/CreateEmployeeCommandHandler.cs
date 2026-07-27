@@ -7,8 +7,9 @@ using SoftPMS.Domain.Exceptions;
 namespace SoftPMS.Application.Features.Employees.Commands.CreateEmployee;
 
 /// <summary>
-/// Creates a new employee together with their initial address and compensation record
-/// in a single atomic save. Checks for duplicate employee numbers before inserting.
+/// Creates a new employee together with their initial address record
+/// in a single atomic save. Compensation is managed separately.
+/// Checks for duplicate employee numbers before inserting.
 /// </summary>
 public sealed class CreateEmployeeCommandHandler(
     IApplicationDbContext context,
@@ -48,7 +49,7 @@ public sealed class CreateEmployeeCommandHandler(
             IsDeleted         = false
         };
 
-        // Initial address
+        // Initial primary address
         var initialAddress = new EmployeeAddress
         {
             Employee    = employee,
@@ -61,22 +62,8 @@ public sealed class CreateEmployeeCommandHandler(
             CreatedAt   = now
         };
 
-        // Initial compensation — EffectiveDate defaults to HireDate; EndDate is null (active)
-        var initialCompensation = new EmployeeCompensation
-        {
-            Employee          = employee,
-            BaseSalary        = request.BaseSalary,
-            SalaryType        = request.SalaryType,
-            PayGrade          = request.PayGrade,
-            EffectiveDate     = request.HireDate,
-            EndDate           = null,
-            CreatedByUserId   = actorId,
-            CreatedAt         = now
-        };
-
         await context.Employees.AddAsync(employee, cancellationToken);
         await context.EmployeeAddresses.AddAsync(initialAddress, cancellationToken);
-        await context.EmployeeCompensations.AddAsync(initialCompensation, cancellationToken);
 
         await context.SaveChangesAsync(cancellationToken);
 

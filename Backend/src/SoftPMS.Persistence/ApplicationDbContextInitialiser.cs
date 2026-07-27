@@ -69,8 +69,7 @@ public class ApplicationDbContextInitialiser
                 .RuleFor(c => c.PayGrade, f => f.Random.String2(1, "ABCDE") + f.Random.Number(1, 5)) //[cite: 1, 6]
                 .RuleFor(c => c.BaseSalary, f => f.Finance.Amount(3000m, 12000m)) //[cite: 1, 6]
                 .RuleFor(c => c.SalaryType, f => f.PickRandom<SalaryType>()) //[cite: 1, 6]
-                .RuleFor(c => c.EffectiveDate, f => f.Date.Past(2)) //[cite: 1, 6]
-                .RuleFor(c => c.EndDate, f => null) //[cite: 1, 6]
+                .RuleFor(c => c.EffectiveDate, f => f.Date.Past(2))
                 .RuleFor(c => c.CreatedByUserId, f => creatorUserId); //[cite: 1, 6]
 
             // 5. Note Faker //[cite: 1, 8]
@@ -122,10 +121,10 @@ public class ApplicationDbContextInitialiser
                     addresses.ForEach(a => a.EmployeeId = e.Id); //[cite: 1, 5]
                     return addresses; //[cite: 1]
                 })
-                .RuleFor(e => e.Compensations, (f, e) => {
-                    var comps = compensationFaker.Generate(1); //[cite: 1]
-                    comps.ForEach(c => c.EmployeeId = e.Id); //[cite: 1, 6]
-                    return comps; //[cite: 1]
+                .RuleFor(e => e.Compensation, (f, e) => {
+                    var comp = compensationFaker.Generate();
+                    comp.EmployeeId = e.Id;
+                    return comp;
                 })
 
                 .RuleFor(e => e.Notes, (f, e) => {

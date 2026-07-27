@@ -122,14 +122,12 @@ export interface CreateEmployeeDto {
   workingHoursPerWeek: number;
   vacationDaysTotal: number;
   departmentId?: string;
+  // Initial primary address (saved as separate EmployeeAddress entity)
   addressLine: string;
   postalCode: string;
   city: string;
   state: string;
   country: string;
-  baseSalary: number;
-  salaryType: number;
-  payGrade: string;
 }
 
 export interface CreatedEmployeeDto {
@@ -180,7 +178,7 @@ export interface EmployeeDetailDto {
   department?: DepartmentDto;
   
   addresses: EmployeeAddressDto[];
-  compensations: any[];
+  compensation?: any;
   documents: any[];
   notes: EmployeeNoteDto[];
   references: EmployeeReferenceDto[];

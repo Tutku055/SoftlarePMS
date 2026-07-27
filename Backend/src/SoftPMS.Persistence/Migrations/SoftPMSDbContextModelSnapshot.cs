@@ -304,14 +304,15 @@ namespace SoftPMS.Persistence.Migrations
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("EffectiveDate")
                         .HasColumnType("datetime2");
 
                     b.Property<Guid>("EmployeeId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("EndDate")
-                        .HasColumnType("datetime2");
 
                     b.Property<string>("PayGrade")
                         .IsRequired()
@@ -325,8 +326,9 @@ namespace SoftPMS.Persistence.Migrations
 
                     b.HasIndex("CreatedByUserId");
 
-                    b.HasIndex("EmployeeId", "EndDate")
-                        .HasDatabaseName("IX_EmployeeCompensations_EmployeeId_EndDate");
+                    b.HasIndex("EmployeeId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_EmployeeCompensations_EmployeeId");
 
                     b.ToTable("EmployeeCompensations");
                 });
@@ -423,6 +425,82 @@ namespace SoftPMS.Persistence.Migrations
                     b.ToTable("EmployeeReferences");
                 });
 
+            modelBuilder.Entity("SoftPMS.Domain.Entities.MonthlyTimesheet", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Month")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TotalAbsentDays")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalOvertimeHours")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalWorkedDays")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId", "Year", "Month")
+                        .IsUnique();
+
+                    b.ToTable("MonthlyTimesheets");
+                });
+
+            modelBuilder.Entity("SoftPMS.Domain.Entities.PayrollSlip", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("BaseSalary")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EmployeeId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("IssueDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Month")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("NetSalary")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalDeductions")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalEarnings")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId", "Year", "Month")
+                        .IsUnique();
+
+                    b.ToTable("PayrollSlips");
+                });
+
             modelBuilder.Entity("SoftPMS.Domain.Entities.Permission", b =>
                 {
                     b.Property<Guid>("Id")
@@ -509,6 +587,35 @@ namespace SoftPMS.Persistence.Migrations
                     b.ToTable("RolePermissions");
                 });
 
+            modelBuilder.Entity("SoftPMS.Domain.Entities.TimesheetEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("MonthlyTimesheetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("OvertimeHours")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MonthlyTimesheetId", "Date")
+                        .IsUnique();
+
+                    b.ToTable("TimesheetEntries");
+                });
+
             modelBuilder.Entity("SoftPMS.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -580,8 +687,7 @@ namespace SoftPMS.Persistence.Migrations
                     b.HasOne("SoftPMS.Domain.Entities.User", "CreatedByUser")
                         .WithMany("CreatedDocuments")
                         .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("CreatedByUser");
                 });
@@ -620,12 +726,11 @@ namespace SoftPMS.Persistence.Migrations
                     b.HasOne("SoftPMS.Domain.Entities.User", "CreatedByUser")
                         .WithMany("CreatedCompensations")
                         .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("SoftPMS.Domain.Entities.Employee", "Employee")
-                        .WithMany("Compensations")
-                        .HasForeignKey("EmployeeId")
+                        .WithOne("Compensation")
+                        .HasForeignKey("SoftPMS.Domain.Entities.EmployeeCompensation", "EmployeeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -639,8 +744,7 @@ namespace SoftPMS.Persistence.Migrations
                     b.HasOne("SoftPMS.Domain.Entities.User", "CreatedByUser")
                         .WithMany("CreatedNotes")
                         .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("SoftPMS.Domain.Entities.Employee", "Employee")
                         .WithMany("Notes")
@@ -657,6 +761,28 @@ namespace SoftPMS.Persistence.Migrations
                 {
                     b.HasOne("SoftPMS.Domain.Entities.Employee", "Employee")
                         .WithMany("References")
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("SoftPMS.Domain.Entities.MonthlyTimesheet", b =>
+                {
+                    b.HasOne("SoftPMS.Domain.Entities.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("SoftPMS.Domain.Entities.PayrollSlip", b =>
+                {
+                    b.HasOne("SoftPMS.Domain.Entities.Employee", "Employee")
+                        .WithMany()
                         .HasForeignKey("EmployeeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -681,6 +807,17 @@ namespace SoftPMS.Persistence.Migrations
                     b.Navigation("Permission");
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("SoftPMS.Domain.Entities.TimesheetEntry", b =>
+                {
+                    b.HasOne("SoftPMS.Domain.Entities.MonthlyTimesheet", "MonthlyTimesheet")
+                        .WithMany("Entries")
+                        .HasForeignKey("MonthlyTimesheetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MonthlyTimesheet");
                 });
 
             modelBuilder.Entity("SoftPMS.Domain.Entities.User", b =>
@@ -710,13 +847,18 @@ namespace SoftPMS.Persistence.Migrations
                 {
                     b.Navigation("Addresses");
 
-                    b.Navigation("Compensations");
+                    b.Navigation("Compensation");
 
                     b.Navigation("LinkedUser");
 
                     b.Navigation("Notes");
 
                     b.Navigation("References");
+                });
+
+            modelBuilder.Entity("SoftPMS.Domain.Entities.MonthlyTimesheet", b =>
+                {
+                    b.Navigation("Entries");
                 });
 
             modelBuilder.Entity("SoftPMS.Domain.Entities.Permission", b =>

@@ -6,7 +6,7 @@ import {
 } from '@mui/material';
 import { 
   Dashboard, PeopleAlt, FolderCopy, 
-  Settings, ExpandLess, ExpandMore, Business 
+  Settings, ExpandLess, ExpandMore, Business, MonetizationOnRounded 
 } from '@mui/icons-material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styles from './Sidebar.module.css';
@@ -63,6 +63,14 @@ const menuConfig: MenuItem[] = [
     children: [
       { title: 'Document Archive', path: '/documents/archive', permission: 'Documents.Read' },
       { title: 'Process Tracking', path: '/documents/tracking', permission: 'Documents.Read' }
+    ]
+  },
+  { 
+    title: 'Financial Management', 
+    icon: <MonetizationOnRounded />,
+    children: [
+      { title: 'Timesheets', path: '/finance/timesheets', permission: 'Dashboard.Read' }, // Assuming default permission for now
+      { title: 'Payrolls', path: '/finance/payrolls', permission: 'Dashboard.Read' }
     ]
   },
   { 
