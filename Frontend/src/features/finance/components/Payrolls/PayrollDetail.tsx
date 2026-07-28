@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useReactToPrint } from 'react-to-print';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { useEmployeeDetail } from '../../../employees/hooks/useEmployeeDetail';
 import { usePayrollList } from '../../hooks/usePayrollList';
 import { useCalculatePayroll } from '../../hooks/useCalculatePayroll';
@@ -32,7 +35,8 @@ import {
   CalculateRounded,
   PictureAsPdfRounded,
   SettingsRounded,
-  ReceiptLongRounded
+  ReceiptLongRounded,
+  PrintRounded
 } from '@mui/icons-material';
 import * as z from 'zod';
 import styles from './PayrollDetail.module.css';
@@ -145,6 +149,99 @@ export const PayrollDetail = () => {
   
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const slipRef = useRef<HTMLDivElement>(null);
+
+  const generatePdfDoc = () => {
+    if (!selectedSlip) return null;
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Header
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.text("PAYROLL SLIP", pageWidth / 2, 22, { align: "center" });
+    
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Employee: ${employee?.firstName} ${employee?.lastName}`, 14, 35);
+    doc.text(`Period: ${new Date(selectedSlip.year, selectedSlip.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}`, 14, 42);
+    doc.text(`Issue Date: ${new Date(selectedSlip.issueDate).toLocaleDateString()}`, 14, 49);
+    doc.text(`Calculation Type: ${selectedSlip.salaryTypes}`, 14, 56);
+    
+    // Earnings Table
+    const earnings = selectedSlip.lineItems?.filter((li: any) => li.itemType === 1) || [];
+    const earningsData = earnings.map((li: any) => [li.description, li.amount.toFixed(2)]);
+    earningsData.push(["Total Earnings", selectedSlip.totalEarnings]);
+
+    autoTable(doc, {
+      startY: 65,
+      head: [['Earnings', 'Amount']],
+      body: earningsData,
+      theme: 'grid',
+      headStyles: { fillColor: [46, 125, 50], fontSize: 11 },
+      columnStyles: { 1: { halign: 'right' } },
+      didParseCell: function(data) {
+        if (data.row.index === earningsData.length - 1) {
+          data.cell.styles.fontStyle = 'bold';
+          data.cell.styles.textColor = [46, 125, 50];
+        }
+      }
+    });
+
+    // Deductions Table
+    const deductions = selectedSlip.lineItems?.filter((li: any) => li.itemType === 2) || [];
+    const deductionsData = deductions.map((li: any) => [li.description, `-${li.amount.toFixed(2)}`]);
+    deductionsData.push(["Total Deductions", selectedSlip.totalDeductions]);
+
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 10,
+      head: [['Deductions', 'Amount']],
+      body: deductionsData,
+      theme: 'grid',
+      headStyles: { fillColor: [211, 47, 47], fontSize: 11 },
+      columnStyles: { 1: { halign: 'right' } },
+      didParseCell: function(data) {
+        if (data.row.index === deductionsData.length - 1) {
+          data.cell.styles.fontStyle = 'bold';
+          data.cell.styles.textColor = [211, 47, 47];
+        }
+      }
+    });
+
+    // Net Salary
+    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    
+    // Draw Net Salary Box
+    doc.setFillColor(245, 245, 245);
+    doc.roundedRect(14, finalY - 8, pageWidth - 28, 16, 2, 2, 'F');
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 0);
+    doc.text("NET SALARY", 18, finalY + 3);
+    
+    doc.setTextColor(25, 118, 210);
+    doc.text(selectedSlip.netSalary, pageWidth - 18, finalY + 3, { align: "right" });
+
+    return doc;
+  };
+
+  const handlePrint = () => {
+    const doc = generatePdfDoc();
+    if (doc) {
+      doc.autoPrint();
+      window.open(doc.output('bloburl'), '_blank');
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    const doc = generatePdfDoc();
+    if (doc) {
+      doc.save(`Payroll_Slip_${selectedSlip?.year}_${selectedSlip?.month}.pdf`);
+    }
+  };
 
   // Tabs
   const [activeTab, setActiveTab] = useState(0);
@@ -607,19 +704,44 @@ export const PayrollDetail = () => {
           open={!!selectedSlip}
           onClose={() => setSelectedSlip(null)}
           title={`Payroll Slip - ${new Date(selectedSlip.year, selectedSlip.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}`}
+          headerActions={
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Tooltip title="Print">
+                <IconButton onClick={() => handlePrint()} sx={{ color: 'primary.main', bgcolor: 'primary.50' }}>
+                  <PrintRounded />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Download PDF">
+                <IconButton onClick={handleDownloadPdf} sx={{ color: 'error.main', bgcolor: 'error.50' }}>
+                  <PictureAsPdfRounded />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          }
           content={
-            <Box sx={{ minWidth: { xs: 300, sm: 500 } }}>
-              <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2" color="text.secondary">Employee: <strong>{employee.firstName} {employee.lastName}</strong></Typography>
-                <Typography variant="body2" color="text.secondary">Issue Date: {new Date(selectedSlip.issueDate).toLocaleDateString()}</Typography>
-              </Box>
-              <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2" color="text.secondary">Calculation Type: <strong>{selectedSlip.salaryTypes}</strong></Typography>
-              </Box>
-              
-              <Divider sx={{ mb: 2 }} />
-
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: 'success.main' }}>Earnings</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+              {/* SLIP CONTENT TO PRINT */}
+              <div ref={slipRef} style={{ padding: '32px', backgroundColor: '#fff', color: '#000', borderRadius: '12px', width: '100%', maxWidth: '600px', margin: '0 auto', border: '1px solid #e0e0e0' }}>
+                <Typography variant="h5" sx={{ textAlign: 'center', fontWeight: 800, mb: 4, color: '#1a1a1a' }}>
+                  PAYROLL SLIP
+                </Typography>
+                
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 4, pb: 3, borderBottom: '2px solid #eee' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body1" sx={{ color: '#555', fontWeight: 500 }}>Employee:</Typography>
+                    <Typography variant="body1" sx={{ color: '#000', fontWeight: 700 }}>{employee?.firstName} {employee?.lastName}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body1" sx={{ color: '#555', fontWeight: 500 }}>Issue Date:</Typography>
+                    <Typography variant="body1" sx={{ color: '#000', fontWeight: 700 }}>{new Date(selectedSlip.issueDate).toLocaleDateString()}</Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body1" sx={{ color: '#555', fontWeight: 500 }}>Calculation Type:</Typography>
+                    <Typography variant="body1" sx={{ color: '#000', fontWeight: 700 }}>{selectedSlip.salaryTypes}</Typography>
+                  </Box>
+                </Box>
+                  
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, color: '#2e7d32', textTransform: 'uppercase', letterSpacing: '1px' }}>Earnings</Typography>
               <table style={{ width: '100%', fontSize: '0.875rem', marginBottom: '16px' }}>
                 <tbody>
                   {selectedSlip.lineItems?.filter((li: any) => li.itemType === 1).map((li: any) => (
@@ -638,7 +760,7 @@ export const PayrollDetail = () => {
                 </tbody>
               </table>
 
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: 'error.main' }}>Deductions</Typography>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700, mt: 4, mb: 2, color: '#d32f2f', textTransform: 'uppercase', letterSpacing: '1px' }}>Deductions</Typography>
               <table style={{ width: '100%', fontSize: '0.875rem', marginBottom: '16px' }}>
                 <tbody>
                   {selectedSlip.lineItems?.filter((li: any) => li.itemType === 2).map((li: any) => (
@@ -657,10 +779,11 @@ export const PayrollDetail = () => {
                 </tbody>
               </table>
 
-              <Box sx={{ mt: 3, p: 2, bgcolor: 'action.hover', borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>NET SALARY</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 800, color: 'primary.main' }}>{selectedSlip.netSalary}</Typography>
+              <Box sx={{ mt: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: '#000' }}>NET SALARY</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 800, color: '#1976d2' }}>{selectedSlip.netSalary}</Typography>
               </Box>
+            </div>
             </Box>
           }
           confirmText="Close"

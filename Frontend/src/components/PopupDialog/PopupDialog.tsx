@@ -19,6 +19,7 @@ export interface PopupDialogProps {
   content: React.ReactNode;
   icon?: React.ReactNode;
   actions?: React.ReactNode;
+  headerActions?: React.ReactNode;
   
   // Default action props (if 'actions' is not provided)
   onConfirm?: () => void;
@@ -37,6 +38,7 @@ export const PopupDialog: React.FC<PopupDialogProps> = ({
   content,
   icon,
   actions,
+  headerActions,
   onConfirm,
   confirmText = 'Confirm',
   cancelText = 'Cancel',
@@ -89,9 +91,15 @@ export const PopupDialog: React.FC<PopupDialogProps> = ({
             {icon}
           </Box>
         )}
-        <Typography component="span" variant="h6" sx={{ fontWeight: 700, letterSpacing: '-0.01em' }}>
+        <Typography component="span" variant="h6" sx={{ fontWeight: 700, letterSpacing: '-0.01em', flexGrow: 1 }}>
           {title}
         </Typography>
+
+        {headerActions && (
+          <Box sx={{ mr: 4 }}>
+            {headerActions}
+          </Box>
+        )}
         
         <IconButton 
           onClick={onClose}
@@ -99,7 +107,7 @@ export const PopupDialog: React.FC<PopupDialogProps> = ({
           sx={{ 
             position: 'absolute', 
             right: 16, 
-            top: 20,
+            top: 16,
             bgcolor: 'action.hover',
             '&:hover': { bgcolor: 'action.selected' }
           }}

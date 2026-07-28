@@ -21,8 +21,12 @@ import {
   ArrowBackRounded,
   AutoFixHighRounded,
   SaveRounded,
+  PrintRounded,
+  PictureAsPdfRounded
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { useTimesheetDetail } from '../../hooks/useTimesheetDetail';
 import { useGenerateTimesheet } from '../../hooks/useGenerateTimesheet';
 import { useUpdateTimesheetEntry } from '../../hooks/useUpdateTimesheetEntry';
@@ -65,11 +69,118 @@ export const TimesheetDetailMatrix = () => {
 
   const daysInMonth = useMemo(() => new Date(year, month, 0).getDate(), [year, month]);
   
-  const matrixDays = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  
+  const firstDay = new Date(year, month - 1, 1).getDay();
+  const startPadding = firstDay === 0 ? 6 : firstDay - 1;
+
+  const calendarCells: (number | null)[] = [];
+  for (let i = 0; i < startPadding; i++) calendarCells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) calendarCells.push(d);
+  
+  const totalCells = calendarCells.length;
+  const remainder = totalCells % 7;
+  if (remainder !== 0) {
+    for (let i = 0; i < 7 - remainder; i++) calendarCells.push(null);
+  }
 
   const handleGenerate = () => {
     if (!employeeId) return;
     generateTimesheet({ employeeId, year, month });
+  };
+
+  const generatePdfDoc = () => {
+    if (!employee || !timesheet) return null;
+    const doc = new jsPDF('l'); // landscape
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // Title
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("MONTHLY TIMESHEET", pageWidth / 2, 15, { align: "center" });
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Employee: ${employee.firstName} ${employee.lastName} (${employee.profession})`, 14, 25);
+    doc.text(`Period: ${new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}`, 14, 31);
+
+    // Build Table Data
+    const headRow = ["Employee"];
+    for (let d = 1; d <= daysInMonth; d++) {
+      headRow.push(d.toString());
+    }
+
+    const bodyRow = [`${employee.firstName} ${employee.lastName}`];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dayStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const entry = timesheet.entries.find((e: any) => e.date.startsWith(dayStr));
+      if (!entry) {
+        bodyRow.push("-");
+      } else {
+        let txt = "";
+        if (entry.status === 1) txt = "W";
+        else if (entry.status === 2) txt = "WE";
+        else if (entry.status === 3) txt = "PL";
+        else if (entry.status === 4) txt = "UL";
+        else if (entry.status === 5) txt = "A";
+        else if (entry.status === 6) txt = "H";
+        
+        if (entry.overtimeHours > 0) {
+          txt += `\n+${entry.overtimeHours}`;
+        }
+        bodyRow.push(txt);
+      }
+    }
+
+    autoTable(doc, {
+      startY: 40,
+      head: [headRow],
+      body: [bodyRow],
+      theme: 'grid',
+      styles: { fontSize: 7, halign: 'center', cellPadding: 1, minCellHeight: 15, valign: 'middle' },
+      columnStyles: { 0: { halign: 'left', minCellWidth: 30 } },
+      didParseCell: function(data: any) {
+        if (data.section === 'head' && data.column.index > 0) {
+          const d = data.column.index;
+          const isWeekend = new Date(year, month - 1, d).getDay() === 0 || new Date(year, month - 1, d).getDay() === 6;
+          if (isWeekend) {
+            data.cell.styles.textColor = [211, 47, 47];
+          }
+        }
+        if (data.section === 'body' && data.column.index > 0) {
+          const txt = data.cell.raw;
+          if (txt === '-') return;
+          if (txt.includes('W\n') || txt === 'W') data.cell.styles.fillColor = [232, 245, 233]; // Worked
+          else if (txt.includes('WE')) data.cell.styles.fillColor = [255, 243, 224]; // Weekend
+          else if (txt.includes('PL')) data.cell.styles.fillColor = [227, 242, 253]; // Paid Leave
+          else if (txt.includes('UL')) data.cell.styles.fillColor = [243, 229, 245]; // Unpaid Leave
+          else if (txt.includes('A'))  data.cell.styles.fillColor = [255, 235, 238]; // Absent
+          else if (txt.includes('H'))  data.cell.styles.fillColor = [225, 245, 254]; // Holiday
+        }
+      }
+    });
+
+    // Legend
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(8);
+    doc.text("Legend: W = Worked, WE = Weekend, PL = Paid Leave, UL = Unpaid Leave, A = Absent, H = Holiday. +X = Overtime Hours", 14, finalY);
+
+    return doc;
+  };
+
+  const handlePrint = () => {
+    const doc = generatePdfDoc();
+    if (doc) {
+      doc.autoPrint();
+      window.open(doc.output('bloburl'), '_blank');
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    const doc = generatePdfDoc();
+    if (doc) {
+      doc.save(`Timesheet_${employee?.firstName}_${employee?.lastName}_${year}_${month}.pdf`);
+    }
   };
 
   const handleOpenEdit = (entry: TimesheetEntry) => {
@@ -148,6 +259,16 @@ export const TimesheetDetailMatrix = () => {
         </Stack>
 
         <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+          <Tooltip title="Print">
+            <IconButton onClick={handlePrint} sx={{ color: 'primary.main', bgcolor: 'primary.50' }}>
+              <PrintRounded />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Download PDF">
+            <IconButton onClick={handleDownloadPdf} sx={{ color: 'error.main', bgcolor: 'error.50' }}>
+              <PictureAsPdfRounded />
+            </IconButton>
+          </Tooltip>
           <FormControl size="small" sx={{ minWidth: 100 }}>
             <Select value={year} onChange={(e: any) => setYear(Number(e.target.value))}>
               {[currentYear - 1, currentYear, currentYear + 1].map(y => <MenuItem key={y} value={y}>{y}</MenuItem>)}
@@ -192,82 +313,75 @@ export const TimesheetDetailMatrix = () => {
               ))}
             </Box>
 
-            {/* Matrix Table */}
-            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-              <thead>
-                <tr>
-                  <th style={{ width: 200, padding: '12px 16px', textAlign: 'left', borderBottom: '1px solid var(--mui-palette-divider)', borderRight: '2px solid var(--mui-palette-divider)', backgroundColor: 'var(--mui-palette-action-hover)' }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Employee</Typography>
-                  </th>
-                  {matrixDays.map(day => {
-                    const isWeekend = new Date(year, month - 1, day).getDay() === 0 || new Date(year, month - 1, day).getDay() === 6;
-                    return (
-                      <th key={day} style={{ width: 45, padding: '8px 0', textAlign: 'center', borderBottom: '1px solid var(--mui-palette-divider)', borderRight: '1px solid var(--mui-palette-divider)', backgroundColor: isWeekend ? 'var(--mui-palette-action-hover)' : 'transparent' }}>
-                        <Typography variant="caption" sx={{ fontWeight: 700, color: isWeekend ? 'error.main' : 'text.primary' }}>{day}</Typography>
-                      </th>
-                    );
-                  })}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style={{ padding: '12px 16px', borderBottom: '1px solid var(--mui-palette-divider)', borderRight: '2px solid var(--mui-palette-divider)' }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{employee?.firstName} {employee?.lastName}</Typography>
-                    <Typography variant="caption" color="text.secondary">{employee?.profession}</Typography>
-                  </td>
-                  {matrixDays.map(day => {
-                    const dayStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    const entry = timesheet.entries.find(e => e.date.startsWith(dayStr));
-                    
-                    if (!entry) {
-                      return <td key={day} style={{ borderBottom: '1px solid var(--mui-palette-divider)', borderRight: '1px solid var(--mui-palette-divider)' }}></td>;
-                    }
+            {/* Calendar UI */}
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, p: 2, minWidth: 700 }}>
+              {WEEK_DAYS.map(day => (
+                <Box key={day} sx={{ p: 1, textAlign: 'center', fontWeight: 800, borderBottom: '2px solid', borderColor: 'divider', color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.85rem' }}>
+                  {day}
+                </Box>
+              ))}
+              
+              {calendarCells.map((day, idx) => {
+                if (!day) return <Box key={`empty-${idx}`} sx={{ p: 1, bgcolor: 'transparent', minHeight: 100 }} />;
+                
+                const isWeekend = new Date(year, month - 1, day).getDay() === 0 || new Date(year, month - 1, day).getDay() === 6;
+                const dayStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const entry = timesheet.entries.find((e: any) => e.date.startsWith(dayStr));
+                
+                if (!entry) {
+                  return (
+                    <Box key={`day-${day}`} sx={{ p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 2, minHeight: 100, position: 'relative', bgcolor: isWeekend ? 'rgba(0,0,0,0.02)' : 'transparent' }}>
+                      <Typography variant="caption" sx={{ position: 'absolute', top: 6, left: 8, fontWeight: 700, color: isWeekend ? 'error.main' : 'text.secondary', fontSize: '0.85rem' }}>
+                        {day}
+                      </Typography>
+                    </Box>
+                  );
+                }
 
-                    const config = STATUS_CONFIG[entry.status];
-                    const otTypeName = entry.overtimeTypeId && overtimeTypes ? overtimeTypes.find(t => t.id === entry.overtimeTypeId)?.name : null;
-                    const tooltipText = `${config.label} ${entry.overtimeHours > 0 ? `(+${entry.overtimeHours}h OT${otTypeName ? ` - ${otTypeName}` : ''})` : ''}`;
-                    
-                    return (
-                      <td 
-                        key={day} 
-                        style={{ 
-                          borderBottom: '1px solid var(--mui-palette-divider)', 
-                          borderRight: '1px solid var(--mui-palette-divider)',
-                          padding: '4px',
-                          cursor: 'pointer',
-                        }}
-                        onClick={() => handleOpenEdit(entry)}
-                      >
-                        <Tooltip title={tooltipText} arrow placement="top">
-                          <Box 
-                            sx={{ 
-                              width: '100%', 
-                              height: 36, 
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              backgroundColor: (theme) => theme.palette.mode === 'dark' ? config.bgDark : config.bgLight,
-                              border: '1px solid',
-                              borderColor: config.color,
-                              color: config.color,
-                              fontWeight: 700,
-                              fontSize: '0.75rem',
-                              transition: 'all 0.2s ease',
-                              '&:hover': {
-                                filter: 'brightness(0.9)',
-                              }
-                            }}
-                          >
-                            {entry.status === 1 ? 'W' : entry.status === 2 ? 'WE' : entry.status === 3 ? 'PL' : entry.status === 4 ? 'UL' : entry.status === 5 ? 'A' : 'H'}
-                            {entry.overtimeHours > 0 && <span style={{ fontSize: '10px', marginLeft: '2px' }}>+{entry.overtimeHours}</span>}
-                          </Box>
-                        </Tooltip>
-                      </td>
-                    );
-                  })}
-                </tr>
-              </tbody>
-            </table>
+                const config = STATUS_CONFIG[entry.status];
+                const otTypeName = entry.overtimeTypeId && overtimeTypes ? overtimeTypes.find(t => t.id === entry.overtimeTypeId)?.name : null;
+                const tooltipText = `${config.label} ${entry.overtimeHours > 0 ? `(+${entry.overtimeHours}h OT${otTypeName ? ` - ${otTypeName}` : ''})` : ''}`;
+                
+                return (
+                  <Tooltip title={tooltipText} arrow placement="top" key={`day-${day}`}>
+                    <Box
+                      onClick={() => handleOpenEdit(entry)}
+                      sx={{
+                        p: 1,
+                        border: '1px solid',
+                        borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                        borderRadius: 2,
+                        minHeight: 100,
+                        position: 'relative',
+                        cursor: 'pointer',
+                        bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          bgcolor: 'action.hover',
+                          borderColor: 'primary.main',
+                          transform: 'translateY(-2px)',
+                          boxShadow: 3
+                        }
+                      }}
+                    >
+                      <Typography variant="caption" sx={{ position: 'absolute', top: 6, left: 8, fontWeight: 700, color: isWeekend ? 'error.main' : 'text.primary', fontSize: '0.85rem' }}>
+                        {day}
+                      </Typography>
+                      <Box sx={{ mt: 3.5, display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: 'center' }}>
+                        <Box sx={{ px: 1, py: 0.5, borderRadius: 1.5, width: '90%', textAlign: 'center', bgcolor: (theme) => theme.palette.mode === 'dark' ? config.bgDark : config.bgLight, border: '1px solid', borderColor: config.color, color: config.color, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                           <Typography variant="caption" sx={{ fontWeight: 800 }}>{config.label}</Typography>
+                        </Box>
+                        {entry.overtimeHours > 0 && (
+                           <Typography variant="caption" sx={{ fontWeight: 700, color: '#f57c00', fontSize: '0.75rem' }}>
+                             +{entry.overtimeHours}h OT
+                           </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  </Tooltip>
+                );
+              })}
+            </Box>
             
             <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider', display: 'flex', gap: 4, bgcolor: 'action.hover' }}>
               <Typography variant="body2"><strong>Worked Days:</strong> {timesheet.totalWorkedDays}</Typography>
