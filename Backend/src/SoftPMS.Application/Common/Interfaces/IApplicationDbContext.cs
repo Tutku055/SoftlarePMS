@@ -16,6 +16,7 @@ public interface IApplicationDbContext
     DbSet<EmployeeCompensation> EmployeeCompensations { get; }
     DbSet<MonthlyTimesheet> MonthlyTimesheets { get; }
     DbSet<TimesheetEntry> TimesheetEntries { get; }
+    DbSet<OvertimeType> OvertimeTypes { get; }
     DbSet<PayrollSlip> PayrollSlips { get; }
     DbSet<Document> Documents { get; }
     DbSet<EmployeeNote> EmployeeNotes { get; }

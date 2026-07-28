@@ -25,6 +25,11 @@ public class TimesheetEntryConfiguration : IEntityTypeConfiguration<TimesheetEnt
             .HasForeignKey(e => e.MonthlyTimesheetId)
             .OnDelete(DeleteBehavior.Cascade);
             
+        builder.HasOne(e => e.OvertimeType)
+            .WithMany()
+            .HasForeignKey(e => e.OvertimeTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+            
         builder.HasIndex(e => new { e.MonthlyTimesheetId, e.Date }).IsUnique();
     }
 }

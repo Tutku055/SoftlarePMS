@@ -15,6 +15,7 @@ export interface TimesheetEntry {
   date: string;
   status: number; // matches backend TimesheetStatus enum: 1=Worked, 2=Weekend, 3=PaidLeave, 4=UnpaidLeave, 5=Absent, 6=Holiday
   overtimeHours: number;
+  overtimeTypeId?: string;
 }
 
 export interface PayrollSlip {
@@ -33,6 +34,7 @@ export interface UpdateTimesheetEntryCommand {
   entryId: string;
   status: number;
   overtimeHours: number;
+  overtimeTypeId?: string;
 }
 
 export interface CalculateMonthlyPayrollCommand {
@@ -53,4 +55,20 @@ export interface UpdateCompensationCommand {
   salaryType: number; // 1=Hourly, 2=Monthly
   currency: number;   // 1=TRY, etc.
   effectiveDate: string;
+}
+
+export interface OvertimeType {
+  id: string;
+  name: string;
+  multiplier: number;
+  isActive: boolean;
+}
+
+export interface PaginatedList<T> {
+  items: T[];
+  pageNumber: number;
+  totalPages: number;
+  totalCount: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
 }

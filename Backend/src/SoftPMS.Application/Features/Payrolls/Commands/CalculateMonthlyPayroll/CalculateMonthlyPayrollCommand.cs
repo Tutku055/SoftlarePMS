@@ -24,6 +24,7 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
         // 1. Fetch timesheet with entries
         var timesheet = await _context.MonthlyTimesheets
             .Include(t => t.Entries)
+                .ThenInclude(e => e.OvertimeType)
             .FirstOrDefaultAsync(t => t.EmployeeId == request.EmployeeId && t.Year == request.Year && t.Month == request.Month, cancellationToken);
 
         if (timesheet == null)
@@ -76,18 +77,16 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
                 windowDeductions = (unpaidCount + absentCount) * dailyRate;
 
                 decimal hourlyRate = dailyRate / 8m;
-                decimal overtimeHours = entriesInWindow.Sum(e => e.OvertimeHours);
-                windowOvertime = overtimeHours * (hourlyRate * 1.5m);
+                windowOvertime = entriesInWindow.Sum(e => e.OvertimeHours * (hourlyRate * (e.OvertimeType?.Multiplier ?? 1.5m)));
             }
             else if (compensation.SalaryType == Domain.Enums.SalaryType.Hourly)
             {
                 decimal hourlyWage = compensation.BaseSalary;
                 var workedDays = entriesInWindow.Count(e => e.Status == Domain.Enums.TimesheetStatus.Worked);
                 var workedHours = workedDays * 8m;
-                var overtimeHours = entriesInWindow.Sum(e => e.OvertimeHours);
                 
                 windowBaseSalary = workedHours * hourlyWage;
-                windowOvertime = overtimeHours * (hourlyWage * 1.5m);
+                windowOvertime = entriesInWindow.Sum(e => e.OvertimeHours * (hourlyWage * (e.OvertimeType?.Multiplier ?? 1.5m)));
             }
 
             earningsByCurrency[compensation.Currency] += windowBaseSalary + windowOvertime;

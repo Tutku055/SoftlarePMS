@@ -12,6 +12,10 @@ public class TimesheetEntry : BaseEntity
 
     public decimal OvertimeHours { get; set; }
 
+    public Guid? OvertimeTypeId { get; set; }
+
     // Navigation properties
     public virtual MonthlyTimesheet MonthlyTimesheet { get; set; } = null!;
+    
+    public virtual OvertimeType? OvertimeType { get; set; }
 }

@@ -31,6 +31,7 @@ public class SoftPMSDbContext : DbContext, IApplicationDbContext
     public DbSet<EmployeeCompensation> EmployeeCompensations { get; set; }
     public DbSet<MonthlyTimesheet> MonthlyTimesheets { get; set; }
     public DbSet<TimesheetEntry> TimesheetEntries { get; set; }
+    public DbSet<OvertimeType> OvertimeTypes { get; set; }
     public DbSet<PayrollSlip> PayrollSlips { get; set; }
     public DbSet<Document> Documents { get; set; }
     public DbSet<EmployeeNote> EmployeeNotes { get; set; }

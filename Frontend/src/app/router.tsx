@@ -19,6 +19,7 @@ import { TimesheetList } from '../features/finance/components/Timesheets/Timeshe
 import { TimesheetDetailMatrix } from '../features/finance/components/Timesheets/TimesheetDetailMatrix';
 import { PayrollList } from '../features/finance/components/Payrolls/PayrollList';
 import { PayrollDetail } from '../features/finance/components/Payrolls/PayrollDetail';
+import { OvertimeTypeList } from '../features/finance/components/OvertimeTypes/OvertimeTypeList';
 
 import { useLocation } from 'react-router-dom';
 
@@ -128,6 +129,10 @@ export const router = createBrowserRouter([
               {
                 path: 'payrolls/:employeeId',
                 element: <PayrollDetail />,
+              },
+              {
+                path: 'overtime-types',
+                element: <OvertimeTypeList />,
               }
             ]
           },

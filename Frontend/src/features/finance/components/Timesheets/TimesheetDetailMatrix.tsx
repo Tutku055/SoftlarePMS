@@ -27,6 +27,7 @@ import { useTimesheetDetail } from '../../hooks/useTimesheetDetail';
 import { useGenerateTimesheet } from '../../hooks/useGenerateTimesheet';
 import { useUpdateTimesheetEntry } from '../../hooks/useUpdateTimesheetEntry';
 import { useEmployeeDetail } from '../../../employees/hooks/useEmployeeDetail';
+import { useOvertimeTypes } from '../../hooks/useOvertimeTypes';
 import type { TimesheetEntry } from '../../types';
 
 // Status values match backend TimesheetStatus enum (1-based)
@@ -50,12 +51,14 @@ export const TimesheetDetailMatrix = () => {
 
   const { data: employee, isLoading: isLoadingEmp } = useEmployeeDetail(employeeId);
   const { data: timesheet, isLoading: isLoadingTs, isError: isErrorTs } = useTimesheetDetail(employeeId || '', year, month);
+  const { data: overtimeTypes } = useOvertimeTypes();
   const { mutate: generateTimesheet, isPending: isGenerating } = useGenerateTimesheet();
   const { mutate: updateEntry, isPending: isUpdating } = useUpdateTimesheetEntry();
 
   const [editEntry, setEditEntry] = useState<TimesheetEntry | null>(null);
   const [editStatus, setEditStatus] = useState<number>(0);
   const [editOvertime, setEditOvertime] = useState<number>(0);
+  const [editOvertimeTypeId, setEditOvertimeTypeId] = useState<string>('');
 
   const daysInMonth = useMemo(() => new Date(year, month, 0).getDate(), [year, month]);
   
@@ -70,6 +73,7 @@ export const TimesheetDetailMatrix = () => {
     setEditEntry(entry);
     setEditStatus(entry.status);
     setEditOvertime(entry.overtimeHours);
+    setEditOvertimeTypeId(entry.overtimeTypeId || '');
   };
 
   const handleSaveEdit = () => {
@@ -80,7 +84,8 @@ export const TimesheetDetailMatrix = () => {
       command: {
         entryId: editEntry.id,
         status: editStatus,
-        overtimeHours: editOvertime
+        overtimeHours: editOvertime,
+        overtimeTypeId: editOvertimeTypeId || undefined
       }
     }, {
       onSuccess: () => {
@@ -292,6 +297,22 @@ export const TimesheetDetailMatrix = () => {
               slotProps={{ htmlInput: { min: 0, step: 0.5 } }}
               disabled={editStatus !== 1 && editStatus !== 2 && editStatus !== 6} // overtime only for Worked, Weekend, or Holiday
             />
+
+            {editOvertime > 0 && (
+              <FormControl fullWidth size="small">
+                <InputLabel>Overtime Type</InputLabel>
+                <Select
+                  value={editOvertimeTypeId}
+                  label="Overtime Type"
+                  onChange={(e) => setEditOvertimeTypeId(e.target.value)}
+                >
+                  <MenuItem value=""><em>None</em></MenuItem>
+                  {overtimeTypes?.map((type) => (
+                    <MenuItem key={type.id} value={type.id}>{type.name} (x{type.multiplier})</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>

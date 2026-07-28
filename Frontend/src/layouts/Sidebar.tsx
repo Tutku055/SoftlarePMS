@@ -70,7 +70,8 @@ const menuConfig: MenuItem[] = [
     icon: <MonetizationOnRounded />,
     children: [
       { title: 'Timesheets', path: '/finance/timesheets', permission: 'Dashboard.Read' }, // Assuming default permission for now
-      { title: 'Payrolls', path: '/finance/payrolls', permission: 'Dashboard.Read' }
+      { title: 'Payrolls', path: '/finance/payrolls', permission: 'Dashboard.Read' },
+      { title: 'Overtime', path: '/finance/overtime-types', permission: 'Dashboard.Read' }
     ]
   },
   { 
