@@ -609,9 +609,12 @@ export const PayrollDetail = () => {
           title={`Payroll Slip - ${new Date(selectedSlip.year, selectedSlip.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}`}
           content={
             <Box sx={{ minWidth: { xs: 300, sm: 500 } }}>
-              <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between' }}>
+              <Box sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
                 <Typography variant="body2" color="text.secondary">Employee: <strong>{employee.firstName} {employee.lastName}</strong></Typography>
                 <Typography variant="body2" color="text.secondary">Issue Date: {new Date(selectedSlip.issueDate).toLocaleDateString()}</Typography>
+              </Box>
+              <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" color="text.secondary">Calculation Type: <strong>{selectedSlip.salaryTypes}</strong></Typography>
               </Box>
               
               <Divider sx={{ mb: 2 }} />

@@ -14,6 +14,10 @@ public class TimesheetEntry : BaseEntity
 
     public Guid? OvertimeTypeId { get; set; }
 
+    public decimal WorkedHours { get; set; } = 8m; // Default normal hours
+    public decimal PaidLeaveHours { get; set; }
+    public decimal UnpaidLeaveHours { get; set; }
+
     // Navigation properties
     public virtual MonthlyTimesheet MonthlyTimesheet { get; set; } = null!;
     

@@ -59,6 +59,9 @@ export const TimesheetDetailMatrix = () => {
   const [editStatus, setEditStatus] = useState<number>(0);
   const [editOvertime, setEditOvertime] = useState<number>(0);
   const [editOvertimeTypeId, setEditOvertimeTypeId] = useState<string>('');
+  const [editWorkedHours, setEditWorkedHours] = useState<number>(8);
+  const [editPaidLeaveHours, setEditPaidLeaveHours] = useState<number>(0);
+  const [editUnpaidLeaveHours, setEditUnpaidLeaveHours] = useState<number>(0);
 
   const daysInMonth = useMemo(() => new Date(year, month, 0).getDate(), [year, month]);
   
@@ -74,6 +77,9 @@ export const TimesheetDetailMatrix = () => {
     setEditStatus(entry.status);
     setEditOvertime(entry.overtimeHours);
     setEditOvertimeTypeId(entry.overtimeTypeId || '');
+    setEditWorkedHours(entry.workedHours);
+    setEditPaidLeaveHours(entry.paidLeaveHours);
+    setEditUnpaidLeaveHours(entry.unpaidLeaveHours);
   };
 
   const handleSaveEdit = () => {
@@ -85,7 +91,10 @@ export const TimesheetDetailMatrix = () => {
         entryId: editEntry.id,
         status: editStatus,
         overtimeHours: editOvertime,
-        overtimeTypeId: editOvertime > 0 ? (editOvertimeTypeId || undefined) : undefined
+        overtimeTypeId: editOvertime > 0 ? (editOvertimeTypeId || undefined) : undefined,
+        workedHours: editWorkedHours,
+        paidLeaveHours: editPaidLeaveHours,
+        unpaidLeaveHours: editUnpaidLeaveHours
       }
     }, {
       onSuccess: () => {
@@ -305,6 +314,42 @@ export const TimesheetDetailMatrix = () => {
               slotProps={{ htmlInput: { min: 0, step: 0.5 } }}
               disabled={(editStatus !== 1 && editStatus !== 2 && editStatus !== 6) || (overtimeTypes && overtimeTypes.length === 0)}
             />
+
+            {editEntry?.salaryType === 1 && (
+              <TextField 
+                label="Worked Hours (Hourly Wage)" 
+                type="number" 
+                size="small" 
+                fullWidth 
+                value={editWorkedHours}
+                onChange={(e) => setEditWorkedHours(Number(e.target.value))}
+                slotProps={{ htmlInput: { min: 0, step: 0.5 } }}
+                disabled={editStatus !== 1 && editStatus !== 3 && editStatus !== 6}
+              />
+            )}
+            
+            {editEntry?.salaryType === 2 && (
+              <Stack direction="row" spacing={2}>
+                <TextField 
+                  label="Paid Leave (Hrs)" 
+                  type="number" 
+                  size="small" 
+                  fullWidth 
+                  value={editPaidLeaveHours}
+                  onChange={(e) => setEditPaidLeaveHours(Number(e.target.value))}
+                  slotProps={{ htmlInput: { min: 0, step: 0.5 } }}
+                />
+                <TextField 
+                  label="Unpaid Leave (Hrs)" 
+                  type="number" 
+                  size="small" 
+                  fullWidth 
+                  value={editUnpaidLeaveHours}
+                  onChange={(e) => setEditUnpaidLeaveHours(Number(e.target.value))}
+                  slotProps={{ htmlInput: { min: 0, step: 0.5 } }}
+                />
+              </Stack>
+            )}
 
             {overtimeTypes && overtimeTypes.length === 0 && (
               <Typography variant="caption" color="error" sx={{ fontWeight: 600 }}>

@@ -16,6 +16,10 @@ export interface TimesheetEntry {
   status: number; // matches backend TimesheetStatus enum: 1=Worked, 2=Weekend, 3=PaidLeave, 4=UnpaidLeave, 5=Absent, 6=Holiday
   overtimeHours: number;
   overtimeTypeId?: string;
+  salaryType: number;
+  workedHours: number;
+  paidLeaveHours: number;
+  unpaidLeaveHours: number;
 }
 
 export interface PayrollSlipLineItem {
@@ -34,6 +38,7 @@ export interface PayrollSlip {
   totalEarnings: string;
   totalDeductions: string;
   netSalary: string;
+  salaryTypes: string;
   issueDate: string;
   lineItems: PayrollSlipLineItem[];
 }
@@ -43,6 +48,9 @@ export interface UpdateTimesheetEntryCommand {
   status: number;
   overtimeHours: number;
   overtimeTypeId?: string;
+  workedHours: number;
+  paidLeaveHours: number;
+  unpaidLeaveHours: number;
 }
 
 export interface CalculateMonthlyPayrollCommand {

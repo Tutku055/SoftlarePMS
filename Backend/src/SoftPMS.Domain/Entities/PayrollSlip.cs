@@ -16,6 +16,8 @@ public class PayrollSlip : BaseEntity
 
     public string NetSalary { get; set; } = string.Empty;
 
+    public string SalaryTypes { get; set; } = string.Empty;
+
     public DateTime IssueDate { get; set; }
 
     // Navigation properties

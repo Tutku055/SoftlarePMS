@@ -6,5 +6,9 @@ public record TimesheetEntryDto(
     DateTime Date,
     int Status,
     decimal OvertimeHours,
-    Guid? OvertimeTypeId
+    Guid? OvertimeTypeId,
+    int SalaryType,
+    decimal WorkedHours,
+    decimal PaidLeaveHours,
+    decimal UnpaidLeaveHours
 );

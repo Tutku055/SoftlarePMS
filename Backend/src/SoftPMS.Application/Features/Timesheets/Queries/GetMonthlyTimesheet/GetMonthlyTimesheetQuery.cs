@@ -27,15 +27,34 @@ public class GetMonthlyTimesheetQueryHandler : IRequestHandler<GetMonthlyTimeshe
         if (timesheet == null)
             return null;
 
+        var startOfMonth = new DateTime(request.Year, request.Month, 1);
+        var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
+
+        var compensations = await _context.EmployeeCompensations
+            .Where(c => c.EmployeeId == request.EmployeeId && c.EffectiveDate <= endOfMonth && (c.EndDate == null || c.EndDate >= startOfMonth))
+            .OrderBy(c => c.EffectiveDate)
+            .ToListAsync(cancellationToken);
+
         var entries = timesheet.Entries
             .OrderBy(e => e.Date)
-            .Select(e => new TimesheetEntryDto(
-                e.Id,
-                e.MonthlyTimesheetId,
-                e.Date,
-                (int)e.Status,
-                e.OvertimeHours,
-                e.OvertimeTypeId))
+            .Select(e => {
+                var comp = compensations.LastOrDefault(c => c.EffectiveDate <= e.Date) 
+                           ?? compensations.FirstOrDefault();
+                
+                var salaryType = comp?.SalaryType ?? Domain.Enums.SalaryType.Monthly;
+
+                return new TimesheetEntryDto(
+                    e.Id,
+                    e.MonthlyTimesheetId,
+                    e.Date,
+                    (int)e.Status,
+                    e.OvertimeHours,
+                    e.OvertimeTypeId,
+                    (int)salaryType,
+                    e.WorkedHours,
+                    e.PaidLeaveHours,
+                    e.UnpaidLeaveHours);
+            })
             .ToList();
 
         return new MonthlyTimesheetDto(

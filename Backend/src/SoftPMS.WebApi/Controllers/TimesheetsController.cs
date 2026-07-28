@@ -26,14 +26,12 @@ public class GenerateTimesheetRequest
 /// <summary>New status and overtime hours for a single timesheet entry.</summary>
 public class UpdateTimesheetEntryRequest
 {
-    /// <summary>The new status.</summary>
     public TimesheetStatus Status { get; set; }
-    
-    /// <summary>The new overtime hours.</summary>
     public decimal OvertimeHours { get; set; }
-    
-    /// <summary>The type of overtime, if any.</summary>
     public Guid? OvertimeTypeId { get; set; }
+    public decimal WorkedHours { get; set; }
+    public decimal PaidLeaveHours { get; set; }
+    public decimal UnpaidLeaveHours { get; set; }
 }
 
 [Authorize]
@@ -65,7 +63,14 @@ public class TimesheetsController : ApiControllerBase
     [HasPermission("Timesheets.Manage")]
     public async Task<ActionResult<bool>> UpdateTimesheetEntry(Guid employeeId, Guid entryId, [FromBody] UpdateTimesheetEntryRequest request)
     {
-        var result = await Sender.Send(new UpdateTimesheetEntryCommand(entryId, request.Status, request.OvertimeHours, request.OvertimeTypeId));
+        var result = await Sender.Send(new UpdateTimesheetEntryCommand(
+            entryId, 
+            request.Status, 
+            request.OvertimeHours, 
+            request.OvertimeTypeId,
+            request.WorkedHours,
+            request.PaidLeaveHours,
+            request.UnpaidLeaveHours));
         return Ok(result);
     }
 }

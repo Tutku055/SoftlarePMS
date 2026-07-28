@@ -10,10 +10,12 @@ public record CalculateMonthlyPayrollCommand(Guid EmployeeId, int Year, int Mont
 public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMonthlyPayrollCommand, Guid>
 {
     private readonly IApplicationDbContext _context;
+    private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration;
 
-    public CalculateMonthlyPayrollCommandHandler(IApplicationDbContext context)
+    public CalculateMonthlyPayrollCommandHandler(IApplicationDbContext context, Microsoft.Extensions.Configuration.IConfiguration configuration)
     {
         _context = context;
+        _configuration = configuration;
     }
 
     public async Task<Guid> Handle(CalculateMonthlyPayrollCommand request, CancellationToken cancellationToken)
@@ -45,6 +47,27 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
         var baseSalaryByCurrency = new Dictionary<Domain.Enums.Currency, decimal>();
 
         var lineItems = new List<PayrollSlipLineItem>();
+        
+        decimal monthlyWorkingHours = 225m;
+        var configStr = _configuration["PayrollSettings:MonthlyWorkingHours"];
+        if (!string.IsNullOrEmpty(configStr) && decimal.TryParse(configStr, out var parsed))
+        {
+            monthlyWorkingHours = parsed;
+        }
+        
+        int daysInMonth = DateTime.DaysInMonth(request.Year, request.Month);
+        var monthlyCompDays = compensations
+            .Where(c => c.SalaryType == Domain.Enums.SalaryType.Monthly)
+            .Select(c => 
+            {
+                var ws = c.EffectiveDate > startOfMonth ? c.EffectiveDate : startOfMonth;
+                var we = (c.EndDate != null && c.EndDate < endOfMonth) ? c.EndDate.Value : endOfMonth;
+                return (we - ws).Days + 1;
+            })
+            .Sum();
+            
+        bool isFullMonthly = (monthlyCompDays == daysInMonth);
+        var lastMonthlyComp = compensations.LastOrDefault(c => c.SalaryType == Domain.Enums.SalaryType.Monthly);
 
         foreach (var compensation in compensations)
         {
@@ -69,6 +92,12 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
                 decimal dailyRate = compensation.BaseSalary / 30m;
                 
                 int activeDaysInWindow = (windowEnd - windowStart).Days + 1;
+                
+                if (isFullMonthly && lastMonthlyComp != null && compensation.Id == lastMonthlyComp.Id)
+                {
+                    activeDaysInWindow += (30 - daysInMonth);
+                }
+                
                 var unpaidCount = entriesInWindow.Count(e => e.Status == Domain.Enums.TimesheetStatus.UnpaidLeave);
                 var absentCount = entriesInWindow.Count(e => e.Status == Domain.Enums.TimesheetStatus.Absent);
 
@@ -94,19 +123,48 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
                     });
                 }
 
-                decimal hourlyRate = dailyRate / 8m;
+                decimal hourlyRate = compensation.BaseSalary / monthlyWorkingHours;
                 
-                var overtimeEntries = entriesInWindow.Where(e => e.OvertimeHours > 0).ToList();
-                foreach (var ot in overtimeEntries)
+                var unpaidHourlySum = entriesInWindow.Sum(e => e.UnpaidLeaveHours);
+                if (unpaidHourlySum > 0)
                 {
-                    var multiplier = ot.OvertimeType?.Multiplier ?? 1.5m;
-                    var amount = ot.OvertimeHours * hourlyRate * multiplier;
+                    var hourlyDeduction = unpaidHourlySum * hourlyRate;
+                    windowDeductions += hourlyDeduction;
+                    lineItems.Add(new PayrollSlipLineItem
+                    {
+                        ItemType = Domain.Enums.SlipItemType.Deduction,
+                        Description = $"Hourly Unpaid Leave ({unpaidHourlySum} hrs)",
+                        Amount = hourlyDeduction
+                    });
+                }
+                
+                var paidHourlySum = entriesInWindow.Sum(e => e.PaidLeaveHours);
+                if (paidHourlySum > 0)
+                {
+                    lineItems.Add(new PayrollSlipLineItem
+                    {
+                        ItemType = Domain.Enums.SlipItemType.Earning,
+                        Description = $"Hourly Paid Leave ({paidHourlySum} hrs) - Included in Base",
+                        Amount = 0m
+                    });
+                }
+                
+                var overtimeGroups = entriesInWindow.Where(e => e.OvertimeHours > 0)
+                    .GroupBy(e => e.OvertimeTypeId)
+                    .ToList();
+                    
+                foreach (var group in overtimeGroups)
+                {
+                    var firstOt = group.First();
+                    var multiplier = firstOt.OvertimeType?.Multiplier ?? 1.5m;
+                    var totalHours = group.Sum(e => e.OvertimeHours);
+                    var amount = totalHours * hourlyRate * multiplier;
                     windowOvertime += amount;
 
                     lineItems.Add(new PayrollSlipLineItem
                     {
                         ItemType = Domain.Enums.SlipItemType.Earning,
-                        Description = $"Overtime: {ot.OvertimeType?.Name ?? "Standard"} ({ot.OvertimeHours}h x {multiplier})",
+                        Description = $"Overtime: {firstOt.OvertimeType?.Name ?? "Standard"} ({totalHours}h x {multiplier})",
                         Amount = amount
                     });
                 }
@@ -114,29 +172,34 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
             else if (compensation.SalaryType == Domain.Enums.SalaryType.Hourly)
             {
                 decimal hourlyWage = compensation.BaseSalary;
-                var workedDays = entriesInWindow.Count(e => e.Status == Domain.Enums.TimesheetStatus.Worked);
-                var workedHours = workedDays * 8m;
+                var payableHourlyEntries = entriesInWindow.Where(e => e.Status == Domain.Enums.TimesheetStatus.Worked || e.Status == Domain.Enums.TimesheetStatus.PaidLeave || e.Status == Domain.Enums.TimesheetStatus.Holiday).ToList();
+                var totalWorkedHours = payableHourlyEntries.Sum(e => e.WorkedHours);
                 
-                windowBaseSalary = workedHours * hourlyWage;
+                windowBaseSalary = totalWorkedHours * hourlyWage;
                 
                 lineItems.Add(new PayrollSlipLineItem
                 {
                     ItemType = Domain.Enums.SlipItemType.Earning,
-                    Description = $"Base Salary ({workedHours} hrs)",
+                    Description = $"Base Salary ({totalWorkedHours} hrs)",
                     Amount = windowBaseSalary
                 });
 
-                var overtimeEntries = entriesInWindow.Where(e => e.OvertimeHours > 0).ToList();
-                foreach (var ot in overtimeEntries)
+                var overtimeGroups = entriesInWindow.Where(e => e.OvertimeHours > 0)
+                    .GroupBy(e => e.OvertimeTypeId)
+                    .ToList();
+                    
+                foreach (var group in overtimeGroups)
                 {
-                    var multiplier = ot.OvertimeType?.Multiplier ?? 1.5m;
-                    var amount = ot.OvertimeHours * hourlyWage * multiplier;
+                    var firstOt = group.First();
+                    var multiplier = firstOt.OvertimeType?.Multiplier ?? 1.5m;
+                    var totalHours = group.Sum(e => e.OvertimeHours);
+                    var amount = totalHours * hourlyWage * multiplier;
                     windowOvertime += amount;
 
                     lineItems.Add(new PayrollSlipLineItem
                     {
                         ItemType = Domain.Enums.SlipItemType.Earning,
-                        Description = $"Overtime: {ot.OvertimeType?.Name ?? "Standard"} ({ot.OvertimeHours}h x {multiplier})",
+                        Description = $"Overtime: {firstOt.OvertimeType?.Name ?? "Standard"} ({totalHours}h x {multiplier})",
                         Amount = amount
                     });
                 }
@@ -156,6 +219,9 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
             return string.Join(" + ", validEntries.Select(kv => $"{kv.Value:F2} {kv.Key}"));
         }
 
+        var distinctTypes = compensations.Select(c => c.SalaryType.ToString()).Distinct().ToList();
+        var salaryTypesString = string.Join(" & ", distinctTypes);
+
         // 7. Save PayrollSlip
         var payrollSlip = new PayrollSlip
         {
@@ -166,6 +232,7 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
             TotalEarnings = FormatMultiCurrency(earningsByCurrency),
             TotalDeductions = FormatMultiCurrency(deductionsByCurrency),
             NetSalary = FormatMultiCurrency(netSalaryByCurrency),
+            SalaryTypes = salaryTypesString,
             IssueDate = DateTime.UtcNow,
             LineItems = lineItems
         };
@@ -180,6 +247,7 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
             existingSlip.TotalEarnings = payrollSlip.TotalEarnings;
             existingSlip.TotalDeductions = payrollSlip.TotalDeductions;
             existingSlip.NetSalary = payrollSlip.NetSalary;
+            existingSlip.SalaryTypes = payrollSlip.SalaryTypes;
             existingSlip.IssueDate = payrollSlip.IssueDate;
             
             // Overwrite old line items

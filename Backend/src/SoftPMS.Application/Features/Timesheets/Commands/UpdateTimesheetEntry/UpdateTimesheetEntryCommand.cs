@@ -5,7 +5,15 @@ using SoftPMS.Domain.Enums;
 
 namespace SoftPMS.Application.Features.Timesheets.Commands.UpdateTimesheetEntry;
 
-public record UpdateTimesheetEntryCommand(Guid EntryId, TimesheetStatus Status, decimal OvertimeHours, Guid? OvertimeTypeId) : IRequest<bool>;
+public record UpdateTimesheetEntryCommand(
+    Guid EntryId, 
+    TimesheetStatus Status, 
+    decimal OvertimeHours, 
+    Guid? OvertimeTypeId,
+    decimal WorkedHours,
+    decimal PaidLeaveHours,
+    decimal UnpaidLeaveHours
+) : IRequest<bool>;
 
 public class UpdateTimesheetEntryCommandHandler : IRequestHandler<UpdateTimesheetEntryCommand, bool>
 {
@@ -28,6 +36,9 @@ public class UpdateTimesheetEntryCommandHandler : IRequestHandler<UpdateTimeshee
         entry.Status = request.Status;
         entry.OvertimeHours = request.OvertimeHours;
         entry.OvertimeTypeId = request.OvertimeTypeId;
+        entry.WorkedHours = request.WorkedHours;
+        entry.PaidLeaveHours = request.PaidLeaveHours;
+        entry.UnpaidLeaveHours = request.UnpaidLeaveHours;
 
         // Recalculate MonthlyTimesheet totals
         var timesheet = entry.MonthlyTimesheet;

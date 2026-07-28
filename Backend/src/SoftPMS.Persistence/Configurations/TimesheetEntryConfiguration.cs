@@ -17,8 +17,18 @@ public class TimesheetEntryConfiguration : IEntityTypeConfiguration<TimesheetEnt
             .IsRequired();
 
         builder.Property(e => e.OvertimeHours)
-            .HasColumnType("decimal(18,2)")
-            .IsRequired();
+            .HasColumnType("decimal(18,2)");
+            
+        builder.Property(e => e.WorkedHours)
+            .HasColumnType("decimal(18,2)");
+            
+        builder.Property(e => e.PaidLeaveHours)
+            .HasColumnType("decimal(18,2)");
+            
+        builder.Property(e => e.UnpaidLeaveHours)
+            .HasColumnType("decimal(18,2)");
+
+        // Relationships
 
         builder.HasOne(e => e.MonthlyTimesheet)
             .WithMany(t => t.Entries)
