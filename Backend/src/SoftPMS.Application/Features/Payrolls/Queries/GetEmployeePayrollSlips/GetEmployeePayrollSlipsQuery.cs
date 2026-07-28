@@ -34,7 +34,7 @@ public class GetEmployeePayrollSlipsQueryHandler : IRequestHandler<GetEmployeePa
                 p.NetSalary,
                 p.SalaryTypes,
                 p.IssueDate,
-                p.LineItems.Select(li => new PayrollSlipLineItemDto(li.Id, (int)li.ItemType, li.Description, li.Amount)).ToList()))
+                p.LineItems.Select(li => new PayrollSlipLineItemDto(li.Id, (int)li.ItemType, li.Description, li.Amount, (int)li.Currency)).ToList()))
             .ToListAsync(cancellationToken);
     }
 }

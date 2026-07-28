@@ -405,7 +405,14 @@ export const TimesheetDetailMatrix = () => {
             
             <FormControl fullWidth size="small">
               <InputLabel>Status</InputLabel>
-              <Select value={editStatus} label="Status" onChange={(e) => setEditStatus(Number(e.target.value))}>
+              <Select value={editStatus} label="Status" onChange={(e) => {
+                const val = Number(e.target.value);
+                setEditStatus(val);
+                if ([3, 4, 5, 6].includes(val)) {
+                  setEditPaidLeaveHours(0);
+                  setEditUnpaidLeaveHours(0);
+                }
+              }}>
                 {Object.entries(STATUS_CONFIG).map(([val, config]) => (
                   <MenuItem key={val} value={Number(val)}>{config.label}</MenuItem>
                 ))}
@@ -452,6 +459,7 @@ export const TimesheetDetailMatrix = () => {
                   value={editPaidLeaveHours}
                   onChange={(e) => setEditPaidLeaveHours(Number(e.target.value))}
                   slotProps={{ htmlInput: { min: 0, step: 0.5 } }}
+                  disabled={[3, 4, 5, 6].includes(editStatus)}
                 />
                 <TextField 
                   label="Unpaid Leave (Hrs)" 
@@ -461,6 +469,7 @@ export const TimesheetDetailMatrix = () => {
                   value={editUnpaidLeaveHours}
                   onChange={(e) => setEditUnpaidLeaveHours(Number(e.target.value))}
                   slotProps={{ htmlInput: { min: 0, step: 0.5 } }}
+                  disabled={[3, 4, 5, 6].includes(editStatus)}
                 />
               </Stack>
             )}

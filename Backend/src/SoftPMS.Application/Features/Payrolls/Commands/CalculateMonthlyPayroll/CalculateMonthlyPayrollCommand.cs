@@ -2,6 +2,8 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Domain.Entities;
+using SoftPMS.Application.Common.Exceptions;
+using FluentValidation.Results;
 
 namespace SoftPMS.Application.Features.Payrolls.Commands.CalculateMonthlyPayroll;
 
@@ -30,9 +32,12 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
             .FirstOrDefaultAsync(t => t.EmployeeId == request.EmployeeId && t.Year == request.Year && t.Month == request.Month, cancellationToken);
 
         if (timesheet == null)
-            throw new Exception("Timesheet not found for this month.");
-
-        // 2. Fetch all compensations active during this month
+        {
+            throw new ValidationException(new List<ValidationFailure> 
+            { 
+                new("Timesheet", "Timesheet not found for this month. Please generate it from the Timesheet Matrix.") 
+            });
+        } // 2. Fetch all compensations active during this month
         var compensations = await _context.EmployeeCompensations
             .Where(c => c.EmployeeId == request.EmployeeId && c.EffectiveDate <= endOfMonth && (c.EndDate == null || c.EndDate >= startOfMonth))
             .OrderBy(c => c.EffectiveDate)
@@ -110,7 +115,8 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
                 {
                     ItemType = Domain.Enums.SlipItemType.Earning,
                     Description = $"Base Salary (Payable Days: {payableDays})",
-                    Amount = windowBaseSalary
+                    Amount = windowBaseSalary,
+                    Currency = compensation.Currency
                 });
 
                 if (windowDeductions > 0)
@@ -119,7 +125,8 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
                     {
                         ItemType = Domain.Enums.SlipItemType.Deduction,
                         Description = $"Absences/Unpaid Leaves ({unpaidCount + absentCount} days)",
-                        Amount = windowDeductions
+                        Amount = windowDeductions,
+                        Currency = compensation.Currency
                     });
                 }
 
@@ -134,7 +141,8 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
                     {
                         ItemType = Domain.Enums.SlipItemType.Deduction,
                         Description = $"Hourly Unpaid Leave ({unpaidHourlySum} hrs)",
-                        Amount = hourlyDeduction
+                        Amount = hourlyDeduction,
+                        Currency = compensation.Currency
                     });
                 }
                 
@@ -145,7 +153,8 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
                     {
                         ItemType = Domain.Enums.SlipItemType.Earning,
                         Description = $"Hourly Paid Leave ({paidHourlySum} hrs) - Included in Base",
-                        Amount = 0m
+                        Amount = 0m,
+                        Currency = compensation.Currency
                     });
                 }
                 
@@ -165,7 +174,8 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
                     {
                         ItemType = Domain.Enums.SlipItemType.Earning,
                         Description = $"Overtime: {firstOt.OvertimeType?.Name ?? "Standard"} ({totalHours}h x {multiplier})",
-                        Amount = amount
+                        Amount = amount,
+                        Currency = compensation.Currency
                     });
                 }
             }
@@ -181,7 +191,8 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
                 {
                     ItemType = Domain.Enums.SlipItemType.Earning,
                     Description = $"Base Salary ({totalWorkedHours} hrs)",
-                    Amount = windowBaseSalary
+                    Amount = windowBaseSalary,
+                    Currency = compensation.Currency
                 });
 
                 var overtimeGroups = entriesInWindow.Where(e => e.OvertimeHours > 0)
@@ -200,7 +211,8 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
                     {
                         ItemType = Domain.Enums.SlipItemType.Earning,
                         Description = $"Overtime: {firstOt.OvertimeType?.Name ?? "Standard"} ({totalHours}h x {multiplier})",
-                        Amount = amount
+                        Amount = amount,
+                        Currency = compensation.Currency
                     });
                 }
             }

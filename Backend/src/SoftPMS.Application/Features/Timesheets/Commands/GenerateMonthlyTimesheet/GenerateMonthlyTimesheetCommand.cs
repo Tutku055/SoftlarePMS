@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Domain.Entities;
 using SoftPMS.Domain.Enums;
+using Microsoft.Extensions.Configuration;
 
 namespace SoftPMS.Application.Features.Timesheets.Commands.GenerateMonthlyTimesheet;
 
@@ -11,10 +12,12 @@ public record GenerateMonthlyTimesheetCommand(Guid EmployeeId, int Year, int Mon
 public class GenerateMonthlyTimesheetCommandHandler : IRequestHandler<GenerateMonthlyTimesheetCommand, Guid>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IConfiguration _configuration;
 
-    public GenerateMonthlyTimesheetCommandHandler(IApplicationDbContext context)
+    public GenerateMonthlyTimesheetCommandHandler(IApplicationDbContext context, IConfiguration configuration)
     {
         _context = context;
+        _configuration = configuration;
     }
 
     public async Task<Guid> Handle(GenerateMonthlyTimesheetCommand request, CancellationToken cancellationToken)
@@ -36,6 +39,13 @@ public class GenerateMonthlyTimesheetCommandHandler : IRequestHandler<GenerateMo
         };
 
         int daysInMonth = DateTime.DaysInMonth(request.Year, request.Month);
+        decimal dailyWorkingHours = 8m;
+        var configValue = _configuration["PayrollSettings:DailyWorkingHours"];
+        if (!string.IsNullOrEmpty(configValue) && decimal.TryParse(configValue, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+        {
+            dailyWorkingHours = parsed;
+        }
+
         for (int i = 1; i <= daysInMonth; i++)
         {
             var date = new DateTime(request.Year, request.Month, i);
@@ -47,7 +57,8 @@ public class GenerateMonthlyTimesheetCommandHandler : IRequestHandler<GenerateMo
             {
                 Date = date,
                 Status = status,
-                OvertimeHours = 0
+                OvertimeHours = 0,
+                WorkedHours = status == TimesheetStatus.Worked ? dailyWorkingHours : 0m
             });
         }
 

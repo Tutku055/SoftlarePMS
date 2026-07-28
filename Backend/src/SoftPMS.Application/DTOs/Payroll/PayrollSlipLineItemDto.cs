@@ -4,5 +4,6 @@ public record PayrollSlipLineItemDto(
     Guid Id,
     int ItemType,
     string Description,
-    decimal Amount
+    decimal Amount,
+    int Currency
 );

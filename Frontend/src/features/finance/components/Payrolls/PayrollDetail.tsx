@@ -105,6 +105,13 @@ const SALARY_TYPE_MAP: Record<number, string> = {
 };
 
 const extractErrorMessage = (error: any): string => {
+  if (error?.response?.data?.errors) {
+    const errs = error.response.data.errors;
+    const firstKey = Object.keys(errs)[0];
+    if (firstKey && Array.isArray(errs[firstKey]) && errs[firstKey].length > 0) {
+      return errs[firstKey][0];
+    }
+  }
   if (typeof error?.response?.data?.detail === 'string') {
     return error.response.data.detail;
   }
@@ -172,7 +179,7 @@ export const PayrollDetail = () => {
     
     // Earnings Table
     const earnings = selectedSlip.lineItems?.filter((li: any) => li.itemType === 1) || [];
-    const earningsData = earnings.map((li: any) => [li.description, li.amount.toFixed(2)]);
+    const earningsData = earnings.map((li: any) => [li.description, `${li.amount.toFixed(2)} ${getCurrencySymbol(li.currency)}`]);
     earningsData.push(["Total Earnings", selectedSlip.totalEarnings]);
 
     autoTable(doc, {
@@ -192,7 +199,7 @@ export const PayrollDetail = () => {
 
     // Deductions Table
     const deductions = selectedSlip.lineItems?.filter((li: any) => li.itemType === 2) || [];
-    const deductionsData = deductions.map((li: any) => [li.description, `-${li.amount.toFixed(2)}`]);
+    const deductionsData = deductions.map((li: any) => [li.description, `-${li.amount.toFixed(2)} ${getCurrencySymbol(li.currency)}`]);
     deductionsData.push(["Total Deductions", selectedSlip.totalDeductions]);
 
     autoTable(doc, {
@@ -277,7 +284,12 @@ export const PayrollDetail = () => {
     }
     setCalcError(null);
     calculatePayroll({ employeeId, year: calcYear, month: calcMonth }, {
-      onSuccess: () => setConfirmOpen(false)
+      onSuccess: () => setConfirmOpen(false),
+      onError: (error: any) => {
+        setConfirmOpen(false);
+        setErrorMessage(extractErrorMessage(error));
+        setErrorDialogOpen(true);
+      }
     });
   };
 
@@ -690,12 +702,21 @@ export const PayrollDetail = () => {
       <PopupDialog
         open={errorDialogOpen}
         onClose={() => setErrorDialogOpen(false)}
-        title="Compensation Error"
-        content={errorMessage}
-        confirmColor="error"
-        onConfirm={() => setErrorDialogOpen(false)}
-        confirmText="OK"
-        showCancel={false}
+        title={errorMessage.includes("Timesheet not found") ? "Timesheet Required" : "Error"}
+        content={
+          errorMessage.includes("Timesheet not found") 
+            ? "There is no timesheet for this month. You need to generate the timesheet before calculating payroll." 
+            : errorMessage
+        }
+        confirmColor={errorMessage.includes("Timesheet not found") ? "primary" : "error"}
+        onConfirm={() => {
+          setErrorDialogOpen(false);
+          if (errorMessage.includes("Timesheet not found")) {
+            navigate(`/finance/timesheets/${employeeId}`);
+          }
+        }}
+        confirmText={errorMessage.includes("Timesheet not found") ? "Go to Timesheet Matrix" : "OK"}
+        showCancel={errorMessage.includes("Timesheet not found")}
       />
 
       {/* SLIP DETAILS DIALOG */}
@@ -747,7 +768,7 @@ export const PayrollDetail = () => {
                   {selectedSlip.lineItems?.filter((li: any) => li.itemType === 1).map((li: any) => (
                     <tr key={li.id}>
                       <td style={{ padding: '4px 0' }}>{li.description}</td>
-                      <td style={{ padding: '4px 0', textAlign: 'right', fontWeight: 600 }}>{li.amount.toFixed(2)}</td>
+                      <td style={{ padding: '4px 0', textAlign: 'right', fontWeight: 600 }}>{li.amount.toFixed(2)} {getCurrencySymbol(li.currency)}</td>
                     </tr>
                   ))}
                   {(!selectedSlip.lineItems || selectedSlip.lineItems.filter((li: any) => li.itemType === 1).length === 0) && (
@@ -766,7 +787,7 @@ export const PayrollDetail = () => {
                   {selectedSlip.lineItems?.filter((li: any) => li.itemType === 2).map((li: any) => (
                     <tr key={li.id}>
                       <td style={{ padding: '4px 0' }}>{li.description}</td>
-                      <td style={{ padding: '4px 0', textAlign: 'right', fontWeight: 600, color: 'error.main' }}>-{li.amount.toFixed(2)}</td>
+                      <td style={{ padding: '4px 0', textAlign: 'right', fontWeight: 600, color: 'error.main' }}>-{li.amount.toFixed(2)} {getCurrencySymbol(li.currency)}</td>
                     </tr>
                   ))}
                   {(!selectedSlip.lineItems || selectedSlip.lineItems.filter((li: any) => li.itemType === 2).length === 0) && (

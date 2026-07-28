@@ -12,5 +12,7 @@ public class PayrollSlipLineItem : BaseEntity
     
     public decimal Amount { get; set; }
 
+    public Currency Currency { get; set; }
+
     public virtual PayrollSlip PayrollSlip { get; set; } = null!;
 }
