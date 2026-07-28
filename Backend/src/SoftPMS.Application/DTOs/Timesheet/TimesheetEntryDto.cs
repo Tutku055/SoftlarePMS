@@ -5,5 +5,6 @@ public record TimesheetEntryDto(
     Guid MonthlyTimesheetId,
     DateTime Date,
     int Status,
-    decimal OvertimeHours
+    decimal OvertimeHours,
+    Guid? OvertimeTypeId
 );

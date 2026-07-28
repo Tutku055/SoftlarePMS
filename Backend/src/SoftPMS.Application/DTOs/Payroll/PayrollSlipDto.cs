@@ -9,5 +9,6 @@ public record PayrollSlipDto(
     string TotalEarnings,
     string TotalDeductions,
     string NetSalary,
-    DateTime IssueDate
+    DateTime IssueDate,
+    List<PayrollSlipLineItemDto> LineItems
 );

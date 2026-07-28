@@ -149,6 +149,9 @@ export const PayrollDetail = () => {
   // Tabs
   const [activeTab, setActiveTab] = useState(0);
 
+  // Slip Details Modal
+  const [selectedSlip, setSelectedSlip] = useState<any | null>(null);
+
   // Compensation Form State
   const [editingCompId, setEditingCompId] = useState<string | null>(null);
   const [baseSalary, setBaseSalary] = useState(0);
@@ -421,7 +424,13 @@ export const PayrollDetail = () => {
                       {slip.netSalary}
                     </Typography>
                   </Box>
-                  <Button variant="outlined" startIcon={<PictureAsPdfRounded />} size="small" sx={{ textTransform: 'none', borderRadius: 2 }}>
+                  <Button 
+                    variant="outlined" 
+                    startIcon={<PictureAsPdfRounded />} 
+                    size="small" 
+                    sx={{ textTransform: 'none', borderRadius: 2 }}
+                    onClick={() => setSelectedSlip(slip)}
+                  >
                     View Slip
                   </Button>
                 </Box>
@@ -591,6 +600,71 @@ export const PayrollDetail = () => {
         confirmText="OK"
         showCancel={false}
       />
+
+      {/* SLIP DETAILS DIALOG */}
+      {selectedSlip && (
+        <PopupDialog
+          open={!!selectedSlip}
+          onClose={() => setSelectedSlip(null)}
+          title={`Payroll Slip - ${new Date(selectedSlip.year, selectedSlip.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}`}
+          content={
+            <Box sx={{ minWidth: { xs: 300, sm: 500 } }}>
+              <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="body2" color="text.secondary">Employee: <strong>{employee.firstName} {employee.lastName}</strong></Typography>
+                <Typography variant="body2" color="text.secondary">Issue Date: {new Date(selectedSlip.issueDate).toLocaleDateString()}</Typography>
+              </Box>
+              
+              <Divider sx={{ mb: 2 }} />
+
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: 'success.main' }}>Earnings</Typography>
+              <table style={{ width: '100%', fontSize: '0.875rem', marginBottom: '16px' }}>
+                <tbody>
+                  {selectedSlip.lineItems?.filter((li: any) => li.itemType === 1).map((li: any) => (
+                    <tr key={li.id}>
+                      <td style={{ padding: '4px 0' }}>{li.description}</td>
+                      <td style={{ padding: '4px 0', textAlign: 'right', fontWeight: 600 }}>{li.amount.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                  {(!selectedSlip.lineItems || selectedSlip.lineItems.filter((li: any) => li.itemType === 1).length === 0) && (
+                     <tr><td colSpan={2} style={{ padding: '4px 0', color: 'gray' }}>No earnings</td></tr>
+                  )}
+                  <tr>
+                    <td style={{ padding: '8px 0', borderTop: '1px solid var(--mui-palette-divider)' }}><strong>Total Earnings</strong></td>
+                    <td style={{ padding: '8px 0', textAlign: 'right', borderTop: '1px solid var(--mui-palette-divider)', fontWeight: 700, color: 'success.main' }}>{selectedSlip.totalEarnings}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: 'error.main' }}>Deductions</Typography>
+              <table style={{ width: '100%', fontSize: '0.875rem', marginBottom: '16px' }}>
+                <tbody>
+                  {selectedSlip.lineItems?.filter((li: any) => li.itemType === 2).map((li: any) => (
+                    <tr key={li.id}>
+                      <td style={{ padding: '4px 0' }}>{li.description}</td>
+                      <td style={{ padding: '4px 0', textAlign: 'right', fontWeight: 600, color: 'error.main' }}>-{li.amount.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                  {(!selectedSlip.lineItems || selectedSlip.lineItems.filter((li: any) => li.itemType === 2).length === 0) && (
+                     <tr><td colSpan={2} style={{ padding: '4px 0', color: 'gray' }}>No deductions</td></tr>
+                  )}
+                  <tr>
+                    <td style={{ padding: '8px 0', borderTop: '1px solid var(--mui-palette-divider)' }}><strong>Total Deductions</strong></td>
+                    <td style={{ padding: '8px 0', textAlign: 'right', borderTop: '1px solid var(--mui-palette-divider)', fontWeight: 700, color: 'error.main' }}>{selectedSlip.totalDeductions}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <Box sx={{ mt: 3, p: 2, bgcolor: 'action.hover', borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>NET SALARY</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 800, color: 'primary.main' }}>{selectedSlip.netSalary}</Typography>
+              </Box>
+            </Box>
+          }
+          confirmText="Close"
+          showCancel={false}
+          onConfirm={() => setSelectedSlip(null)}
+        />
+      )}
 
     </Box>
   );

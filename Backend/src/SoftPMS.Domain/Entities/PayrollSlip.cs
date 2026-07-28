@@ -20,4 +20,6 @@ public class PayrollSlip : BaseEntity
 
     // Navigation properties
     public virtual Employee Employee { get; set; } = null!;
+
+    public virtual ICollection<PayrollSlipLineItem> LineItems { get; set; } = new List<PayrollSlipLineItem>();
 }

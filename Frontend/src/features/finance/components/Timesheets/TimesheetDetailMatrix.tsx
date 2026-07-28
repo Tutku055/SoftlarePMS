@@ -85,7 +85,7 @@ export const TimesheetDetailMatrix = () => {
         entryId: editEntry.id,
         status: editStatus,
         overtimeHours: editOvertime,
-        overtimeTypeId: editOvertimeTypeId || undefined
+        overtimeTypeId: editOvertime > 0 ? (editOvertimeTypeId || undefined) : undefined
       }
     }, {
       onSuccess: () => {
@@ -215,6 +215,8 @@ export const TimesheetDetailMatrix = () => {
                     }
 
                     const config = STATUS_CONFIG[entry.status];
+                    const otTypeName = entry.overtimeTypeId && overtimeTypes ? overtimeTypes.find(t => t.id === entry.overtimeTypeId)?.name : null;
+                    const tooltipText = `${config.label} ${entry.overtimeHours > 0 ? `(+${entry.overtimeHours}h OT${otTypeName ? ` - ${otTypeName}` : ''})` : ''}`;
                     
                     return (
                       <td 
@@ -227,7 +229,7 @@ export const TimesheetDetailMatrix = () => {
                         }}
                         onClick={() => handleOpenEdit(entry)}
                       >
-                        <Tooltip title={`${config.label} ${entry.overtimeHours > 0 ? `(+${entry.overtimeHours}h OT)` : ''}`} arrow placement="top">
+                        <Tooltip title={tooltipText} arrow placement="top">
                           <Box 
                             sx={{ 
                               width: '100%', 
@@ -293,12 +295,24 @@ export const TimesheetDetailMatrix = () => {
               size="small" 
               fullWidth 
               value={editOvertime}
-              onChange={(e) => setEditOvertime(Number(e.target.value))}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setEditOvertime(val);
+                if (val > 0 && !editOvertimeTypeId && overtimeTypes && overtimeTypes.length > 0) {
+                  setEditOvertimeTypeId(overtimeTypes[0].id);
+                }
+              }}
               slotProps={{ htmlInput: { min: 0, step: 0.5 } }}
-              disabled={editStatus !== 1 && editStatus !== 2 && editStatus !== 6} // overtime only for Worked, Weekend, or Holiday
+              disabled={(editStatus !== 1 && editStatus !== 2 && editStatus !== 6) || (overtimeTypes && overtimeTypes.length === 0)}
             />
 
-            {editOvertime > 0 && (
+            {overtimeTypes && overtimeTypes.length === 0 && (
+              <Typography variant="caption" color="error" sx={{ fontWeight: 600 }}>
+                There is no overtime type defined. You cannot enter overtime.
+              </Typography>
+            )}
+
+            {editOvertime > 0 && overtimeTypes && overtimeTypes.length > 0 && (
               <FormControl fullWidth size="small">
                 <InputLabel>Overtime Type</InputLabel>
                 <Select
@@ -306,8 +320,7 @@ export const TimesheetDetailMatrix = () => {
                   label="Overtime Type"
                   onChange={(e) => setEditOvertimeTypeId(e.target.value)}
                 >
-                  <MenuItem value=""><em>None</em></MenuItem>
-                  {overtimeTypes?.map((type) => (
+                  {overtimeTypes.map((type) => (
                     <MenuItem key={type.id} value={type.id}>{type.name} (x{type.multiplier})</MenuItem>
                   ))}
                 </Select>

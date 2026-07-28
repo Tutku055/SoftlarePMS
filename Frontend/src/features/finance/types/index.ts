@@ -18,6 +18,13 @@ export interface TimesheetEntry {
   overtimeTypeId?: string;
 }
 
+export interface PayrollSlipLineItem {
+  id: string;
+  itemType: number; // 1 = Earning, 2 = Deduction
+  description: string;
+  amount: number;
+}
+
 export interface PayrollSlip {
   id: string;
   employeeId: string;
@@ -28,6 +35,7 @@ export interface PayrollSlip {
   totalDeductions: string;
   netSalary: string;
   issueDate: string;
+  lineItems: PayrollSlipLineItem[];
 }
 
 export interface UpdateTimesheetEntryCommand {

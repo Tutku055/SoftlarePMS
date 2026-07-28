@@ -34,7 +34,8 @@ public class GetMonthlyTimesheetQueryHandler : IRequestHandler<GetMonthlyTimeshe
                 e.MonthlyTimesheetId,
                 e.Date,
                 (int)e.Status,
-                e.OvertimeHours))
+                e.OvertimeHours,
+                e.OvertimeTypeId))
             .ToList();
 
         return new MonthlyTimesheetDto(

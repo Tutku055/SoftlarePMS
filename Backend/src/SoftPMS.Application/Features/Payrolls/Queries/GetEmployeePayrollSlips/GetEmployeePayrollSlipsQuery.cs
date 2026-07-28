@@ -19,6 +19,7 @@ public class GetEmployeePayrollSlipsQueryHandler : IRequestHandler<GetEmployeePa
     public async Task<List<PayrollSlipDto>> Handle(GetEmployeePayrollSlipsQuery request, CancellationToken cancellationToken)
     {
         return await _context.PayrollSlips
+            .Include(p => p.LineItems)
             .Where(p => p.EmployeeId == request.EmployeeId)
             .OrderByDescending(p => p.Year)
             .ThenByDescending(p => p.Month)
@@ -31,7 +32,8 @@ public class GetEmployeePayrollSlipsQueryHandler : IRequestHandler<GetEmployeePa
                 p.TotalEarnings,
                 p.TotalDeductions,
                 p.NetSalary,
-                p.IssueDate))
+                p.IssueDate,
+                p.LineItems.Select(li => new PayrollSlipLineItemDto(li.Id, (int)li.ItemType, li.Description, li.Amount)).ToList()))
             .ToListAsync(cancellationToken);
     }
 }
