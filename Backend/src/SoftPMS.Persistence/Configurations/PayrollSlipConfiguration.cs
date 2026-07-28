@@ -14,19 +14,19 @@ public class PayrollSlipConfiguration : IEntityTypeConfiguration<PayrollSlip>
         builder.Property(p => p.Month).IsRequired();
 
         builder.Property(p => p.BaseSalary)
-            .HasColumnType("decimal(18,2)")
+            .HasMaxLength(255)
             .IsRequired();
 
         builder.Property(p => p.TotalEarnings)
-            .HasColumnType("decimal(18,2)")
+            .HasMaxLength(500)
             .IsRequired();
 
         builder.Property(p => p.TotalDeductions)
-            .HasColumnType("decimal(18,2)")
+            .HasMaxLength(500)
             .IsRequired();
 
         builder.Property(p => p.NetSalary)
-            .HasColumnType("decimal(18,2)")
+            .HasMaxLength(500)
             .IsRequired();
 
         builder.Property(p => p.IssueDate)

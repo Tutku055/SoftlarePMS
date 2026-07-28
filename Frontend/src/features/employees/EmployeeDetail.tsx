@@ -15,6 +15,7 @@ import { parseDocumentFilters } from '../documents/utils/filterUtils';
 import { PopupDialog } from '../../components/PopupDialog/PopupDialog';
 import { NotesAndReferences } from './components/NotesAndReferences/NotesAndReferences';
 import { CompensationModal } from './components/Compensation/CompensationModal';
+import { useDeleteCompensation } from '../finance/hooks/useDeleteCompensation';
 
 import {
   Box,
@@ -137,6 +138,7 @@ export const EmployeeDetail = () => {
   const { data: employee, isLoading, isError } = useEmployeeDetail(id);
   const { mutate: updateEmployee, isPending: isUpdatingEmployee } = useUpdateEmployee();
   const { mutate: updateAddress, isPending: isUpdatingAddress } = useUpdateEmployeeAddress();
+  const { mutate: deleteCompensation } = useDeleteCompensation();
   const { data: deptData } = useDepartments();
   const departmentOptions = deptData?.items.map((d: any) => ({ value: d.id, label: d.name })) || [];
 
@@ -534,6 +536,20 @@ export const EmployeeDetail = () => {
                 Manage Salaries
               </Button>
             </Stack>
+
+            <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Full compensation history and payroll settings have been moved to the Payroll Details section.
+              </Typography>
+              <Button 
+                variant="outlined" 
+                color="primary" 
+                onClick={() => navigate(`/finance/payrolls/${employee.id}`)}
+                sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600 }}
+              >
+                View Full Compensation History & Settings
+              </Button>
+            </Box>
           </Box>
         </Box>
       </TabPanel>

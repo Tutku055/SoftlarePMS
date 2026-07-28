@@ -10,5 +10,6 @@ public record EmployeeCompensationDto
     public string PayGrade { get; init; }
     public DateTime EffectiveDate { get; init; }
     public Currency Currency { get; init; }
+    public DateTime? EndDate { get; init; }
     public bool IsActive { get; init; }
 }

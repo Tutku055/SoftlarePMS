@@ -121,10 +121,10 @@ public class ApplicationDbContextInitialiser
                     addresses.ForEach(a => a.EmployeeId = e.Id); //[cite: 1, 5]
                     return addresses; //[cite: 1]
                 })
-                .RuleFor(e => e.Compensation, (f, e) => {
+                .RuleFor(e => e.Compensations, (f, e) => {
                     var comp = compensationFaker.Generate();
                     comp.EmployeeId = e.Id;
-                    return comp;
+                    return new List<EmployeeCompensation> { comp };
                 })
 
                 .RuleFor(e => e.Notes, (f, e) => {

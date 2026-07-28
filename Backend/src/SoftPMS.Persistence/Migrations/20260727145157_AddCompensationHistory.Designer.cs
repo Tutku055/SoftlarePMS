@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SoftPMS.Persistence.Context;
 
@@ -11,9 +12,11 @@ using SoftPMS.Persistence.Context;
 namespace SoftPMS.Persistence.Migrations
 {
     [DbContext(typeof(SoftPMSDbContext))]
-    partial class SoftPMSDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260727145157_AddCompensationHistory")]
+    partial class AddCompensationHistory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -468,10 +471,8 @@ namespace SoftPMS.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("BaseSalary")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                    b.Property<decimal>("BaseSalary")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -485,20 +486,14 @@ namespace SoftPMS.Persistence.Migrations
                     b.Property<int>("Month")
                         .HasColumnType("int");
 
-                    b.Property<string>("NetSalary")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                    b.Property<decimal>("NetSalary")
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("TotalDeductions")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                    b.Property<decimal>("TotalDeductions")
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<string>("TotalEarnings")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                    b.Property<decimal>("TotalEarnings")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Year")
                         .HasColumnType("int");

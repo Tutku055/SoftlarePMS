@@ -30,10 +30,15 @@ public class EmployeeCompensationConfiguration : IEntityTypeConfiguration<Employ
         builder.Property(c => c.EffectiveDate)
             .IsRequired();
 
-        // Unique index on EmployeeId since it's 1-to-1
+        // Index on EmployeeId for faster lookups (1-to-Many)
         builder.HasIndex(c => c.EmployeeId)
-            .HasDatabaseName("IX_EmployeeCompensations_EmployeeId")
-            .IsUnique();
+            .HasDatabaseName("IX_EmployeeCompensations_EmployeeId");
+
+        // Explicit 1-to-Many relation
+        builder.HasOne(c => c.Employee)
+            .WithMany(e => e.Compensations)
+            .HasForeignKey(c => c.EmployeeId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // FK to creating User — restrict to avoid accidental cascade
         builder.HasOne(c => c.CreatedByUser)

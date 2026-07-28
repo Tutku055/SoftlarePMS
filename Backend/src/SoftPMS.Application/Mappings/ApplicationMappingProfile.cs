@@ -19,7 +19,8 @@ public class ApplicationMappingProfile : Profile
     {
         // Employee mappings
         CreateMap<Employee, EmployeeDto>();
-        CreateMap<Employee, EmployeeDetailDto>();
+        CreateMap<Employee, EmployeeDetailDto>()
+            .ForMember(d => d.Compensation, o => o.MapFrom(s => s.Compensations.FirstOrDefault(c => c.EndDate == null)));
         // Downcast for facade: detail -> slim DTO
         CreateMap<EmployeeDetailDto, EmployeeDto>();
         CreateMap<CreateEmployeeDto, Employee>();

@@ -5,9 +5,9 @@ public record PayrollSlipDto(
     Guid EmployeeId,
     int Year,
     int Month,
-    decimal BaseSalary,
-    decimal TotalEarnings,
-    decimal TotalDeductions,
-    decimal NetSalary,
+    string BaseSalary,
+    string TotalEarnings,
+    string TotalDeductions,
+    string NetSalary,
     DateTime IssueDate
 );

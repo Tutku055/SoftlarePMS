@@ -16,6 +16,8 @@ public class EmployeeCompensation: BaseEntity
 
     public DateTime EffectiveDate { get; set; }
 
+    public DateTime? EndDate { get; set; }
+
 
 
     public Guid CreatedByUserId { get; set; }

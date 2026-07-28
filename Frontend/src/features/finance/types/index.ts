@@ -22,10 +22,10 @@ export interface PayrollSlip {
   employeeId: string;
   year: number;
   month: number;
-  baseSalary: number;
-  totalEarnings: number;
-  totalDeductions: number;
-  netSalary: number;
+  baseSalary: string;
+  totalEarnings: string;
+  totalDeductions: string;
+  netSalary: string;
   issueDate: string;
 }
 

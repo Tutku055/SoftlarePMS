@@ -34,18 +34,17 @@ public class UpdateEmployeeCompensationCommandHandler : IRequestHandler<UpdateEm
             throw new Exception("Employee not found");
 
         var activeCompensation = await _context.EmployeeCompensations
-            .FirstOrDefaultAsync(c => c.EmployeeId == request.EmployeeId, cancellationToken);
+            .Where(c => c.EmployeeId == request.EmployeeId && c.EndDate == null)
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (activeCompensation != null)
         {
-            activeCompensation.BaseSalary = request.BaseSalary;
-            activeCompensation.SalaryType = request.SalaryType;
-            activeCompensation.Currency = request.Currency;
-            activeCompensation.EffectiveDate = request.EffectiveDate;
-            
+            if (request.EffectiveDate.Date <= activeCompensation.EffectiveDate.Date)
+            {
+                throw new Exception("New compensation's effective date must be later than the current active compensation's effective date.");
+            }
+            activeCompensation.EndDate = request.EffectiveDate.AddDays(-1);
             _context.EmployeeCompensations.Update(activeCompensation);
-            await _context.SaveChangesAsync(cancellationToken);
-            return activeCompensation.Id;
         }
 
         var newCompensation = new EmployeeCompensation
@@ -55,6 +54,7 @@ public class UpdateEmployeeCompensationCommandHandler : IRequestHandler<UpdateEm
             SalaryType       = request.SalaryType,
             Currency         = request.Currency,
             EffectiveDate    = request.EffectiveDate,
+            EndDate          = null,
             CreatedByUserId  = _currentUser.UserId
         };
 

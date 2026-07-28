@@ -18,54 +18,90 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
 
     public async Task<Guid> Handle(CalculateMonthlyPayrollCommand request, CancellationToken cancellationToken)
     {
-        // 1. Fetch latest compensation
-        var compensation = await _context.EmployeeCompensations
-            .FirstOrDefaultAsync(c => c.EmployeeId == request.EmployeeId, cancellationToken);
+        var startOfMonth = new DateTime(request.Year, request.Month, 1);
+        var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
 
-        if (compensation == null)
-            throw new Exception("No active compensation found for employee.");
-
-        // 2. Fetch timesheet
+        // 1. Fetch timesheet with entries
         var timesheet = await _context.MonthlyTimesheets
+            .Include(t => t.Entries)
             .FirstOrDefaultAsync(t => t.EmployeeId == request.EmployeeId && t.Year == request.Year && t.Month == request.Month, cancellationToken);
 
         if (timesheet == null)
             throw new Exception("Timesheet not found for this month.");
 
-        decimal deductions = 0;
-        decimal overtimePay = 0;
-        decimal totalEarnings = 0;
-        decimal netSalary = 0;
+        // 2. Fetch all compensations active during this month
+        var compensations = await _context.EmployeeCompensations
+            .Where(c => c.EmployeeId == request.EmployeeId && c.EffectiveDate <= endOfMonth && (c.EndDate == null || c.EndDate >= startOfMonth))
+            .OrderBy(c => c.EffectiveDate)
+            .ToListAsync(cancellationToken);
 
-        if (compensation.SalaryType == Domain.Enums.SalaryType.Monthly)
+        if (!compensations.Any())
+            throw new Exception("No active compensation found for employee in the given month.");
+
+        var earningsByCurrency = new Dictionary<Domain.Enums.Currency, decimal>();
+        var deductionsByCurrency = new Dictionary<Domain.Enums.Currency, decimal>();
+        var netSalaryByCurrency = new Dictionary<Domain.Enums.Currency, decimal>();
+        var baseSalaryByCurrency = new Dictionary<Domain.Enums.Currency, decimal>();
+
+        foreach (var compensation in compensations)
         {
-            // 3. Daily Rate
-            decimal dailyRate = compensation.BaseSalary / 30m;
+            if (!earningsByCurrency.ContainsKey(compensation.Currency))
+            {
+                earningsByCurrency[compensation.Currency] = 0;
+                deductionsByCurrency[compensation.Currency] = 0;
+                netSalaryByCurrency[compensation.Currency] = 0;
+                baseSalaryByCurrency[compensation.Currency] = 0;
+            }
 
-            // 4. Deductions (Unpaid leaves + Absent days)
-            var unpaidLeaveCount = await _context.TimesheetEntries
-                .CountAsync(e => e.MonthlyTimesheetId == timesheet.Id && e.Status == Domain.Enums.TimesheetStatus.UnpaidLeave, cancellationToken);
+            // Determine active window for this compensation within this month
+            var windowStart = compensation.EffectiveDate > startOfMonth ? compensation.EffectiveDate : startOfMonth;
+            var windowEnd = (compensation.EndDate != null && compensation.EndDate < endOfMonth) ? compensation.EndDate.Value : endOfMonth;
+            
+            var entriesInWindow = timesheet.Entries.Where(e => e.Date >= windowStart && e.Date <= windowEnd).ToList();
+            
+            decimal windowBaseSalary = 0;
+            decimal windowDeductions = 0;
+            decimal windowOvertime = 0;
 
-            decimal totalDeductionDays = timesheet.TotalAbsentDays + unpaidLeaveCount;
-            deductions = totalDeductionDays * dailyRate;
+            if (compensation.SalaryType == Domain.Enums.SalaryType.Monthly)
+            {
+                decimal dailyRate = compensation.BaseSalary / 30m;
+                int activeDaysInWindow = (windowEnd - windowStart).Days + 1;
+                
+                windowBaseSalary = dailyRate * activeDaysInWindow;
 
-            // 5. Overtime Pay
-            decimal hourlyRate = dailyRate / 8m;
-            overtimePay = timesheet.TotalOvertimeHours * (hourlyRate * 1.5m);
+                var unpaidCount = entriesInWindow.Count(e => e.Status == Domain.Enums.TimesheetStatus.UnpaidLeave);
+                var absentCount = entriesInWindow.Count(e => e.Status == Domain.Enums.TimesheetStatus.Absent);
 
-            totalEarnings = compensation.BaseSalary + overtimePay;
-            netSalary = compensation.BaseSalary - deductions + overtimePay;
+                windowDeductions = (unpaidCount + absentCount) * dailyRate;
+
+                decimal hourlyRate = dailyRate / 8m;
+                decimal overtimeHours = entriesInWindow.Sum(e => e.OvertimeHours);
+                windowOvertime = overtimeHours * (hourlyRate * 1.5m);
+            }
+            else if (compensation.SalaryType == Domain.Enums.SalaryType.Hourly)
+            {
+                decimal hourlyWage = compensation.BaseSalary;
+                var workedDays = entriesInWindow.Count(e => e.Status == Domain.Enums.TimesheetStatus.Worked);
+                var workedHours = workedDays * 8m;
+                var overtimeHours = entriesInWindow.Sum(e => e.OvertimeHours);
+                
+                windowBaseSalary = workedHours * hourlyWage;
+                windowOvertime = overtimeHours * (hourlyWage * 1.5m);
+            }
+
+            earningsByCurrency[compensation.Currency] += windowBaseSalary + windowOvertime;
+            deductionsByCurrency[compensation.Currency] += windowDeductions;
+            netSalaryByCurrency[compensation.Currency] += (windowBaseSalary + windowOvertime) - windowDeductions;
+            baseSalaryByCurrency[compensation.Currency] += windowBaseSalary;
         }
-        else if (compensation.SalaryType == Domain.Enums.SalaryType.Hourly)
+
+        string FormatMultiCurrency(Dictionary<Domain.Enums.Currency, decimal> map)
         {
-            decimal hourlyWage = compensation.BaseSalary;
-            decimal totalWorkedHours = timesheet.TotalWorkedDays * 8m;
-            
-            decimal regularPay = totalWorkedHours * hourlyWage;
-            overtimePay = timesheet.TotalOvertimeHours * (hourlyWage * 1.5m);
-            
-            totalEarnings = regularPay + overtimePay;
-            netSalary = totalEarnings - deductions;
+            if (!map.Any()) return "0";
+            var validEntries = map.Where(kv => kv.Value != 0).ToList();
+            if (!validEntries.Any()) return $"0.00 {map.First().Key}";
+            return string.Join(" + ", validEntries.Select(kv => $"{kv.Value:F2} {kv.Key}"));
         }
 
         // 7. Save PayrollSlip
@@ -74,10 +110,10 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
             EmployeeId = request.EmployeeId,
             Year = request.Year,
             Month = request.Month,
-            BaseSalary = compensation.BaseSalary,
-            TotalEarnings = totalEarnings,
-            TotalDeductions = deductions,
-            NetSalary = netSalary,
+            BaseSalary = FormatMultiCurrency(baseSalaryByCurrency),
+            TotalEarnings = FormatMultiCurrency(earningsByCurrency),
+            TotalDeductions = FormatMultiCurrency(deductionsByCurrency),
+            NetSalary = FormatMultiCurrency(netSalaryByCurrency),
             IssueDate = DateTime.UtcNow
         };
 

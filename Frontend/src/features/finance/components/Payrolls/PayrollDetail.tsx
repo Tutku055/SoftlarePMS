@@ -4,6 +4,8 @@ import { useEmployeeDetail } from '../../../employees/hooks/useEmployeeDetail';
 import { usePayrollList } from '../../hooks/usePayrollList';
 import { useCalculatePayroll } from '../../hooks/useCalculatePayroll';
 import { useUpdateCompensation } from '../../hooks/useUpdateCompensation';
+import { useEditCompensation } from '../../hooks/useEditCompensation';
+import { useDeleteCompensation } from '../../hooks/useDeleteCompensation';
 import { PopupDialog } from '../../../../components/PopupDialog/PopupDialog';
 
 import {
@@ -30,11 +32,11 @@ import {
   CalculateRounded,
   PictureAsPdfRounded,
   SettingsRounded,
-  ReceiptLongRounded,
-  SaveRounded
+  ReceiptLongRounded
 } from '@mui/icons-material';
 import * as z from 'zod';
 import styles from './PayrollDetail.module.css';
+import { CURRENCY_CONFIGS, getCurrencySymbol, formatCompensationAmount } from '../../constants/currencyConstants';
 
 const glassPanelSx = {
   background: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(24, 24, 24, 0.85)' : 'rgba(255, 255, 255, 0.85)',
@@ -98,16 +100,25 @@ const SALARY_TYPE_MAP: Record<number, string> = {
   2: 'Monthly'
 };
 
-const CURRENCY_MAP: Record<number, string> = {
-  1: 'TRY',
-  2: 'USD',
-  3: 'EUR',
-  4: 'GBP'
+const extractErrorMessage = (error: any): string => {
+  if (typeof error?.response?.data?.detail === 'string') {
+    return error.response.data.detail;
+  }
+  if (typeof error?.response?.data?.title === 'string') {
+    return error.response.data.title;
+  }
+  if (typeof error?.response?.data === 'string') {
+    return error.response.data;
+  }
+  if (typeof error?.message === 'string') {
+    return error.message;
+  }
+  return 'An error occurred.';
 };
 
 const compensationSchema = z.object({
   baseSalary: z.number().positive("Base Salary must be greater than 0"),
-  currency: z.number().int().min(1).max(4),
+  currency: z.number().int().min(1),
   salaryType: z.number().int().min(1).max(2),
   effectiveDate: z.string().refine(val => !isNaN(Date.parse(val)), { message: "Invalid date" })
 });
@@ -120,6 +131,8 @@ export const PayrollDetail = () => {
   const { data: payrolls, isLoading: isLoadingPayrolls } = usePayrollList(employeeId || '');
   const { mutate: calculatePayroll, isPending: isCalculating } = useCalculatePayroll();
   const { mutate: updateCompensation, isPending: isUpdatingCompensation } = useUpdateCompensation();
+  const { mutate: editCompensation, isPending: isEditingCompensation } = useEditCompensation();
+  const { mutate: deleteCompensation } = useDeleteCompensation();
 
   const compensation = employee?.compensation || null;
 
@@ -129,11 +142,15 @@ export const PayrollDetail = () => {
   const [calcMonth, setCalcMonth] = useState(currentMonth);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [calcError, setCalcError] = useState<string | null>(null);
+  
+  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   // Tabs
   const [activeTab, setActiveTab] = useState(0);
 
   // Compensation Form State
+  const [editingCompId, setEditingCompId] = useState<string | null>(null);
   const [baseSalary, setBaseSalary] = useState(0);
   const [currency, setCurrency] = useState(1);
   const [salaryType, setSalaryType] = useState(2);
@@ -188,15 +205,69 @@ export const PayrollDetail = () => {
     }
 
     setCompErrors({});
-    updateCompensation({
-      employeeId,
-      command: {
+    
+    const commandData = {
         baseSalary: validation.data.baseSalary,
         currency: validation.data.currency,
         salaryType: validation.data.salaryType,
         effectiveDate: new Date(validation.data.effectiveDate).toISOString()
+    };
+
+    if (editingCompId) {
+      editCompensation(
+        { employeeId, id: editingCompId, command: commandData },
+        { 
+          onSuccess: () => {
+            setEditingCompId(null);
+            // Optionally reset to current active compensation
+            if (compensation) {
+              setBaseSalary(compensation.baseSalary || 0);
+              setCurrency(compensation.currency || 1);
+              setSalaryType(compensation.salaryType || 2);
+              if (compensation.effectiveDate) {
+                setEffectiveDate(compensation.effectiveDate.split('T')[0]);
+              }
+            }
+          },
+          onError: (error: any) => {
+            setErrorMessage(extractErrorMessage(error));
+            setErrorDialogOpen(true);
+          }
+        }
+      );
+    } else {
+      updateCompensation(
+        { employeeId, command: commandData },
+        {
+          onError: (error: any) => {
+            setErrorMessage(extractErrorMessage(error));
+            setErrorDialogOpen(true);
+          }
+        }
+      );
+    }
+  };
+
+  const handleEditClick = (comp: any) => {
+    setEditingCompId(comp.id);
+    setBaseSalary(comp.baseSalary);
+    setCurrency(comp.currency);
+    setSalaryType(comp.salaryType);
+    setEffectiveDate(comp.effectiveDate.split('T')[0]);
+    setCompErrors({});
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCompId(null);
+    setCompErrors({});
+    if (compensation) {
+      setBaseSalary(compensation.baseSalary || 0);
+      setCurrency(compensation.currency || 1);
+      setSalaryType(compensation.salaryType || 2);
+      if (compensation.effectiveDate) {
+        setEffectiveDate(compensation.effectiveDate.split('T')[0]);
       }
-    });
+    }
   };
 
   if (isEmployeeLoading) {
@@ -242,15 +313,6 @@ export const PayrollDetail = () => {
         </Stack>
 
         <Stack direction="row" spacing={1.5}>
-          <Button 
-            variant="contained" 
-            onClick={handleSaveCompensation} 
-            disabled={isUpdatingCompensation}
-            startIcon={<SaveRounded />} 
-            sx={{ borderRadius: '10px', fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
-          >
-            {isUpdatingCompensation ? 'Saving...' : 'Save Changes'}
-          </Button>
         </Stack>
       </Box>
 
@@ -270,7 +332,7 @@ export const PayrollDetail = () => {
             <Stack direction="row" spacing={3} sx={{ mt: 1.5, alignItems: 'center' }}>
               <Typography variant="caption" color="text.secondary">
                 <strong>Base Salary:</strong> {compensation 
-                  ? `${compensation.baseSalary} ${CURRENCY_MAP[compensation.currency] || ''}` 
+                  ? `${compensation.baseSalary}${getCurrencySymbol(compensation.currency)}` 
                   : 'Not Set'}
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -291,7 +353,7 @@ export const PayrollDetail = () => {
           sx={{ '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: '0.95rem', minHeight: '48px' } }}
         >
           <Tab icon={<ReceiptLongRounded sx={{ mr: 1 }}/>} iconPosition="start" label="Payroll Generation & Slips" />
-          <Tab icon={<SettingsRounded sx={{ mr: 1 }}/>} iconPosition="start" label="Compensation Settings" />
+          <Tab icon={<SettingsRounded sx={{ mr: 1 }}/>} iconPosition="start" label="Compensation History & Settings" />
         </Tabs>
       </Box>
 
@@ -356,7 +418,7 @@ export const PayrollDetail = () => {
                   <Box sx={{ textAlign: 'right', mr: 4 }}>
                     <Typography variant="caption" color="text.secondary">Net Salary</Typography>
                     <Typography variant="h6" sx={{ fontWeight: 800, color: 'success.main' }}>
-                      {new Intl.NumberFormat('en-US', { style: 'currency', currency: CURRENCY_MAP[compensation?.currency || 1] || 'TRY' }).format(slip.netSalary)}
+                      {slip.netSalary}
                     </Typography>
                   </Box>
                   <Button variant="outlined" startIcon={<PictureAsPdfRounded />} size="small" sx={{ textTransform: 'none', borderRadius: 2 }}>
@@ -370,7 +432,7 @@ export const PayrollDetail = () => {
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>
-        <Box sx={{ ...glassPanelSx, maxWidth: 600 }}>
+        <Box sx={{ ...glassPanelSx }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Typography variant="h6" className={styles.sectionTitle}>
               Update Compensation Settings
@@ -404,10 +466,11 @@ export const PayrollDetail = () => {
             <FormControl fullWidth size="small" error={!!compErrors.currency} sx={premiumInputSx}>
               <InputLabel>Currency</InputLabel>
               <Select value={currency} label="Currency" onChange={(e: any) => setCurrency(Number(e.target.value))}>
-                <MenuItem value={1}>TRY - Turkish Lira</MenuItem>
-                <MenuItem value={2}>USD - US Dollar</MenuItem>
-                <MenuItem value={3}>EUR - Euro</MenuItem>
-                <MenuItem value={4}>GBP - British Pound</MenuItem>
+                {Object.values(CURRENCY_CONFIGS).map((curr) => (
+                  <MenuItem key={curr.id} value={curr.id}>
+                    {curr.label}
+                  </MenuItem>
+                ))}
               </Select>
               {compErrors.currency && <FormHelperText>{compErrors.currency}</FormHelperText>}
             </FormControl>
@@ -425,6 +488,86 @@ export const PayrollDetail = () => {
               sx={premiumInputSx}
             />
           </Box>
+          <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+            <Button 
+              variant="contained" 
+              onClick={handleSaveCompensation} 
+              disabled={isUpdatingCompensation || isEditingCompensation}
+              sx={{ borderRadius: '10px', fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}
+            >
+              {editingCompId 
+                ? (isEditingCompensation ? 'Updating...' : 'Update Record') 
+                : (isUpdatingCompensation ? 'Adding...' : 'Add New Compensation')}
+            </Button>
+            {editingCompId && (
+              <Button 
+                variant="outlined" 
+                onClick={handleCancelEdit}
+                disabled={isEditingCompensation}
+                sx={{ borderRadius: '10px', fontWeight: 600, textTransform: 'none' }}
+              >
+                Cancel Edit
+              </Button>
+            )}
+          </Box>
+
+          <Box sx={{ mt: 5 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>History</Typography>
+              <Typography variant="caption" color="text.secondary">
+                Total Records: {employee.compensations?.length || 0}
+              </Typography>
+            </Box>
+            <Box sx={{ borderRadius: 2, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
+                <thead style={{ backgroundColor: 'rgba(128, 128, 128, 0.05)' }}>
+                  <tr>
+                    <th style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.2)' }}>Base Salary</th>
+                    <th style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.2)' }}>Pay Grade</th>
+                    <th style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.2)' }}>Effective Date</th>
+                    <th style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.2)' }}>End Date</th>
+                    <th style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.2)', textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...(employee.compensations || [])].sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime()).map((comp: any) => (
+                    <tr key={comp.id}>
+                      <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)' }}>
+                        {formatCompensationAmount(comp.baseSalary, comp.currency, comp.salaryType)}
+                      </td>
+                      <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)' }}>{comp.payGrade}</td>
+                      <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)' }}>{new Date(comp.effectiveDate).toLocaleDateString()}</td>
+                      <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)' }}>{comp.endDate ? new Date(comp.endDate).toLocaleDateString() : 'Active'}</td>
+                      <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)', textAlign: 'right' }}>
+                        <Button 
+                          size="small" 
+                          color="primary" 
+                          onClick={() => handleEditClick(comp)}
+                          sx={{ mr: 1 }}
+                        >
+                          Edit
+                        </Button>
+                        <Button 
+                          size="small" 
+                          color="error" 
+                          onClick={() => {
+                            if (window.confirm('Are you sure you want to delete this historical record?')) {
+                              deleteCompensation({ employeeId: employee.id, id: comp.id });
+                            }
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                  {!(employee.compensations?.length) && (
+                    <tr><td colSpan={5} style={{ padding: '12px', textAlign: 'center' }}>No history found.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </Box>
+          </Box>
         </Box>
       </TabPanel>
 
@@ -436,6 +579,17 @@ export const PayrollDetail = () => {
         confirmColor="warning"
         onConfirm={handleCalculateConfirm}
         confirmText={isCalculating ? "Calculating..." : "Calculate"}
+      />
+
+      <PopupDialog
+        open={errorDialogOpen}
+        onClose={() => setErrorDialogOpen(false)}
+        title="Compensation Error"
+        content={errorMessage}
+        confirmColor="error"
+        onConfirm={() => setErrorDialogOpen(false)}
+        confirmText="OK"
+        showCancel={false}
       />
 
     </Box>

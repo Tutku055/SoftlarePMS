@@ -25,5 +25,13 @@ export const financeApi = {
   updateCompensation: async (employeeId: string, command: any) => {
     const { data } = await apiClient.post<string>(`/employees/${employeeId}/compensations`, command);
     return data;
+  },
+  editCompensation: async (employeeId: string, id: string, command: any) => {
+    const { data } = await apiClient.put(`/employees/${employeeId}/compensations/${id}`, command);
+    return data;
+  },
+  deleteCompensation: async (employeeId: string, id: string) => {
+    const { data } = await apiClient.delete(`/employees/${employeeId}/compensations/${id}`);
+    return data;
   }
 };

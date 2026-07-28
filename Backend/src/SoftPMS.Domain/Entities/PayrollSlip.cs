@@ -8,13 +8,13 @@ public class PayrollSlip : BaseEntity
 
     public int Month { get; set; }
 
-    public decimal BaseSalary { get; set; }
+    public string BaseSalary { get; set; } = string.Empty;
 
-    public decimal TotalEarnings { get; set; }
+    public string TotalEarnings { get; set; } = string.Empty;
 
-    public decimal TotalDeductions { get; set; }
+    public string TotalDeductions { get; set; } = string.Empty;
 
-    public decimal NetSalary { get; set; }
+    public string NetSalary { get; set; } = string.Empty;
 
     public DateTime IssueDate { get; set; }
 
