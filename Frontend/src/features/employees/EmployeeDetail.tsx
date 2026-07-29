@@ -15,7 +15,6 @@ import { parseDocumentFilters } from '../documents/utils/filterUtils';
 import { PopupDialog } from '../../components/PopupDialog/PopupDialog';
 import { NotesAndReferences } from './components/NotesAndReferences/NotesAndReferences';
 import { CompensationModal } from './components/Compensation/CompensationModal';
-import { useDeleteCompensation } from '../finance/hooks/useDeleteCompensation';
 
 import {
   Box,
@@ -50,7 +49,6 @@ import {
   AccountBalanceWalletRounded,
   FolderSharedRounded,
   ContactsRounded,
-  OpenInNewRounded,
   UploadFileRounded,
   WarningRounded,
   CheckCircleRounded
@@ -138,7 +136,6 @@ export const EmployeeDetail = () => {
   const { data: employee, isLoading, isError } = useEmployeeDetail(id);
   const { mutate: updateEmployee, isPending: isUpdatingEmployee } = useUpdateEmployee();
   const { mutate: updateAddress, isPending: isUpdatingAddress } = useUpdateEmployeeAddress();
-  const { mutate: deleteCompensation } = useDeleteCompensation();
   const { data: deptData } = useDepartments();
   const departmentOptions = deptData?.items.map((d: any) => ({ value: d.id, label: d.name })) || [];
 
@@ -532,9 +529,6 @@ export const EmployeeDetail = () => {
                     : 'Not Set'}
                 </Typography>
               </Box>
-              <Button variant="outlined" endIcon={<OpenInNewRounded />} onClick={() => setIsCompensationModalOpen(true)} sx={actionButtonSx}>
-                Manage Salaries
-              </Button>
             </Stack>
 
             <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
@@ -544,7 +538,7 @@ export const EmployeeDetail = () => {
               <Button 
                 variant="outlined" 
                 color="primary" 
-                onClick={() => navigate(`/finance/payrolls/${employee.id}`)}
+                onClick={() => navigate(`/finance/payrolls/${employee.id}?tab=1`)}
                 sx={{ borderRadius: '8px', textTransform: 'none', fontWeight: 600 }}
               >
                 View Full Compensation History & Settings

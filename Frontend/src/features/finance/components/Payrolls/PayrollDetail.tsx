@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -251,7 +251,30 @@ export const PayrollDetail = () => {
   };
 
   // Tabs
-  const [activeTab, setActiveTab] = useState(0);
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
+  const getInitialTab = () => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === '1' || tabParam === 'compensation') return 1;
+    if (location.state && typeof (location.state as any).activeTab === 'number') {
+      return (location.state as any).activeTab;
+    }
+    return 0;
+  };
+
+  const [activeTab, setActiveTab] = useState<number>(getInitialTab);
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === '1' || tabParam === 'compensation') {
+      setActiveTab(1);
+    } else if (tabParam === '0' || tabParam === 'payroll') {
+      setActiveTab(0);
+    } else if (location.state && typeof (location.state as any).activeTab === 'number') {
+      setActiveTab((location.state as any).activeTab);
+    }
+  }, [searchParams, location.state]);
 
   // Slip Details Modal
   const [selectedSlip, setSelectedSlip] = useState<any | null>(null);
