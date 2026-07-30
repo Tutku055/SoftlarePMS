@@ -211,10 +211,8 @@ namespace SoftPMS.Persistence.Migrations
                     b.Property<DateTime?>("ProbationEndDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Profession")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
+                    b.Property<Guid?>("ProfessionId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("TerminationDate")
                         .HasColumnType("datetime2");
@@ -236,8 +234,7 @@ namespace SoftPMS.Persistence.Migrations
                     b.HasIndex("EmploymentStatus")
                         .HasDatabaseName("IX_Employees_EmploymentStatus");
 
-                    b.HasIndex("Profession")
-                        .HasDatabaseName("IX_Employees_Profession");
+                    b.HasIndex("ProfessionId");
 
                     b.HasIndex("LastName", "FirstName")
                         .HasDatabaseName("IX_Employees_LastName_FirstName");
@@ -604,6 +601,40 @@ namespace SoftPMS.Persistence.Migrations
                     b.ToTable("Permissions");
                 });
 
+            modelBuilder.Entity("SoftPMS.Domain.Entities.Profession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Professions_Name");
+
+                    b.ToTable("Professions");
+                });
+
             modelBuilder.Entity("SoftPMS.Domain.Entities.Role", b =>
                 {
                     b.Property<Guid>("Id")
@@ -814,9 +845,16 @@ namespace SoftPMS.Persistence.Migrations
                         .HasForeignKey("DepartmentId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("SoftPMS.Domain.Entities.Profession", "Profession")
+                        .WithMany("Employees")
+                        .HasForeignKey("ProfessionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("CreatedByUser");
 
                     b.Navigation("Department");
+
+                    b.Navigation("Profession");
                 });
 
             modelBuilder.Entity("SoftPMS.Domain.Entities.EmployeeAddress", b =>
@@ -996,6 +1034,11 @@ namespace SoftPMS.Persistence.Migrations
             modelBuilder.Entity("SoftPMS.Domain.Entities.Permission", b =>
                 {
                     b.Navigation("RolePermissions");
+                });
+
+            modelBuilder.Entity("SoftPMS.Domain.Entities.Profession", b =>
+                {
+                    b.Navigation("Employees");
                 });
 
             modelBuilder.Entity("SoftPMS.Domain.Entities.Role", b =>

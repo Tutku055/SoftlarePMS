@@ -21,9 +21,6 @@ public sealed class UpdateEmployeeCommandValidator : AbstractValidator<UpdateEmp
         RuleFor(x => x.Nationality)
             .NotEmpty().WithMessage("Nationality is required.");
 
-        RuleFor(x => x.Profession)
-            .NotEmpty().WithMessage("Profession is required.");
-
         RuleFor(x => x.WorkingHoursPerWeek)
             .GreaterThan(0).WithMessage("Working hours must be greater than 0.")
             .LessThanOrEqualTo(60).WithMessage("Working hours must not exceed 60 per week.");

@@ -16,7 +16,8 @@ public record EmployeeDetailDto
     public Gender Gender { get; init; }
     public DateTime DateOfBirth { get; init; }
     public string Nationality { get; init; }
-    public string Profession { get; init; }
+    public Guid? ProfessionId { get; init; }
+    public string? ProfessionName { get; init; }
     public EmploymentStatus EmploymentStatus { get; init; }
     public DateTime HireDate { get; init; }
     public DateTime? TerminationDate { get; init; }

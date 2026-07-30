@@ -115,7 +115,7 @@ export const TimesheetDetailMatrix = () => {
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`Employee: ${employee.firstName} ${employee.lastName} (${employee.profession})`, 14, 25);
+    doc.text(`Employee: ${employee.firstName} ${employee.lastName} (${employee.professionName || '-'})`, 14, 25);
     doc.text(`Period: ${new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}`, 14, 31);
 
     // Build Table Data

@@ -16,8 +16,9 @@ public class Employee: BaseEntity
 
     public string Nationality { get; set; } = string.Empty;
 
-    public string Profession { get; set; } = string.Empty;
+    public Guid? ProfessionId { get; set; }
 
+    public virtual Profession? Profession { get; set; }
     public EmploymentStatus EmploymentStatus { get; set; } = EmploymentStatus.Active;
 
     public DateTime HireDate { get; set; }

@@ -148,7 +148,7 @@ export const TimesheetList = () => {
       { id: 'employeeNo', label: 'Employee No', getValue: (emp: any) => emp.employeeNo },
       { id: 'firstName', label: 'First Name', getValue: (emp: any) => emp.firstName },
       { id: 'lastName', label: 'Last Name', getValue: (emp: any) => emp.lastName },
-      { id: 'profession', label: 'Profession', getValue: (emp: any) => emp.profession },
+      { id: 'profession', label: 'Profession', getValue: (emp: any) => emp.professionName || '-' },
     ];
 
     const visibleColumns = allColumns.filter(col => columnVisibility[col.id] !== false);
@@ -242,9 +242,10 @@ export const TimesheetList = () => {
       flex: 1.5,
       minWidth: 180,
       filterType: 'text',
+      valueGetter: (_, row: any) => row.professionName || '-',
       renderCell: (params) => (
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          {params.value || 'N/A'}
+        <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary' }}>
+          {params.value}
         </Typography>
       )
     },

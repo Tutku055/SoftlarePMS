@@ -23,9 +23,6 @@ public sealed class CreateEmployeeCommandValidator : AbstractValidator<CreateEmp
         RuleFor(x => x.Nationality)
             .NotEmpty().WithMessage("Nationality is required.");
 
-        RuleFor(x => x.Profession)
-            .NotEmpty().WithMessage("Profession is required.");
-
         // Dates
         RuleFor(x => x.DateOfBirth)
             .LessThan(DateTime.UtcNow.AddYears(-16))

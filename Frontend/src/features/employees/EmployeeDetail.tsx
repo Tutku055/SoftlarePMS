@@ -5,6 +5,7 @@ import { useEmployeeDetail } from './hooks/useEmployeeDetail';
 import { useUpdateEmployee } from './hooks/useUpdateEmployee';
 import { useUpdateEmployeeAddress } from './hooks/useUpdateEmployeeAddress';
 import { useDepartments } from './hooks/useDepartments';
+import { useProfessionsLookup } from '../professions/hooks/useProfessionsLookup';
 import { useDocuments } from '../documents/hooks/useDocuments';
 import { useAuthStore } from '../../store/useAuthStore';
 import { documentsApi } from '../documents/api/documentsApi';
@@ -138,6 +139,7 @@ export const EmployeeDetail = () => {
   const { mutate: updateAddress, isPending: isUpdatingAddress } = useUpdateEmployeeAddress();
   const { data: deptData } = useDepartments();
   const departmentOptions = deptData?.items.map((d: any) => ({ value: d.id, label: d.name })) || [];
+  const { data: professions } = useProfessionsLookup();
 
   const [formState, setFormState] = useState({
     firstName: '',
@@ -145,7 +147,7 @@ export const EmployeeDetail = () => {
     gender: 0,
     dateOfBirth: '',
     nationality: '',
-    profession: '',
+    professionId: '',
     employmentStatus: 1,
     hireDate: '',
     probationEndDate: '',
@@ -242,7 +244,7 @@ export const EmployeeDetail = () => {
         gender: employee.gender ?? 0,
         dateOfBirth: employee.dateOfBirth?.split('T')[0] || '',
         nationality: employee.nationality || '',
-        profession: employee.profession || '',
+        professionId: employee.professionId || '',
         employmentStatus: employee.employmentStatus || 1,
         hireDate: employee.hireDate?.split('T')[0] || '',
         probationEndDate: employee.probationEndDate?.split('T')[0] || '',
@@ -429,7 +431,7 @@ export const EmployeeDetail = () => {
               />
             </Stack>
             <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500, mb: 1 }}>
-              {employee.profession} • {employee.employeeNo} {employee.department ? `• ${employee.department.name}` : ''}
+              {employee.professionName} • {employee.employeeNo} {employee.department ? `• ${employee.department.name}` : ''}
             </Typography>
             <Stack direction="row" spacing={3} sx={{ mt: 1.5 }}>
               <Typography variant="caption" color="text.secondary">
@@ -479,7 +481,13 @@ export const EmployeeDetail = () => {
             </TextField>
             <TextField label="Date of Birth" name="dateOfBirth" type="date" value={formState.dateOfBirth} onChange={handleChange} size="small" fullWidth slotProps={{ inputLabel: { shrink: true } }} sx={premiumInputSx} />
             <TextField label="Nationality" name="nationality" value={formState.nationality} onChange={handleChange} size="small" fullWidth sx={premiumInputSx} />
-            <TextField label="Profession" name="profession" value={formState.profession} onChange={handleChange} size="small" fullWidth sx={premiumInputSx} />
+            <TextField select label="Profession" name="professionId" value={formState.professionId} onChange={handleChange} size="small" fullWidth sx={premiumInputSx}>
+              <MenuItem value=""><em>None</em></MenuItem>
+              {professions?.map((p: any) => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
+              {formState.professionId && !professions?.some((p: any) => p.id === formState.professionId) && (
+                <MenuItem value={formState.professionId} sx={{ display: 'none' }}>Loading...</MenuItem>
+              )}
+            </TextField>
             <TextField select label="Employment Status" name="employmentStatus" value={formState.employmentStatus} onChange={handleChange} size="small" fullWidth sx={premiumInputSx}>
               {statuses.map((s) => <MenuItem key={s.value} value={s.value}>{s.label}</MenuItem>)}
             </TextField>

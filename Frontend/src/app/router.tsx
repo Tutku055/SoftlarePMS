@@ -21,6 +21,7 @@ import { TimesheetDetailMatrix } from '../features/finance/components/Timesheets
 import { PayrollList } from '../features/finance/components/Payrolls/PayrollList';
 import { PayrollDetail } from '../features/finance/components/Payrolls/PayrollDetail';
 import { OvertimeTypeList } from '../features/finance/components/OvertimeTypes/OvertimeTypeList';
+import { ProfessionList } from '../features/professions/components/ProfessionList';
 
 import { useLocation } from 'react-router-dom';
 
@@ -114,6 +115,14 @@ export const router = createBrowserRouter([
             element: (
               <ProtectedRoute permission="Departments.Read">
                 <DepartmentEmployees />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'departments/professions',
+            element: (
+              <ProtectedRoute permission="Professions.Read">
+                <ProfessionList />
               </ProtectedRoute>
             ),
           },

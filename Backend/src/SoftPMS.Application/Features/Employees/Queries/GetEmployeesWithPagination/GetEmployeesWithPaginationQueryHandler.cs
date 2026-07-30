@@ -20,6 +20,7 @@ public sealed class GetEmployeesWithPaginationQueryHandler(
     {
         var query = context.Employees
             .Include(e => e.Department)
+            .Include(e => e.Profession)
             .AsNoTracking();
 
         // Tek satırda tüm dinamik filtreleri uygula

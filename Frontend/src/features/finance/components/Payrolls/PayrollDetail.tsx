@@ -519,7 +519,7 @@ export const PayrollDetail = () => {
               <Typography variant="h5" sx={{ fontWeight: 700 }}>{employee.firstName} {employee.lastName}</Typography>
             </Stack>
             <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500, mb: 1 }}>
-              {employee.profession} • {employee.employeeNo} {employee.department ? `• ${employee.department.name}` : ''}
+              {employee.professionName || '-'} • {employee.employeeNo} {employee.department ? `• ${employee.department.name}` : ''}
             </Typography>
             <Stack direction="row" spacing={3} sx={{ mt: 1.5, alignItems: 'center' }}>
               <Typography variant="caption" color="text.secondary">

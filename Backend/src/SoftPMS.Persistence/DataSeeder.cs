@@ -35,6 +35,10 @@ public static class DatabaseSeeder
         ("Departments.Create", "Create new departments"),
         ("Departments.Update", "Edit departments"),
         ("Departments.Delete", "Delete departments"),
+        ("Professions.Read", "View professions"),
+        ("Professions.Create", "Create new professions"),
+        ("Professions.Update", "Edit professions"),
+        ("Professions.Delete", "Delete professions"),
         ("Timesheets.Read", "View timesheets"),
         ("Timesheets.Manage", "Manage timesheets (generate, update entries)"),
         ("Payrolls.Read", "View payroll slips"),
@@ -42,6 +46,7 @@ public static class DatabaseSeeder
         ("Compensations.Manage", "Manage employee compensations"),
         ("Documents.Read",   "View documents"),
         ("Documents.Create", "Upload documents"),
+
         ("Documents.Update", "Edit documents"),
         ("Documents.Delete", "Delete documents"),
         ("Roles.Read",       "View roles"),

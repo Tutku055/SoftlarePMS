@@ -27,6 +27,7 @@ public class SoftPMSDbContext : DbContext, IApplicationDbContext
     #region Core Personnel DbSets
     public DbSet<Department> Departments { get; set; }
     public DbSet<Employee> Employees { get; set; }
+    public DbSet<Profession> Professions { get; set; }
     public DbSet<EmployeeAddress> EmployeeAddresses { get; set; }
     public DbSet<EmployeeCompensation> EmployeeCompensations { get; set; }
     public DbSet<MonthlyTimesheet> MonthlyTimesheets { get; set; }

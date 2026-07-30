@@ -94,7 +94,8 @@ export interface EmployeeDto {
   employeeNo: string;
   firstName: string;
   lastName: string;
-  profession: string;
+  professionId?: string;
+  professionName?: string;
   employmentStatus: number;
   hireDate: string;
   terminationDate?: string;
@@ -117,7 +118,7 @@ export interface CreateEmployeeDto {
   gender: number;
   dateOfBirth: string;
   nationality: string;
-  profession: string;
+  professionId: string;
   employmentStatus: number;
   hireDate: string;
   workingHoursPerWeek: number;
@@ -171,7 +172,8 @@ export interface EmployeeDetailDto {
   gender: number;
   dateOfBirth: string;
   nationality: string;
-  profession: string;
+  professionId?: string;
+  professionName?: string;
   employmentStatus: number;
   hireDate: string;
   terminationDate?: string;
@@ -197,7 +199,7 @@ export interface UpdateEmployeeCommand {
   gender: number;
   dateOfBirth: string;
   nationality: string;
-  profession: string;
+  professionId: string;
   employmentStatus: number;
   hireDate: string;
   terminationDate?: string | null;

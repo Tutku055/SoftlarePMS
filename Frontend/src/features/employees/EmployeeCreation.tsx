@@ -13,6 +13,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useCreateEmployee } from './hooks/useCreateEmployee';
 import { useDepartments } from './hooks/useDepartments';
+import { useProfessionsLookup } from '../professions/hooks/useProfessionsLookup';
 import styles from './EmployeeCreation.module.css';
 import type { CreateEmployeeDto, DepartmentDto } from './types';
 
@@ -75,6 +76,7 @@ export const EmployeeCreation: React.FC = () => {
   const navigate = useNavigate();
   const { mutate: createEmployee, isPending } = useCreateEmployee();
   const { data: deptData } = useDepartments();
+  const { data: professions } = useProfessionsLookup();
   const departmentOptions = deptData?.items.map((d: DepartmentDto) => ({ value: d.id, label: d.name })) || [];
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -88,7 +90,7 @@ export const EmployeeCreation: React.FC = () => {
     gender: 0, 
     dateOfBirth: '',
     nationality: '',
-    profession: '',
+    professionId: '',
     employmentStatus: 1, 
     hireDate: new Date().toISOString().split('T')[0],
     workingHoursPerWeek: 40,
@@ -156,7 +158,7 @@ export const EmployeeCreation: React.FC = () => {
     else if (formState.lastName.length > 50) newErrors.lastName = 'Max 50 chars';
 
     if (!formState.nationality.trim()) newErrors.nationality = 'Required';
-    if (!formState.profession.trim()) newErrors.profession = 'Required';
+    if (!formState.professionId?.trim()) newErrors.professionId = 'Required';
 
     if (!formState.dateOfBirth) newErrors.dateOfBirth = 'Required';
     else {
@@ -369,21 +371,21 @@ export const EmployeeCreation: React.FC = () => {
           <Divider sx={{ mb: 3, opacity: 0.5 }} />
 
           <div className={styles.formGrid}>
-            <TextField
-              label="Profession *"
-              name="profession"
-              value={formState.profession}
-              onChange={handleInputChange}
-              error={!!errors.profession}
-              helperText={errors.profession}
-              sx={getPremiumInputSx(true, !!errors.profession)}
-              fullWidth
-              slotProps={{
-                input: {
-                  startAdornment: <InputAdornment position="start"><WorkRounded fontSize="small" /></InputAdornment>,
-                }
-              }}
-            />
+            <FormControl fullWidth error={!!errors.professionId} sx={getPremiumInputSx(true, !!errors.professionId)}>
+              <InputLabel id="profession-label">Profession *</InputLabel>
+              <Select
+                labelId="profession-label"
+                value={formState.professionId}
+                label="Profession *"
+                onChange={(e) => handleSelectChange('professionId', e.target.value)}
+                startAdornment={<InputAdornment position="start" sx={{ pl: 1.5, pr: 0.5 }}><WorkRounded fontSize="small" /></InputAdornment>}
+              >
+                {professions?.map((p: any) => (
+                  <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+                ))}
+              </Select>
+              {errors.professionId && <FormHelperText>{errors.professionId}</FormHelperText>}
+            </FormControl>
 
             <FormControl fullWidth error={!!errors.employmentStatus} sx={getPremiumInputSx(true, !!errors.employmentStatus)}>
               <InputLabel id="status-label">Employment Status *</InputLabel>

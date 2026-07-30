@@ -39,7 +39,7 @@ public sealed class CreateEmployeeCommandHandler(
             Gender            = request.Gender,
             DateOfBirth       = request.DateOfBirth,
             Nationality       = request.Nationality,
-            Profession        = request.Profession,
+            ProfessionId      = request.ProfessionId,
             EmploymentStatus  = request.EmploymentStatus,
             HireDate          = request.HireDate,
             WorkingHoursPerWeek = workingHours,

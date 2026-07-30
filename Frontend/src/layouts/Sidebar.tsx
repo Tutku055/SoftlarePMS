@@ -54,7 +54,8 @@ const menuConfig: MenuItem[] = [
     icon: <Business />,
     children: [
       { title: 'Department List', path: '/departments/list', permission: 'Departments.Read' },
-      { title: 'Department Employees', path: '/departments/employees', permission: 'Departments.Read' }
+      { title: 'Department Employees', path: '/departments/employees', permission: 'Departments.Read' },
+      { title: 'Professions', path: '/departments/professions', permission: 'Professions.Read' }
     ]
   },
   { 

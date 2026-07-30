@@ -22,7 +22,47 @@ public class ApplicationDbContextInitialiser
     {
         try
         {
-            // Eğer veritabanında halihazırda Employee veya Department varsa işlemi tamamen atlasın (Tek seferlik kuralı) //[cite: 1]
+            // ONE-OFF FIX: If professions table is empty, generate 27 professions and assign to existing employees
+            if (!await _context.Professions.AnyAsync())
+            {
+                _logger.LogInformation("Professions table is empty. Generating 27 professions...");
+                
+                var profFaker = new Faker<Profession>()
+                    .RuleFor(p => p.Id, f => Guid.NewGuid())
+                    .RuleFor(p => p.CreatedAt, f => f.Date.Past(3))
+                    .RuleFor(p => p.Name, f => f.Name.JobTitle())
+                    .RuleFor(p => p.Description, f => f.Lorem.Sentence(5))
+                    .RuleFor(p => p.IsActive, f => true)
+                    .RuleFor(p => p.IsDeleted, f => false);
+
+                var generatedProfessions = profFaker.Generate(27);
+                
+                var rnd = new Bogus.Randomizer();
+                var inactives = rnd.ArrayElements(generatedProfessions.ToArray(), 4);
+                foreach (var ip in inactives)
+                {
+                    ip.IsActive = false;
+                }
+
+                await _context.Professions.AddRangeAsync(generatedProfessions);
+                
+                var activeProfs = generatedProfessions.Where(p => p.IsActive).ToList();
+                var existingEmployees = await _context.Employees.ToListAsync();
+                
+                if (existingEmployees.Any())
+                {
+                    _logger.LogInformation("Assigning new active professions to {Count} existing employees...", existingEmployees.Count);
+                    foreach (var emp in existingEmployees)
+                    {
+                        emp.ProfessionId = rnd.ListItem(activeProfs).Id;
+                    }
+                }
+                
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Professions seeded and assigned successfully.");
+            }
+
+            // Skip completely if Employee or Department already exists in the database (One-time rule) //[cite: 1]
             if (await _context.Employees.AnyAsync() || await _context.Departments.AnyAsync())
             {
                 return; //[cite: 1]
@@ -30,16 +70,16 @@ public class ApplicationDbContextInitialiser
 
             var creatorUserId = Guid.Parse("69318b93-57c8-4a54-8aae-05eec7d4ba95"); //[cite: 1]
 
-            // Foreign Key hatası almamak için bu ID'ye sahip bir User veritabanında var mı kontrol ediyoruz //[cite: 1]
+            // Check if a User with this ID exists in the database to avoid Foreign Key errors
             var creatorUserExists = await _context.Users.AnyAsync(u => u.Id == creatorUserId); //[cite: 1]
 
             if (!creatorUserExists) //[cite: 1]
             {
-                _logger.LogWarning("Seeding iptal edildi: '69318b93-57c8-4a54-8aae-05eec7d4ba95' ID'li bir User veritabanında bulunamadı! Önce user eklemelisiniz."); //[cite: 1]
+                _logger.LogWarning("Seeding canceled: User with ID '69318b93-57c8-4a54-8aae-05eec7d4ba95' not found in the database! You must add the user first."); //[cite: 1]
                 return; //[cite: 1]
             }
 
-            _logger.LogInformation("Bogus ile 10 Departman ve bunlarla ilişkili sahte personel verileri (100 adet) üretiliyor...");
+            _logger.LogInformation("Generating 10 Departments and 100 fake employee records with Bogus...");
 
             // 1. Department Faker //[cite: 3]
             var departmentFaker = new Faker<Department>()
@@ -48,8 +88,29 @@ public class ApplicationDbContextInitialiser
                 .RuleFor(d => d.Name, f => f.Commerce.Department()) //[cite: 3]
                 .RuleFor(d => d.Description, f => f.Lorem.Sentence(5)); //[cite: 3]
 
-            // 10 Adet Departman Üret
+            // Generate 10 Departments
             var fakeDepartments = departmentFaker.Generate(10);
+
+            // 1.5 Profession Faker
+            var professionFaker = new Faker<Profession>()
+                .RuleFor(p => p.Id, f => Guid.NewGuid())
+                .RuleFor(p => p.CreatedAt, f => f.Date.Past(3))
+                .RuleFor(p => p.Name, f => f.Name.JobTitle())
+                .RuleFor(p => p.Description, f => f.Lorem.Sentence(5))
+                .RuleFor(p => p.IsActive, f => true)
+                .RuleFor(p => p.IsDeleted, f => false);
+
+            var fakeProfessions = professionFaker.Generate(27);
+            
+            // Make exactly 4 randomly selected professions inactive
+            var randomizer = new Bogus.Randomizer();
+            var inactiveProfessions = randomizer.ArrayElements(fakeProfessions.ToArray(), 4);
+            foreach (var ip in inactiveProfessions)
+            {
+                ip.IsActive = false;
+            }
+
+            var activeProfessions = fakeProfessions.Where(p => p.IsActive).ToList();
 
             // 2. Address Faker //[cite: 1, 5]
             var addressFaker = new Faker<EmployeeAddress>()
@@ -102,7 +163,7 @@ public class ApplicationDbContextInitialiser
                 .RuleFor(e => e.Gender, f => f.PickRandom<Gender>()) //[cite: 1, 4]
                 .RuleFor(e => e.DateOfBirth, f => f.Date.Past(40, DateTime.Now.AddYears(-18))) //[cite: 1, 4]
                 .RuleFor(e => e.Nationality, f => f.PickRandom("English", "German")) //[cite: 1, 4]
-                .RuleFor(e => e.Profession, f => f.Name.JobTitle()) //[cite: 1, 4]
+                .RuleFor(e => e.ProfessionId, f => f.PickRandom(activeProfessions).Id) //[cite: 1, 4]
                 .RuleFor(e => e.EmploymentStatus, f => f.PickRandom<EmploymentStatus>()) //[cite: 1, 4]
                 .RuleFor(e => e.HireDate, f => f.Date.Past(5)) //[cite: 1, 4]
                 .RuleFor(e => e.TerminationDate, f => null) //[cite: 1, 4]
@@ -113,10 +174,10 @@ public class ApplicationDbContextInitialiser
                 .RuleFor(e => e.IsDeleted, false) //[cite: 1, 4]
                 .RuleFor(e => e.CreatedByUserId, creatorUserId) //[cite: 1, 4]
 
-                // --- Departman Ataması (Üretilen 10 departmandan biri) --- //[cite: 3, 4]
+                // --- Assign Department (One of the 10 generated departments) --- //[cite: 3, 4]
                 .RuleFor(e => e.DepartmentId, f => f.PickRandom(fakeDepartments).Id) //[cite: 3, 4]
 
-                // --- Alt Koleksiyonların Guid Bağlantılarıyla Oluşturulması --- //[cite: 1]
+                // --- Create Subcollections with Guid Links --- //[cite: 1]
                 .RuleFor(e => e.Addresses, (f, e) => {
                     var addresses = addressFaker.Generate(f.Random.Int(1, 2)); //[cite: 1]
                     addresses.ForEach(a => a.EmployeeId = e.Id); //[cite: 1, 5]
@@ -139,19 +200,20 @@ public class ApplicationDbContextInitialiser
                     return refs; //[cite: 1]
                 });
 
-            // 100 adet çalışan ve iç içe bağlı tüm verileri üret //[cite: 1]
+            // Generate 100 employees and all their nested linked data //[cite: 1]
             var fakeEmployees = employeeFaker.Generate(100); //[cite: 1]
 
-            // Önce Departmanları, sonra Personelleri veritabanına ekle
+            // Add Departments, Professions, then Employees to the database
             await _context.Departments.AddRangeAsync(fakeDepartments);
+            await _context.Professions.AddRangeAsync(fakeProfessions);
             await _context.Employees.AddRangeAsync(fakeEmployees); //[cite: 1]
             await _context.SaveChangesAsync(); //[cite: 1]
 
-            _logger.LogInformation("10 Adet Departman, 100 adet personel ve bunlara bağlı tüm ilişkili veriler başarıyla eklendi.");
+            _logger.LogInformation("10 Departments, 27 Professions, 100 employees and all their related data successfully added.");
         }
         catch (Exception ex) //[cite: 1]
         {
-            _logger.LogError(ex, "Veritabanı seed edilirken beklenmedik bir hata oluştu."); //[cite: 1]
+            _logger.LogError(ex, "An unexpected error occurred while seeding the database."); //[cite: 1]
             throw; //[cite: 1]
         }
     }

@@ -130,6 +130,7 @@ export const DepartmentEmployees = () => {
       flex: 1.5,
       minWidth: 200,
       filterType: 'text',
+      valueGetter: (_, row: any) => row.professionName || '-',
       renderCell: (params) => (
         <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary' }}>
           {params.value}

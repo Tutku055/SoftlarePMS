@@ -20,7 +20,7 @@ public sealed class UpdateEmployeeCommandHandler(
         employee.Gender             = request.Gender;
         employee.DateOfBirth        = request.DateOfBirth;
         employee.Nationality        = request.Nationality;
-        employee.Profession         = request.Profession;
+        employee.ProfessionId       = request.ProfessionId;
         employee.EmploymentStatus   = request.EmploymentStatus;
         employee.HireDate           = request.HireDate;
         employee.TerminationDate    = request.TerminationDate;

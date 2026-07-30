@@ -221,7 +221,7 @@ export const Roster = () => {
       { id: 'employeeNo', label: 'Employee No', getValue: (emp: any) => emp.employeeNo },
       { id: 'fullName', label: 'Full Name', getValue: (emp: any) => `${emp.firstName} ${emp.lastName}` },
       { id: 'departmentId', label: 'Department', getValue: (emp: any) => emp.department?.name || '' },
-      { id: 'profession', label: 'Profession', getValue: (emp: any) => emp.profession },
+      { id: 'profession', label: 'Profession', getValue: (emp: any) => emp.professionName || '-' },
       { 
         id: 'employmentStatus', 
         label: 'Status', 
@@ -370,8 +370,9 @@ export const Roster = () => {
       field: 'profession',
       headerName: 'Profession',
       flex: 1.5,
-      minWidth: 195,
+      minWidth: 150,
       filterType: 'text',
+      valueGetter: (_, row: any) => row.professionName || '-',
       renderCell: (params) => (
         <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary' }}>
           {params.value}

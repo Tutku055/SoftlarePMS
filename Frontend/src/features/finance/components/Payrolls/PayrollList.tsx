@@ -195,7 +195,7 @@ export const PayrollList = () => {
       { id: 'employeeNo', label: 'Employee No', getValue: (emp: any) => emp.employeeNo },
       { id: 'fullName', label: 'Full Name', getValue: (emp: any) => `${emp.firstName} ${emp.lastName}` },
       { id: 'departmentId', label: 'Department', getValue: (emp: any) => emp.department?.name || '' },
-      { id: 'profession', label: 'Profession', getValue: (emp: any) => emp.profession },
+      { id: 'profession', label: 'Profession', getValue: (emp: any) => emp.professionName || '-' },
       { id: 'hireDate', label: 'Hire Date', getValue: (emp: any) => new Date(emp.hireDate).toLocaleDateString() },
     ];
 
@@ -275,11 +275,12 @@ export const PayrollList = () => {
       field: 'profession',
       headerName: 'Profession',
       flex: 1.5,
-      minWidth: 180,
+      minWidth: 150,
       filterType: 'text',
+      valueGetter: (_, row: any) => row.professionName || '-',
       renderCell: (params) => (
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          {params.value || 'N/A'}
+        <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary' }}>
+          {params.value}
         </Typography>
       )
     },

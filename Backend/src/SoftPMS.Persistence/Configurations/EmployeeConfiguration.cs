@@ -36,12 +36,11 @@ public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
         builder.Property(e => e.WorkingHoursPerWeek)
             .HasPrecision(5, 2);
 
-        builder.Property(e => e.Profession)
-            .HasMaxLength(150);
-
-        // Index on Profession for server-side filtering
-        builder.HasIndex(e => e.Profession)
-            .HasDatabaseName("IX_Employees_Profession");
+        // FK: Profession
+        builder.HasOne(e => e.Profession)
+            .WithMany(p => p.Employees)
+            .HasForeignKey(e => e.ProfessionId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(e => e.Gender)
             .HasConversion<int>()

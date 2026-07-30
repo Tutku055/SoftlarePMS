@@ -20,6 +20,7 @@ public sealed class GetEmployeeByIdQueryHandler(
     {
         var employee = await context.Employees
             .Include(e => e.Department)
+            .Include(e => e.Profession)
             .Include(e => e.Addresses)
             .Include(e => e.Compensations)
 

@@ -21,13 +21,13 @@ public static class EmployeeQueryExtensions
             if (string.IsNullOrWhiteSpace(filter.Value))
                 continue;
 
-            // Alan ismini küçük harfe çevirelim (frontend CamelCase yollayabilir: firstName)
+            // Convert field name to lowercase (frontend might send camelCase: firstName)
             var field = filter.Field.Trim();
-            // Operatörü küçük harfe çevirelim (MUI "contains", "equals" yollar)
+            // Convert operator to lowercase (MUI sends "contains", "equals")
             var op = filter.Operator?.ToLower().Trim();
             var val = filter.Value.Trim().ToLower();
 
-            // Her if/case bloğu query = query.Where(...) şeklinde zincire EKLEME yapmalı
+            // Each if/case block chains query.Where(...) filters
             if (string.Equals(field, "employeeNo", StringComparison.OrdinalIgnoreCase))
             {
                 query = op switch
@@ -65,11 +65,11 @@ public static class EmployeeQueryExtensions
             {
                 query = op switch
                 {
-                    "equals" => query.Where(e => e.Profession.ToLower() == val),
-                    "contains" => query.Where(e => e.Profession.ToLower().Contains(val)),
-                    "startswith" => query.Where(e => e.Profession.ToLower().StartsWith(val)),
-                    "endswith" => query.Where(e => e.Profession.ToLower().EndsWith(val)),
-                    _ => query.Where(e => e.Profession.ToLower().Contains(val))
+                    "equals" => query.Where(e => e.Profession != null && e.Profession.Name.ToLower() == val),
+                    "contains" => query.Where(e => e.Profession != null && e.Profession.Name.ToLower().Contains(val)),
+                    "startswith" => query.Where(e => e.Profession != null && e.Profession.Name.ToLower().StartsWith(val)),
+                    "endswith" => query.Where(e => e.Profession != null && e.Profession.Name.ToLower().EndsWith(val)),
+                    _ => query.Where(e => e.Profession != null && e.Profession.Name.ToLower().Contains(val))
                 };
             }
             else if (string.Equals(field, "employmentStatus", StringComparison.OrdinalIgnoreCase))

@@ -1,7 +1,6 @@
 using AutoMapper;
 using SoftPMS.Application.Features.Departments.DTOs;
 using SoftPMS.Application.Features.Employees.DTOs;
-using SoftPMS.Application.Features.Employees.DTOs;
 using SoftPMS.Application.Features.EmployeeCompensations.DTOs;
 using SoftPMS.Application.Features.Documents.DTOs;
 using SoftPMS.Application.Features.EmployeeNotes.DTOs;
@@ -9,6 +8,7 @@ using SoftPMS.Application.Features.EmployeeReferences.DTOs;
 using SoftPMS.Application.Features.Permissions.DTOs;
 using SoftPMS.Application.Features.Roles.DTOs;
 using SoftPMS.Application.Features.Users.DTOs;
+using SoftPMS.Application.Features.Professions.DTOs;
 using SoftPMS.Domain.Entities;
 
 namespace SoftPMS.Application.Mappings;
@@ -18,8 +18,10 @@ public class ApplicationMappingProfile : Profile
     public ApplicationMappingProfile()
     {
         // Employee mappings
-        CreateMap<Employee, EmployeeDto>();
+        CreateMap<Employee, EmployeeDto>()
+            .ForMember(d => d.ProfessionName, o => o.MapFrom(s => s.Profession != null ? s.Profession.Name : null));
         CreateMap<Employee, EmployeeDetailDto>()
+            .ForMember(d => d.ProfessionName, o => o.MapFrom(s => s.Profession != null ? s.Profession.Name : null))
             .ForMember(d => d.Compensation, o => o.MapFrom(s => s.Compensations.FirstOrDefault(c => c.EndDate == null)));
         // Downcast for facade: detail -> slim DTO
         CreateMap<EmployeeDetailDto, EmployeeDto>();
@@ -45,6 +47,15 @@ public class ApplicationMappingProfile : Profile
         CreateMap<Department, DepartmentDto>()
             .ForCtorParam("EmployeeCount", o => o.MapFrom(s => s.Employees.Count));
         CreateMap<Department, DepartmentLookupDto>();
+
+        // Profession mappings
+        CreateMap<Profession, ProfessionDto>()
+            .ForCtorParam("EmployeeCount", o => o.MapFrom(s => s.Employees.Count));
+        CreateMap<Profession, ProfessionLookupDto>();
+        CreateMap<CreateProfessionDto, Profession>();
+        CreateMap<UpdateProfessionDto, Profession>()
+            .ForMember(d => d.Id, o => o.Ignore())
+            .ForMember(d => d.CreatedAt, o => o.Ignore());
 
         // Employee compensation mappings
         CreateMap<EmployeeCompensation, EmployeeCompensationDto>()

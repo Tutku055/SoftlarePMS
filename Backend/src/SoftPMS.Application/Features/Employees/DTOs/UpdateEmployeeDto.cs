@@ -10,7 +10,7 @@ public record UpdateEmployeeDto(
     Gender Gender,
     DateTime DateOfBirth,
     string Nationality,
-    string Profession,
+    Guid? ProfessionId,
     EmploymentStatus EmploymentStatus,
     DateTime HireDate,
     decimal WorkingHoursPerWeek,
