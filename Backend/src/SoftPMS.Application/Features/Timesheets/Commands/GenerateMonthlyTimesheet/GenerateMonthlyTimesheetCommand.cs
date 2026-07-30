@@ -79,7 +79,7 @@ public class GenerateMonthlyTimesheetCommandHandler : IRequestHandler<GenerateMo
         {
             var date = new DateTime(request.Year, request.Month, i);
             
-            // Skip days before the hire date in the hire month
+            // Exclude days before the hire date within the hire month.
             if (date < employee.HireDate.Date)
             {
                 continue;

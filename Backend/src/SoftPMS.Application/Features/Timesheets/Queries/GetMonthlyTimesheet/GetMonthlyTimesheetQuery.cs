@@ -41,6 +41,7 @@ public class GetMonthlyTimesheetQueryHandler : IRequestHandler<GetMonthlyTimeshe
             .OrderBy(c => c.EffectiveDate)
             .ToListAsync(cancellationToken);
 
+        // Resolve each entry's salary type from the compensation active on that specific date.
         var entries = timesheet.Entries
             .OrderBy(e => e.Date)
             .Select(e => {

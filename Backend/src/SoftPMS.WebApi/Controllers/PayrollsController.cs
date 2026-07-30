@@ -1,22 +1,17 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SoftPMS.Application.Features.Payrolls.DTOs;
-using SoftPMS.Application.Features.Payrolls.Commands.CalculateMonthlyPayroll;
+using SoftPMS.Application.Features.Payrolls.Commands.CalculatePayroll;
 using SoftPMS.Application.Features.Payrolls.Queries.GetEmployeePayrollSlips;
 using SoftPMS.WebApi.Authorization;
 
 namespace SoftPMS.WebApi.Controllers;
 
-// ── Body-only request record (route param is NOT repeated inside) ──
-// Prevents null ModelMetadata crash in .NET 10's XML comment OpenAPI transformer.
-
-/// <summary>Year and month to calculate payroll for.</summary>
+/// <summary>Request body for payroll calculation (route params excluded to avoid .NET 10 OpenAPI null-metadata crash).</summary>
 public class CalculatePayrollRequest
 {
-    /// <summary>The year.</summary>
     public int Year { get; set; }
-    
-    /// <summary>The month (1-12).</summary>
+    /// <summary>1–12</summary>
     public int Month { get; set; }
 }
 
@@ -38,7 +33,7 @@ public class PayrollsController : ApiControllerBase
     [HasPermission("Payrolls.Manage")]
     public async Task<ActionResult<Guid>> CalculatePayroll(Guid employeeId, [FromBody] CalculatePayrollRequest request)
     {
-        var result = await Sender.Send(new CalculateMonthlyPayrollCommand(employeeId, request.Year, request.Month));
+        var result = await Sender.Send(new CalculatePayrollCommand(employeeId, request.Year, request.Month));
         return Ok(result);
     }
 }

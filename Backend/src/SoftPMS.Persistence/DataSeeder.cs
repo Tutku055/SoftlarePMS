@@ -56,12 +56,12 @@ public static class DatabaseSeeder
         ("Users.ChangePassword", "Change user password"),
         ("Permissions.Read", "View available permissions"),
         ("SystemSettings.YearEndOperations", "Manage year-end operations and leave rollovers"),
+        ("OvertimeTypes.Read", "View overtime types"),
+        ("OvertimeTypes.Create", "Create new overtime types"),
+        ("OvertimeTypes.Update", "Edit overtime types"),
+        ("OvertimeTypes.Delete", "Delete overtime types"),
     ];
 
-    private const string AdminRoleName = "Admin";
-    private const string AdminUsername  = "admin";
-    private const string AdminEmail     = "admin@SoftPMS.com";
-    private const string AdminPassword  = "Admin@123!"; // Override via env / user-secrets in production
 
     public static async Task SeedAsync(IServiceProvider rootProvider, CancellationToken ct = default)
     {
@@ -93,64 +93,7 @@ public static class DatabaseSeeder
                 logger.LogInformation("Seeded {Count} new permission(s).", missing.Count);
             }
 
-            // ── 3. Seed Admin role ────────────────────────────────────────────
-            var adminRole = await db.Roles
-                .Include(r => r.RolePermissions)
-                .FirstOrDefaultAsync(r => r.Name == AdminRoleName, ct);
 
-            if (adminRole is null)
-            {
-                adminRole = new Role
-                {
-                    Name        = AdminRoleName,
-                    Description = "System administrator with full access",
-                };
-                db.Roles.Add(adminRole);
-                await db.SaveChangesAsync(ct);
-                logger.LogInformation("Seeded 'Admin' role.");
-            }
-
-            // ── 4. Assign ALL permissions to the Admin role (idempotent) ─────
-            var allPermissions     = await db.Permissions.ToListAsync(ct);
-            var assignedIds        = adminRole.RolePermissions.Select(rp => rp.PermissionId).ToHashSet();
-            var missingPermLinks = allPermissions
-                .Where(p => p.Name != "Permissions.Assign") // Do not auto-assign this
-                .Where(p => !assignedIds.Contains(p.Id))
-                .Select(p => new RolePermission { RoleId = adminRole.Id, PermissionId = p.Id })
-                .ToList();
-
-            if (missingPermLinks.Count > 0)
-            {
-                db.RolePermissions.AddRange(missingPermLinks);
-                await db.SaveChangesAsync(ct);
-                logger.LogInformation("Assigned {Count} permission(s) to Admin role.", missingPermLinks.Count);
-            }
-
-            // ── 5. Seed Admin user ────────────────────────────────────────────
-            var adminUser = await db.Users
-                .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.Username == AdminUsername, ct);
-
-            if (adminUser is null)
-            {
-                adminUser = new User
-                {
-                    Username     = AdminUsername,
-                    Email        = AdminEmail,
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(AdminPassword),
-                    IsActive     = true,
-                    RoleId       = adminRole.Id,
-                };
-                db.Users.Add(adminUser);
-                await db.SaveChangesAsync(ct);
-                logger.LogInformation("Seeded admin user '{Username}' with 'Admin' role.", AdminUsername);
-            }
-            else if (adminUser.RoleId != adminRole.Id)
-            {
-                adminUser.RoleId = adminRole.Id;
-                await db.SaveChangesAsync(ct);
-                logger.LogInformation("Assigned 'Admin' role to admin user.");
-            }
 
             // ── 6. Seed SuperAdmin role ────────────────────────────────────────────
             var superAdminRoleName = "SuperAdmin";
@@ -190,6 +133,7 @@ public static class DatabaseSeeder
             }
 
             // ── 7. Assign ALL permissions to the Super Admin role ─────
+            var allPermissions = await db.Permissions.ToListAsync(ct);
             var saAssignedIds = superAdminRole.RolePermissions.Select(rp => rp.PermissionId).ToHashSet();
             
             var saMissingPermLinks = allPermissions

@@ -284,9 +284,11 @@ export const DepartmentDetail = () => {
               Delete
             </Button>
           )}
-          <Button onClick={handleSave} disabled={isUpdatingDepartment || !hasPermission('Departments.Update')} variant="contained" startIcon={<SaveRounded />} sx={{ borderRadius: '10px', fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}>
-            {isUpdatingDepartment ? 'Saving...' : 'Save Changes'}
-          </Button>
+          {hasPermission('Departments.Update') && (
+            <Button onClick={handleSave} disabled={isUpdatingDepartment} variant="contained" startIcon={<SaveRounded />} sx={{ borderRadius: '10px', fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}>
+              {isUpdatingDepartment ? 'Saving...' : 'Save Changes'}
+            </Button>
+          )}
         </Stack>
       </Box>
 
@@ -384,9 +386,11 @@ export const DepartmentDetail = () => {
         <Box sx={glassPanelSx}>
           <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h6" sx={{ fontWeight: 700 }}>Department Documents</Typography>
-            <Button variant="contained" startIcon={<UploadFileRounded />} onClick={() => setUploadOpen(true)} sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}>
-              Upload Document
-            </Button>
+            {hasPermission('Documents.Create') && (
+              <Button variant="contained" startIcon={<UploadFileRounded />} onClick={() => setUploadOpen(true)} sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}>
+                Upload Document
+              </Button>
+            )}
           </Stack>
           <Box sx={{ borderRadius: 4, overflow: 'hidden', backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', boxShadow: '0 4px 24px rgba(0, 0, 0, 0.03)' }}>
             <DataTable

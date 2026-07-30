@@ -14,6 +14,7 @@ namespace SoftPMS.WebApi.Controllers;
 [Route("api/employees/{employeeId:guid}/notes")]
 public sealed class EmployeeNotesController : ApiControllerBase
 {
+    /// <summary>Get notes for an employee. Optionally filter by category and/or confidentiality.</summary>
     [HttpGet]
     [HasPermission("EmployeeNotes.Read")]
     public async Task<IActionResult> Get(Guid employeeId, [FromQuery] NoteCategory? category, [FromQuery] bool? isConfidential, CancellationToken ct)
@@ -22,6 +23,7 @@ public sealed class EmployeeNotesController : ApiControllerBase
         return Ok(result);
     }
 
+    /// <summary>Add a new note to an employee.</summary>
     [HttpPost]
     [HasPermission("EmployeeNotes.Create")]
     [ProducesResponseType(typeof(EmployeeNoteDto), StatusCodes.Status201Created)]
@@ -32,6 +34,7 @@ public sealed class EmployeeNotesController : ApiControllerBase
         return Created($"/api/employees/{employeeId}/notes", result);
     }
 
+    /// <summary>Update an existing employee note.</summary>
     [HttpPut("{id:guid}")]
     [HasPermission("EmployeeNotes.Update")]
     public async Task<IActionResult> Update(Guid employeeId, Guid id, [FromBody] UpdateEmployeeNoteDto dto, CancellationToken ct)
@@ -40,6 +43,7 @@ public sealed class EmployeeNotesController : ApiControllerBase
         return NoContent();
     }
 
+    /// <summary>Delete an employee note.</summary>
     [HttpDelete("{id:guid}")]
     [HasPermission("EmployeeNotes.Delete")]
     public async Task<IActionResult> Delete(Guid employeeId, Guid id, CancellationToken ct)

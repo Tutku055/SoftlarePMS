@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
+using SoftPMS.Application.Common.Exceptions;
 
 namespace SoftPMS.Application.Features.EmployeeCompensations.Commands.DeleteEmployeeCompensation;
 
@@ -22,6 +23,14 @@ public class DeleteEmployeeCompensationCommandHandler : IRequestHandler<DeleteEm
 
         if (compensation == null)
             throw new Exception("Compensation not found");
+
+        var currentUtc = DateTime.UtcNow;
+        var startOfCompensationMonth = new DateTime(compensation.EffectiveDate.Year, compensation.EffectiveDate.Month, 1);
+
+        if (currentUtc >= startOfCompensationMonth)
+        {
+            throw new BusinessRuleException("Cannot delete a compensation for the current or a past month. Only future compensations can be deleted.");
+        }
 
         // Find the predecessor that was closed to make way for this one
         var predecessor = await _context.EmployeeCompensations

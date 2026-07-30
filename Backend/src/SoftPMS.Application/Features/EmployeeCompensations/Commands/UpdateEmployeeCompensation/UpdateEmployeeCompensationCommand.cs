@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Domain.Entities;
 using SoftPMS.Domain.Enums;
+using SoftPMS.Application.Common.Exceptions;
 
 namespace SoftPMS.Application.Features.EmployeeCompensations.Commands.UpdateEmployeeCompensation;
 
@@ -30,9 +31,24 @@ public class UpdateEmployeeCompensationCommandHandler : IRequestHandler<UpdateEm
 
     public async Task<Guid> Handle(UpdateEmployeeCompensationCommand request, CancellationToken cancellationToken)
     {
+        if (request.EffectiveDate.Day != 1)
+        {
+            throw new Exception("New compensation's effective date must be the 1st day of the month.");
+        }
+
         var employee = await _context.Employees.FindAsync(new object[] { request.EmployeeId }, cancellationToken);
         if (employee == null)
             throw new Exception("Employee not found");
+
+        var existingCompensationForMonth = await _context.EmployeeCompensations
+            .AnyAsync(c => c.EmployeeId == request.EmployeeId && 
+                           c.EffectiveDate.Year == request.EffectiveDate.Year && 
+                           c.EffectiveDate.Month == request.EffectiveDate.Month, cancellationToken);
+                           
+        if (existingCompensationForMonth)
+        {
+            throw new BusinessRuleException("A compensation record already exists for this month. Only one compensation is allowed per month.");
+        }
 
         var activeCompensation = await _context.EmployeeCompensations
             .Where(c => c.EmployeeId == request.EmployeeId && c.EndDate == null)
@@ -42,12 +58,12 @@ public class UpdateEmployeeCompensationCommandHandler : IRequestHandler<UpdateEm
         {
             if (request.EffectiveDate.Date <= activeCompensation.EffectiveDate.Date)
             {
-                throw new Exception("New compensation's effective date must be later than the current active compensation's effective date.");
+                throw new BusinessRuleException("New compensation's effective date must be later than the current active compensation's effective date.");
             }
             activeCompensation.EndDate = request.EffectiveDate.AddDays(-1);
             _context.EmployeeCompensations.Update(activeCompensation);
 
-            // If switching from Hourly to Monthly, set default values for vacation and hours
+            // Hourly → Monthly: seed default leave and working-hours values.
             if (activeCompensation.SalaryType == SalaryType.Hourly && request.SalaryType == SalaryType.Monthly)
             {
                 employee.WorkingHoursPerWeek = 40;
@@ -55,7 +71,7 @@ public class UpdateEmployeeCompensationCommandHandler : IRequestHandler<UpdateEm
                 employee.CarriedOverLeaves = 0;
                 _context.Employees.Update(employee);
             }
-            // If switching to Hourly, reset all vacation counters to 0
+            // Monthly → Hourly or new Hourly: clear all leave counters.
             else if (request.SalaryType == SalaryType.Hourly)
             {
                 employee.WorkingHoursPerWeek = 0;
@@ -66,7 +82,6 @@ public class UpdateEmployeeCompensationCommandHandler : IRequestHandler<UpdateEm
         }
         else if (request.SalaryType == SalaryType.Monthly && employee.WorkingHoursPerWeek == 0)
         {
-             // Fallback if no active compensation existed but transitioning to Monthly
              employee.WorkingHoursPerWeek = 40;
              employee.AnnualVacationDays = 14;
              employee.CarriedOverLeaves = 0;
@@ -74,7 +89,6 @@ public class UpdateEmployeeCompensationCommandHandler : IRequestHandler<UpdateEm
         }
         else if (request.SalaryType == SalaryType.Hourly)
         {
-             // Fallback if no active compensation existed but transitioning to Hourly
              employee.WorkingHoursPerWeek = 0;
              employee.AnnualVacationDays = 0;
              employee.CarriedOverLeaves = 0;

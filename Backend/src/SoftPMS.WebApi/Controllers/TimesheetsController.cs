@@ -9,17 +9,13 @@ using SoftPMS.WebApi.Authorization;
 
 namespace SoftPMS.WebApi.Controllers;
 
-// ── Body-only request records (route params are NOT repeated inside these) ──
-// This prevents .NET 10's model binder from creating ParameterDescriptions with
-// null ModelMetadata, which crashes the XML comment OpenAPI transformer.
+// Route params are excluded from body records to avoid .NET 10 OpenAPI null-metadata crash.
 
-/// <summary>Year and month to generate a monthly timesheet for.</summary>
+/// <summary>Request body for monthly timesheet generation.</summary>
 public class GenerateTimesheetRequest
 {
-    /// <summary>The year.</summary>
     public int Year { get; set; }
-    
-    /// <summary>The month (1-12).</summary>
+    /// <summary>1–12</summary>
     public int Month { get; set; }
 }
 

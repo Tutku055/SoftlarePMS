@@ -80,7 +80,7 @@ public sealed class RolesController : ApiControllerBase
 
     /// <summary>Replace the complete permission set for a role.</summary>
     [HttpPut("{id:guid}/permissions")]
-    [HasPermission("Roles.Update")]
+    [HasPermission("Permissions.Assign")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

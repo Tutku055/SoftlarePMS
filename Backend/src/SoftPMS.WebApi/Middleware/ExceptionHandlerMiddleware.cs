@@ -68,6 +68,10 @@ public sealed class ExceptionHandlerMiddleware(
                 (StatusCodes.Status422UnprocessableEntity, "Business Rule Violation",
                  (object)new { message = domainEx.Message }),
 
+            BusinessRuleException businessEx =>
+                (StatusCodes.Status400BadRequest, "Business Rule Violation",
+                 (object)new { message = businessEx.Message }),
+
             // Catch-all — never leak stack traces in production
             _ =>
                 (StatusCodes.Status500InternalServerError, "Internal Server Error",

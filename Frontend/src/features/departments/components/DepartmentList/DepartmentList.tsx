@@ -41,6 +41,7 @@ import { DataTable } from '../../../../components/DataTable/DataTable';
 import type { CustomFilterValue, DataTableColumnDef } from '../../../../components/DataTable/DataTable';
 import { useDepartmentsList } from '../../hooks/useDepartmentsList';
 import { useCreateDepartment } from '../../hooks/useCreateDepartment';
+import { HasPermission } from '../../../../components/HasPermission';
 import ExcelJS from 'exceljs';
 
 const COLUMN_NAMES: Record<string, string> = {
@@ -327,19 +328,21 @@ export const DepartmentList = () => {
         </Box>
 
         <Stack direction="row" spacing={1.5}>
-          <Button
-            variant="contained"
-            startIcon={<AddRounded />}
-            onClick={() => setIsCreateDialogOpen(true)}
-            sx={{
-              borderRadius: '10px',
-              fontWeight: 600,
-              textTransform: 'none',
-              boxShadow: 'none',
-            }}
-          >
-            Add Department
-          </Button>
+          <HasPermission requiredPermission="Departments.Create">
+            <Button
+              variant="contained"
+              startIcon={<AddRounded />}
+              onClick={() => setIsCreateDialogOpen(true)}
+              sx={{
+                borderRadius: '10px',
+                fontWeight: 600,
+                textTransform: 'none',
+                boxShadow: 'none',
+              }}
+            >
+              Add Department
+            </Button>
+          </HasPermission>
 
           <Tooltip title="Manage Columns" arrow>
             <Button

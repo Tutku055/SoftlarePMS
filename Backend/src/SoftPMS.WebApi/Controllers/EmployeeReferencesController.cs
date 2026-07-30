@@ -13,6 +13,7 @@ namespace SoftPMS.WebApi.Controllers;
 [Route("api/employees/{employeeId:guid}/references")]
 public sealed class EmployeeReferencesController : ApiControllerBase
 {
+    /// <summary>Get all references for an employee.</summary>
     [HttpGet]
     [HasPermission("EmployeeReferences.Read")]
     public async Task<IActionResult> Get(Guid employeeId, CancellationToken ct)
@@ -21,6 +22,7 @@ public sealed class EmployeeReferencesController : ApiControllerBase
         return Ok(result);
     }
 
+    /// <summary>Add a new reference to an employee.</summary>
     [HttpPost]
     [HasPermission("EmployeeReferences.Create")]
     [ProducesResponseType(typeof(EmployeeReferenceDto), StatusCodes.Status201Created)]
@@ -31,6 +33,7 @@ public sealed class EmployeeReferencesController : ApiControllerBase
         return Created($"/api/employees/{employeeId}/references", result);
     }
 
+    /// <summary>Update an existing employee reference.</summary>
     [HttpPut("{id:guid}")]
     [HasPermission("EmployeeReferences.Update")]
     public async Task<IActionResult> Update(Guid employeeId, Guid id, [FromBody] UpdateEmployeeReferenceDto dto, CancellationToken ct)
@@ -39,6 +42,7 @@ public sealed class EmployeeReferencesController : ApiControllerBase
         return NoContent();
     }
 
+    /// <summary>Delete an employee reference.</summary>
     [HttpDelete("{id:guid}")]
     [HasPermission("EmployeeReferences.Delete")]
     public async Task<IActionResult> Delete(Guid employeeId, Guid id, CancellationToken ct)

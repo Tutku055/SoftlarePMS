@@ -18,7 +18,6 @@ public class CloseYearAndRolloverLeavesCommandHandler : IRequestHandler<CloseYea
 
     public async Task<Unit> Handle(CloseYearAndRolloverLeavesCommand request, CancellationToken cancellationToken)
     {
-        // 1. Check if the year is already closed
         var isAlreadyClosed = await _context.YearlyRolloverLogs
             .AnyAsync(r => r.YearClosed == request.YearToClose, cancellationToken);
 
@@ -27,12 +26,11 @@ public class CloseYearAndRolloverLeavesCommandHandler : IRequestHandler<CloseYea
             throw new BusinessRuleException($"The year {request.YearToClose} has already been closed.");
         }
 
-        // 2. Open transaction
         using var transaction = await _context.BeginTransactionAsync(cancellationToken);
 
         try
         {
-            // 3. Get all paid leaves for the year being closed, grouped by EmployeeId
+            // Collect used paid-leave days per employee for the closed year.
             var usedLeaves = await _context.TimesheetEntries
                 .Include(t => t.MonthlyTimesheet)
                 .Where(t => t.Status == TimesheetStatus.PaidLeave && t.Date.Year == request.YearToClose)
@@ -44,7 +42,7 @@ public class CloseYearAndRolloverLeavesCommandHandler : IRequestHandler<CloseYea
                 })
                 .ToDictionaryAsync(k => k.EmployeeId, v => v.UsedDays, cancellationToken);
 
-            // 4. Fetch only monthly-salary active employees (hourly employees have no annual leave to roll over)
+            // Hourly employees have no annual leave entitlement; only monthly employees are processed.
             var monthlyEmployeeIds = await _context.EmployeeCompensations
                 .Where(c =>
                     c.SalaryType == SalaryType.Monthly
@@ -61,17 +59,13 @@ public class CloseYearAndRolloverLeavesCommandHandler : IRequestHandler<CloseYea
                     && monthlyEmployeeIds.Contains(e.Id))
                 .ToListAsync(cancellationToken);
 
-            // 5. Calculate and update CarriedOverLeaves
+            // CarriedOverLeaves = max(0, AnnualVacationDays + CarriedOverLeaves - UsedPaidLeaves)
             foreach (var emp in activeEmployees)
             {
                 int usedDays = usedLeaves.ContainsKey(emp.Id) ? usedLeaves[emp.Id] : 0;
-                
-                // New CarriedOverLeaves = (Current AnnualVacationDays + Current CarriedOverLeaves) - UsedPaidLeaves
-                // Floor at 0 so a heavy-leave-user doesn't get negative carry-over
                 emp.CarriedOverLeaves = Math.Max(0, (emp.AnnualVacationDays + emp.CarriedOverLeaves) - usedDays);
             }
 
-            // 6. Add YearlyRolloverLog record
             _context.YearlyRolloverLogs.Add(new YearlyRolloverLog
             {
                 YearClosed = request.YearToClose,

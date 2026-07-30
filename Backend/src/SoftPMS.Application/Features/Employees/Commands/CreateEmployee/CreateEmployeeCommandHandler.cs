@@ -7,11 +7,7 @@ using SoftPMS.Domain.Exceptions;
 
 namespace SoftPMS.Application.Features.Employees.Commands.CreateEmployee;
 
-/// <summary>
-/// Creates a new employee together with their initial address record
-/// in a single atomic save. Compensation is managed separately.
-/// Checks for duplicate employee numbers before inserting.
-/// </summary>
+/// <summary>Handles employee creation: duplicate-number guard, hourly/monthly leave constraint enforcement, and initial address + compensation seeding.</summary>
 public sealed class CreateEmployeeCommandHandler(
     IApplicationDbContext context,
     ICurrentUserService currentUser,
@@ -30,12 +26,11 @@ public sealed class CreateEmployeeCommandHandler(
         var now = dateTime.UtcNow;
         var actorId = currentUser.UserId;
 
-        // Enforce hourly constraints
+        // Hourly employees have no leave entitlement; override any supplied values.
         var workingHours = request.SalaryType == Domain.Enums.SalaryType.Hourly ? 0 : request.WorkingHoursPerWeek;
         var annualVacation = request.SalaryType == Domain.Enums.SalaryType.Hourly ? 0 : request.AnnualVacationDays;
         var carriedOver = request.SalaryType == Domain.Enums.SalaryType.Hourly ? 0 : request.CarriedOverLeaves;
 
-        // Build the employee aggregate root
         var employee = new Employee
         {
             EmployeeNo        = request.EmployeeNo,

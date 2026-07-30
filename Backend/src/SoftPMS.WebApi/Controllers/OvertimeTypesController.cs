@@ -15,6 +15,7 @@ namespace SoftPMS.WebApi.Controllers;
 public class OvertimeTypesController : ApiControllerBase
 {
 
+    /// <summary>Get all overtime types. Pass includeDeleted=true to include soft-deleted records.</summary>
     [HttpGet]
     [HasPermission("OvertimeTypes.Read")]
     public async Task<ActionResult<List<OvertimeTypeDto>>> Get([FromQuery] bool includeDeleted = false)
@@ -23,6 +24,7 @@ public class OvertimeTypesController : ApiControllerBase
         return Ok(result);
     }
 
+    /// <summary>Get a paginated list of overtime types.</summary>
     [HttpPost("paged")]
     [HasPermission("OvertimeTypes.Read")]
     public async Task<ActionResult<SoftPMS.Application.Common.Models.PaginatedList<OvertimeTypeDto>>> GetPaged([FromBody] GetOvertimeTypesWithPaginationQuery query)
@@ -31,6 +33,7 @@ public class OvertimeTypesController : ApiControllerBase
         return Ok(result);
     }
 
+    /// <summary>Create a new overtime type.</summary>
     [HttpPost]
     [HasPermission("OvertimeTypes.Create")]
     public async Task<ActionResult<Guid>> Create([FromBody] CreateOvertimeTypeCommand command)
@@ -39,6 +42,7 @@ public class OvertimeTypesController : ApiControllerBase
         return Ok(id);
     }
 
+    /// <summary>Update an existing overtime type.</summary>
     [HttpPut("{id}")]
     [HasPermission("OvertimeTypes.Update")]
     public async Task<ActionResult> Update(Guid id, [FromBody] UpdateOvertimeTypeCommand command)
@@ -50,6 +54,7 @@ public class OvertimeTypesController : ApiControllerBase
         return NoContent();
     }
 
+    /// <summary>Soft-delete an overtime type.</summary>
     [HttpDelete("{id}")]
     [HasPermission("OvertimeTypes.Delete")]
     public async Task<ActionResult> Delete(Guid id)
@@ -58,6 +63,7 @@ public class OvertimeTypesController : ApiControllerBase
         return NoContent();
     }
 
+    /// <summary>Restore a soft-deleted overtime type.</summary>
     [HttpPatch("{id}/restore")]
     [HasPermission("OvertimeTypes.Update")]
     public async Task<ActionResult> Restore(Guid id)

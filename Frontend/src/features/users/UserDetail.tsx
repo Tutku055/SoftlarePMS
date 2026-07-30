@@ -481,14 +481,16 @@ export const UserDetail = () => {
             </FormControl>
           </Box>
           <Box sx={{ mt: 3 }}>
-            <Button 
-              variant="contained" 
-              onClick={handleSave} 
-              disabled={isUpdating || !hasPermission('Users.Update')}
-              sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}
-            >
-              {isUpdating ? 'Saving...' : 'Save Account Details'}
-            </Button>
+            {hasPermission('Users.Update') && (
+              <Button 
+                variant="contained" 
+                onClick={handleSave} 
+                disabled={isUpdating}
+                sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}
+              >
+                {isUpdating ? 'Saving...' : 'Save Account Details'}
+              </Button>
+            )}
           </Box>
         </Box>
       </TabPanel>
@@ -600,19 +602,20 @@ export const UserDetail = () => {
                 sx={premiumInputSx}
               />
               <Box>
-                <Button 
-                  type="submit"
-                  variant="contained" 
-                  disabled={
-                    isChangingPassword || 
-                    !passwordForm.newPassword || 
-                    (currentUser?.id === id && !passwordForm.oldPassword) ||
-                    (currentUser?.id !== id && !hasPermission('Users.ChangePassword'))
-                  }
-                  sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}
-                >
-                  {isChangingPassword ? 'Changing...' : 'Update Password'}
-                </Button>
+                {(hasPermission('Users.ChangePassword') || currentUser?.id === id) && (
+                  <Button 
+                    type="submit"
+                    variant="contained" 
+                    disabled={
+                      isChangingPassword || 
+                      !passwordForm.newPassword || 
+                      (currentUser?.id === id && !passwordForm.oldPassword)
+                    }
+                    sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}
+                  >
+                    {isChangingPassword ? 'Changing...' : 'Update Password'}
+                  </Button>
+                )}
               </Box>
             </Stack>
           </form>

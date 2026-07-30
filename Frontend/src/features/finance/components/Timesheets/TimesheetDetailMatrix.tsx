@@ -37,6 +37,7 @@ import { useOvertimeTypes } from '../../hooks/useOvertimeTypes';
 import { useYearClosureStatus } from '../../hooks/useYearClosureStatus';
 import { PopupDialog } from '../../../../components/PopupDialog/PopupDialog';
 import type { TimesheetEntry } from '../../types';
+import { useAuthStore } from '../../../../store/useAuthStore';
 
 // Status values match backend TimesheetStatus enum (1-based)
 const STATUS_CONFIG: Record<number, { label: string, color: string, bgDark: string, bgLight: string }> = {
@@ -51,6 +52,7 @@ const STATUS_CONFIG: Record<number, { label: string, color: string, bgDark: stri
 export const TimesheetDetailMatrix = () => {
   const { employeeId } = useParams<{ employeeId: string }>();
   const navigate = useNavigate();
+  const hasPermission = useAuthStore((state) => state.hasPermission);
 
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
@@ -71,7 +73,6 @@ export const TimesheetDetailMatrix = () => {
   }, [timesheet?.entries]);
 
   const [editEntry, setEditEntry] = useState<TimesheetEntry | null>(null);
-  const [lockedPopupOpen, setLockedPopupOpen] = useState(false);
   const [errorDialog, setErrorDialog] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
   const [editStatus, setEditStatus] = useState<number>(0);
   const [editOvertime, setEditOvertime] = useState<number>(0);
@@ -217,6 +218,11 @@ export const TimesheetDetailMatrix = () => {
       }
     }
 
+    if (editOvertime > 0 && !editOvertimeTypeId) {
+      setErrorDialog({ open: true, message: 'An Overtime Type must be selected if Overtime Hours are greater than 0.' });
+      return;
+    }
+
     updateEntry({
       employeeId,
       entryId: editEntry.id,
@@ -235,7 +241,19 @@ export const TimesheetDetailMatrix = () => {
       },
       onError: (error: any) => {
         let msg = 'An error occurred while updating the entry.';
-        if (error?.response?.data?.detail) msg = error.response.data.detail;
+        if (error?.response?.data?.errors) {
+            const errs = error.response.data.errors;
+            if (typeof errs.message === 'string') msg = errs.message;
+            else {
+                const firstKey = Object.keys(errs)[0];
+                if (firstKey) {
+                    if (Array.isArray(errs[firstKey]) && errs[firstKey].length > 0) msg = errs[firstKey][0];
+                    else if (typeof errs[firstKey] === 'string') msg = errs[firstKey];
+                }
+            }
+        }
+        else if (error?.response?.data?.message) msg = error.response.data.message;
+        else if (error?.response?.data?.detail) msg = error.response.data.detail;
         else if (error?.response?.data?.title) msg = error.response.data.title;
         else if (typeof error?.response?.data === 'string') msg = error.response.data;
         else if (error?.message) msg = error.message;
@@ -373,7 +391,7 @@ export const TimesheetDetailMatrix = () => {
                     );
                   }
                   
-                  return (
+                  return hasPermission('Timesheets.Manage') && (
                     <Button
                       variant="contained"
                       startIcon={<AutoFixHighRounded />}
@@ -385,13 +403,11 @@ export const TimesheetDetailMatrix = () => {
                         py: 1.5,
                         borderRadius: 2,
                         textTransform: 'none',
-                        fontSize: '1rem',
                         fontWeight: 600,
-                        boxShadow: '0 4px 14px 0 rgba(0,118,255,0.39)',
-                        '&:hover': { boxShadow: '0 6px 20px rgba(0,118,255,0.23)' }
+                        boxShadow: 'none'
                       }}
                     >
-                      {isGenerating ? 'Generating...' : 'Auto-Generate Matrix'}
+                      {isGenerating ? 'Generating...' : 'Generate Timesheet'}
                     </Button>
                   );
                 })()}
@@ -470,10 +486,6 @@ export const TimesheetDetailMatrix = () => {
                     <Box
                       onClick={() => {
                         if (!isPreviousYearPendingClosure) {
-                          if (hasHourlyEntries && entry.status === 3) {
-                            setLockedPopupOpen(true);
-                            return;
-                          }
                           handleOpenEdit(entry);
                         }
                       }}
@@ -640,27 +652,19 @@ export const TimesheetDetailMatrix = () => {
         </DialogContent>
         <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
           <Button onClick={() => setEditEntry(null)} sx={{ textTransform: 'none', fontWeight: 600 }}>Cancel</Button>
-          <Button 
-            variant="contained" 
-            onClick={handleSaveEdit} 
-            disabled={isUpdating}
-            startIcon={<SaveRounded />}
-            sx={{ textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}
-          >
-            {isUpdating ? 'Saving...' : 'Save Entry'}
-          </Button>
+          {hasPermission('Timesheets.Manage') && (
+            <Button 
+              variant="contained" 
+              onClick={handleSaveEdit} 
+              disabled={isUpdating}
+              startIcon={<SaveRounded />}
+              sx={{ textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}
+            >
+              {isUpdating ? 'Saving...' : 'Save Entry'}
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
-
-      <PopupDialog
-        open={lockedPopupOpen}
-        title="Entry Locked"
-        content="This record is locked because Paid Leave cannot be modified in a month that contains an Hourly compensation period."
-        confirmText="OK"
-        onConfirm={() => setLockedPopupOpen(false)}
-        hideCancel
-        onClose={() => setLockedPopupOpen(false)}
-      />
 
       <PopupDialog
         open={errorDialog.open}

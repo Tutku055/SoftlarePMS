@@ -394,12 +394,16 @@ export const EmployeeDetail = () => {
         </Stack>
 
         <Stack direction="row" spacing={1.5}>
-          <Button onClick={handleTerminate} disabled={isUpdatingEmployee || isUpdatingAddress || formState.employmentStatus === 3 || !hasPermission('Employees.Update')} variant="outlined" color="error" startIcon={<PersonRemoveRounded />} sx={actionButtonSx}>
-            {formState.employmentStatus === 3 ? 'Terminated' : 'Terminate'}
-          </Button>
-          <Button onClick={handleSave} disabled={isUpdatingEmployee || isUpdatingAddress || !hasPermission('Employees.Update')} variant="contained" startIcon={<SaveRounded />} sx={{ borderRadius: '10px', fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}>
-            {isUpdatingEmployee || isUpdatingAddress ? 'Saving...' : 'Save Changes'}
-          </Button>
+          {hasPermission('Employees.Update') && (
+            <>
+              <Button onClick={handleTerminate} disabled={isUpdatingEmployee || isUpdatingAddress || formState.employmentStatus === 3} variant="outlined" color="error" startIcon={<PersonRemoveRounded />} sx={actionButtonSx}>
+                {formState.employmentStatus === 3 ? 'Terminated' : 'Terminate'}
+              </Button>
+              <Button onClick={handleSave} disabled={isUpdatingEmployee || isUpdatingAddress} variant="contained" startIcon={<SaveRounded />} sx={{ borderRadius: '10px', fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}>
+                {isUpdatingEmployee || isUpdatingAddress ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </>
+          )}
         </Stack>
       </Box>
 
@@ -558,9 +562,11 @@ export const EmployeeDetail = () => {
         <Box sx={glassPanelSx}>
           <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h6" sx={{ fontWeight: 700 }}>Employee Documents</Typography>
-            <Button variant="contained" startIcon={<UploadFileRounded />} onClick={() => setUploadOpen(true)} sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}>
-              Upload Document
-            </Button>
+            {hasPermission('Documents.Create') && (
+              <Button variant="contained" startIcon={<UploadFileRounded />} onClick={() => setUploadOpen(true)} sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}>
+                Upload Document
+              </Button>
+            )}
           </Stack>
           <Box sx={{ borderRadius: 4, overflow: 'hidden', backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', boxShadow: '0 4px 24px rgba(0, 0, 0, 0.03)' }}>
             <DataTable

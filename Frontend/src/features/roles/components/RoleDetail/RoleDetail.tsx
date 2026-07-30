@@ -534,14 +534,16 @@ export const RoleDetail = () => {
           </Box>
 
           <Box sx={{ mt: 3 }}>
-            <Button 
-              variant="contained" 
-              onClick={handleSaveDetails} 
-              disabled={isUpdating || !hasPermission('Roles.Update')}
-              sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}
-            >
-              {isUpdating ? 'Saving...' : 'Save Role Details'}
-            </Button>
+            {hasPermission('Roles.Update') && (
+              <Button 
+                variant="contained" 
+                onClick={handleSaveDetails} 
+                disabled={isUpdating}
+                sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}
+              >
+                {isUpdating ? 'Saving...' : 'Save Role Details'}
+              </Button>
+            )}
           </Box>
 
           <Divider sx={{ my: 4 }} />
@@ -621,14 +623,16 @@ export const RoleDetail = () => {
           </Box>
 
           <Box>
-            <Button 
-              variant="contained" 
-              onClick={handleSavePermissions} 
-              disabled={isAssigning || !hasPermission('Roles.Update') || isOwnRole}
-              sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}
-            >
-              {isAssigning ? 'Updating...' : 'Update Permissions'}
-            </Button>
+            {hasPermission('Roles.Update') && (
+              <Button 
+                variant="contained" 
+                onClick={handleSavePermissions} 
+                disabled={isAssigning || isOwnRole}
+                sx={{ borderRadius: '10px', textTransform: 'none', fontWeight: 600 }}
+              >
+                {isAssigning ? 'Updating...' : 'Update Permissions'}
+              </Button>
+            )}
           </Box>
         </Box>
       </TabPanel>

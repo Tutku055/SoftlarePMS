@@ -51,20 +51,19 @@ public class UpdateTimesheetEntryCommandHandler : IRequestHandler<UpdateTimeshee
 
         if (request.Status == TimesheetStatus.PaidLeave)
         {
-            // Check if ANY hourly compensation exists in this month for the employee
+            // Hourly employees are not eligible for Paid Leave.
             var firstDayOfMonth = new DateTime(entry.Date.Year, entry.Date.Month, 1);
             var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
 
-            var hasHourlyInMonth = await _context.EmployeeCompensations
-                .AnyAsync(c => c.EmployeeId == entry.MonthlyTimesheet.EmployeeId
-                            && c.SalaryType == SalaryType.Hourly
+            var activeCompensation = await _context.EmployeeCompensations
+                .FirstOrDefaultAsync(c => c.EmployeeId == entry.MonthlyTimesheet.EmployeeId
                             && c.EffectiveDate <= lastDayOfMonth
                             && (c.EndDate == null || c.EndDate >= firstDayOfMonth), 
                             cancellationToken);
 
-            if (hasHourlyInMonth)
+            if (activeCompensation != null && activeCompensation.SalaryType == SalaryType.Hourly)
             {
-                throw new BusinessRuleException("Cannot set Paid Leave in a month that contains an Hourly compensation period.");
+                throw new BusinessRuleException("Cannot set Paid Leave in a month that has an Hourly compensation.");
             }
 
             if (entry.Status != TimesheetStatus.PaidLeave)
@@ -86,6 +85,24 @@ public class UpdateTimesheetEntryCommandHandler : IRequestHandler<UpdateTimeshee
             }
         }
 
+        if (request.OvertimeHours > 0)
+        {
+            if (!request.OvertimeTypeId.HasValue)
+            {
+                throw new BusinessRuleException("An Overtime Type must be selected if Overtime Hours are greater than 0.");
+            }
+
+            var typeExists = await _context.OvertimeTypes.AnyAsync(t => t.Id == request.OvertimeTypeId.Value, cancellationToken);
+            if (!typeExists)
+            {
+                throw new BusinessRuleException("The selected Overtime Type does not exist in the system.");
+            }
+        }
+        else if (request.OvertimeTypeId.HasValue)
+        {
+            throw new BusinessRuleException("Overtime Type should not be set when there are no Overtime Hours.");
+        }
+
         entry.Status = request.Status;
         entry.OvertimeHours = request.OvertimeHours;
         entry.OvertimeTypeId = request.OvertimeTypeId;
@@ -99,7 +116,7 @@ public class UpdateTimesheetEntryCommandHandler : IRequestHandler<UpdateTimeshee
             .Where(e => e.MonthlyTimesheetId == timesheet.Id)
             .ToListAsync(cancellationToken);
 
-        // Replace the entry in memory with updated one
+        // Replace the updated entry in the in-memory list before recalculating totals.
         var updatedEntryIndex = allEntries.FindIndex(e => e.Id == request.EntryId);
         if(updatedEntryIndex != -1) allEntries[updatedEntryIndex] = entry;
 

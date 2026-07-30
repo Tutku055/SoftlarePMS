@@ -9,6 +9,7 @@ import { useUpdateCompensation } from '../../hooks/useUpdateCompensation';
 import { useEditCompensation } from '../../hooks/useEditCompensation';
 import { useDeleteCompensation } from '../../hooks/useDeleteCompensation';
 import { PopupDialog } from '../../../../components/PopupDialog/PopupDialog';
+import { useAuthStore } from '../../../../store/useAuthStore';
 
 import {
   Box,
@@ -107,10 +108,20 @@ const SALARY_TYPE_MAP: Record<number, string> = {
 const extractErrorMessage = (error: any): string => {
   if (error?.response?.data?.errors) {
     const errs = error.response.data.errors;
-    const firstKey = Object.keys(errs)[0];
-    if (firstKey && Array.isArray(errs[firstKey]) && errs[firstKey].length > 0) {
-      return errs[firstKey][0];
+    if (typeof errs.message === 'string') {
+      return errs.message;
     }
+    const firstKey = Object.keys(errs)[0];
+    if (firstKey) {
+      if (Array.isArray(errs[firstKey]) && errs[firstKey].length > 0) {
+        return errs[firstKey][0];
+      } else if (typeof errs[firstKey] === 'string') {
+        return errs[firstKey];
+      }
+    }
+  }
+  if (typeof error?.response?.data?.message === 'string') {
+    return error.response.data.message;
   }
   if (typeof error?.response?.data?.detail === 'string') {
     return error.response.data.detail;
@@ -131,7 +142,7 @@ const compensationSchema = z.object({
   baseSalary: z.number().positive("Base Salary must be greater than 0"),
   currency: z.number().int().min(1),
   salaryType: z.number().int().min(1).max(2),
-  effectiveDate: z.string().refine(val => !isNaN(Date.parse(val)), { message: "Invalid date" })
+  effectiveDate: z.string().regex(/^\d{4}-\d{2}$/, "Invalid month format")
 });
 
 export const PayrollDetail = () => {
@@ -144,6 +155,8 @@ export const PayrollDetail = () => {
   const { mutate: updateCompensation, isPending: isUpdatingCompensation } = useUpdateCompensation();
   const { mutate: editCompensation, isPending: isEditingCompensation } = useEditCompensation();
   const { mutate: deleteCompensation } = useDeleteCompensation();
+
+  const hasPermission = useAuthStore((state) => state.hasPermission);
 
   const compensation = employee?.compensation || null;
 
@@ -179,8 +192,8 @@ export const PayrollDetail = () => {
     
     // Earnings Table
     const earnings = selectedSlip.lineItems?.filter((li: any) => li.itemType === 1) || [];
-    const earningsData = earnings.map((li: any) => [li.description, `${li.amount.toFixed(2)} ${getCurrencySymbol(li.currency)}`]);
-    earningsData.push(["Total Earnings", selectedSlip.totalEarnings]);
+    const earningsData = earnings.map((li: any) => [li.description, `${Number(li.amount).toFixed(2)} ${getCurrencySymbol(li.currency)}`]);
+    earningsData.push(["Total Earnings", `${Number(selectedSlip.totalEarnings).toFixed(2)} ${getCurrencySymbol(selectedSlip.currency)}`]);
 
     autoTable(doc, {
       startY: 65,
@@ -199,8 +212,8 @@ export const PayrollDetail = () => {
 
     // Deductions Table
     const deductions = selectedSlip.lineItems?.filter((li: any) => li.itemType === 2) || [];
-    const deductionsData = deductions.map((li: any) => [li.description, `-${li.amount.toFixed(2)} ${getCurrencySymbol(li.currency)}`]);
-    deductionsData.push(["Total Deductions", selectedSlip.totalDeductions]);
+    const deductionsData = deductions.map((li: any) => [li.description, `-${Number(li.amount).toFixed(2)} ${getCurrencySymbol(li.currency)}`]);
+    deductionsData.push(["Total Deductions", `-${Number(selectedSlip.totalDeductions).toFixed(2)} ${getCurrencySymbol(selectedSlip.currency)}`]);
 
     autoTable(doc, {
       startY: (doc as any).lastAutoTable.finalY + 10,
@@ -230,7 +243,7 @@ export const PayrollDetail = () => {
     doc.text("NET SALARY", 18, finalY + 3);
     
     doc.setTextColor(25, 118, 210);
-    doc.text(selectedSlip.netSalary, pageWidth - 18, finalY + 3, { align: "right" });
+    doc.text(`${Number(selectedSlip.netSalary).toFixed(2)} ${getCurrencySymbol(selectedSlip.currency)}`, pageWidth - 18, finalY + 3, { align: "right" });
 
     return doc;
   };
@@ -284,10 +297,8 @@ export const PayrollDetail = () => {
   const [baseSalary, setBaseSalary] = useState(0);
   const [currency, setCurrency] = useState(1);
   const [salaryType, setSalaryType] = useState(2);
-  const [effectiveDate, setEffectiveDate] = useState(new Date().toISOString().split('T')[0]);
+  const [effectiveDate, setEffectiveDate] = useState(new Date().toISOString().substring(0, 7));
   const [compErrors, setCompErrors] = useState<Record<string, string>>({});
-  const [confirmHourlyDialogOpen, setConfirmHourlyDialogOpen] = useState(false);
-  const [pendingCompensationCommand, setPendingCompensationCommand] = useState<any>(null);
   const [deleteCompId, setDeleteCompId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -296,7 +307,7 @@ export const PayrollDetail = () => {
       setCurrency(compensation.currency || 1);
       setSalaryType(compensation.salaryType || 2);
       if (compensation.effectiveDate) {
-        setEffectiveDate(compensation.effectiveDate.split('T')[0]);
+        setEffectiveDate(compensation.effectiveDate.substring(0, 7));
       }
     }
   }, [compensation]);
@@ -344,31 +355,26 @@ export const PayrollDetail = () => {
 
     setCompErrors({});
     
+    if (!editingCompId) {
+      const selectedDate = new Date(`${validation.data.effectiveDate}-01T00:00:00Z`);
+      const existingComp = employee?.compensations?.find((comp: any) => {
+        const compDate = new Date(comp.effectiveDate);
+        return compDate.getFullYear() === selectedDate.getFullYear() && compDate.getMonth() === selectedDate.getMonth();
+      });
+
+      if (existingComp) {
+        setErrorMessage("A compensation record already exists for this month. Only one compensation is allowed per month.");
+        setErrorDialogOpen(true);
+        return;
+      }
+    }
+    
     const commandData = {
         baseSalary: validation.data.baseSalary,
         currency: validation.data.currency,
         salaryType: validation.data.salaryType,
-        effectiveDate: new Date(validation.data.effectiveDate).toISOString()
+        effectiveDate: new Date(`${validation.data.effectiveDate}-01T00:00:00Z`).toISOString()
     };
-
-    let needsWarning = false;
-    if (editingCompId) {
-        const originalComp = employee?.compensations?.find((c: any) => c.id === editingCompId);
-        if (originalComp?.salaryType === 2 && validation.data.salaryType === 1) {
-            needsWarning = true;
-        }
-    } else {
-        const currentSalaryType = employee?.compensation?.salaryType || 2;
-        if (currentSalaryType === 2 && validation.data.salaryType === 1) {
-            needsWarning = true;
-        }
-    }
-
-    if (needsWarning) {
-        setPendingCompensationCommand(commandData);
-        setConfirmHourlyDialogOpen(true);
-        return;
-    }
 
     executeSaveCompensation(commandData);
   };
@@ -388,7 +394,7 @@ export const PayrollDetail = () => {
               setCurrency(compensation.currency || 1);
               setSalaryType(compensation.salaryType || 2);
               if (compensation.effectiveDate) {
-                setEffectiveDate(compensation.effectiveDate.split('T')[0]);
+                setEffectiveDate(compensation.effectiveDate.substring(0, 7));
               }
             }
           },
@@ -416,7 +422,7 @@ export const PayrollDetail = () => {
     setBaseSalary(comp.baseSalary);
     setCurrency(comp.currency);
     setSalaryType(comp.salaryType);
-    setEffectiveDate(comp.effectiveDate.split('T')[0]);
+    setEffectiveDate(comp.effectiveDate.substring(0, 7));
     setCompErrors({});
   };
 
@@ -428,7 +434,7 @@ export const PayrollDetail = () => {
       setCurrency(compensation.currency || 1);
       setSalaryType(compensation.salaryType || 2);
       if (compensation.effectiveDate) {
-        setEffectiveDate(compensation.effectiveDate.split('T')[0]);
+        setEffectiveDate(compensation.effectiveDate.substring(0, 7));
       }
     }
   };
@@ -543,15 +549,17 @@ export const PayrollDetail = () => {
                 ))}
               </Select>
             </FormControl>
-            <Button 
-              variant="contained" 
-              color="secondary"
-              startIcon={<CalculateRounded />}
-              onClick={() => { setCalcError(null); setConfirmOpen(true); }}
-              sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2, boxShadow: 'none' }}
-            >
-              Calculate Payroll
-            </Button>
+            {hasPermission('Payrolls.Manage') && (
+              <Button 
+                variant="contained" 
+                color="secondary"
+                startIcon={<CalculateRounded />}
+                onClick={() => { setCalcError(null); setConfirmOpen(true); }}
+                sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2, boxShadow: 'none' }}
+              >
+                Calculate Payroll
+              </Button>
+            )}
             {calcError && <Typography variant="caption" color="error">{calcError}</Typography>}
           </Box>
 
@@ -645,15 +653,15 @@ export const PayrollDetail = () => {
             </FormControl>
 
             <TextField
-              label="Effective Date"
-              type="date"
+              label="Effective Month"
+              type="month"
               size="small"
               fullWidth
               value={effectiveDate}
               onChange={(e) => setEffectiveDate(e.target.value)}
               slotProps={{ inputLabel: { shrink: true } }}
               error={!!compErrors.effectiveDate}
-              helperText={compErrors.effectiveDate || "Date this salary takes effect"}
+              helperText={compErrors.effectiveDate || "Compensation starts on the 1st day of this month"}
               sx={premiumInputSx}
             />
           </Box>
@@ -699,7 +707,13 @@ export const PayrollDetail = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {[...(employee.compensations || [])].sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime()).map((comp: any) => (
+                  {[...(employee.compensations || [])].sort((a, b) => new Date(b.effectiveDate).getTime() - new Date(a.effectiveDate).getTime()).map((comp: any) => {
+                    const compDate = new Date(comp.effectiveDate).getTime();
+                    const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+                    const canEdit = compDate >= currentMonthStart;
+                    const canDelete = compDate > currentMonthStart;
+
+                    return (
                     <tr key={comp.id}>
                       <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)' }}>
                         {formatCompensationAmount(comp.baseSalary, comp.currency, comp.salaryType)}
@@ -708,24 +722,29 @@ export const PayrollDetail = () => {
                       <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)' }}>{new Date(comp.effectiveDate).toLocaleDateString()}</td>
                       <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)' }}>{comp.endDate ? new Date(comp.endDate).toLocaleDateString() : 'Active'}</td>
                       <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)', textAlign: 'right' }}>
-                        <Button 
-                          size="small" 
-                          color="primary" 
-                          onClick={() => handleEditClick(comp)}
-                          sx={{ mr: 1 }}
-                        >
-                          Edit
-                        </Button>
-                        <Button 
-                          size="small" 
-                          color="error" 
-                          onClick={() => setDeleteCompId(comp.id)}
-                        >
-                          Delete
-                        </Button>
+                        {canEdit && (
+                          <Button 
+                            size="small" 
+                            color="primary" 
+                            onClick={() => handleEditClick(comp)}
+                            sx={{ mr: 1 }}
+                          >
+                            Edit
+                          </Button>
+                        )}
+                        {canDelete && (
+                          <Button 
+                            size="small" 
+                            color="error" 
+                            onClick={() => setDeleteCompId(comp.id)}
+                          >
+                            Delete
+                          </Button>
+                        )}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                   {!(employee.compensations?.length) && (
                     <tr><td colSpan={5} style={{ padding: '12px', textAlign: 'center' }}>No history found.</td></tr>
                   )}
@@ -861,38 +880,7 @@ export const PayrollDetail = () => {
         />
       )}
 
-      <PopupDialog
-        open={confirmHourlyDialogOpen}
-        title="Confirm Contract Change"
-        icon={<WarningRounded color="warning" />}
-        confirmColor="warning"
-        content={
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Typography variant="body2">
-              Although the system can manage mid-month transitions from Monthly to Hourly contracts, we strongly recommend making this change at the <b>beginning of the month</b> for a healthier and more manageable payroll experience.
-            </Typography>
-            <Typography variant="body2" color="error.main" sx={{ fontWeight: 600 }}>
-              Please be aware: Proceeding with this change will permanently reset the employee's current annual vacation days and carried-over leaves to 0, as hourly contracts do not accrue paid leave.
-            </Typography>
-            <Typography variant="body2">
-              Are you sure you want to proceed?
-            </Typography>
-          </Box>
-        }
-        confirmText="Yes, Change to Hourly"
-        cancelText="Cancel"
-        onConfirm={() => {
-          setConfirmHourlyDialogOpen(false);
-          if (pendingCompensationCommand) {
-            executeSaveCompensation(pendingCompensationCommand);
-            setPendingCompensationCommand(null);
-          }
-        }}
-        onClose={() => {
-          setConfirmHourlyDialogOpen(false);
-          setPendingCompensationCommand(null);
-        }}
-      />
+
 
       <PopupDialog
         open={!!deleteCompId}

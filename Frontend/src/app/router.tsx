@@ -79,46 +79,86 @@ export const router = createBrowserRouter([
           },
           {
             path: 'employees/roster',
-            element: <Roster />,
+            element: (
+              <ProtectedRoute permission="Employees.Read">
+                <Roster />
+              </ProtectedRoute>
+            ),
           },
           {
             path: 'employees/create',
-            element: <EmployeeCreation />,
+            element: (
+              <ProtectedRoute permission="Employees.Create">
+                <EmployeeCreation />
+              </ProtectedRoute>
+            ),
           },
           {
             path: 'employees/:id',
-            element: <EmployeeDetail />,
+            element: (
+              <ProtectedRoute permission="Employees.Read">
+                <EmployeeDetail />
+              </ProtectedRoute>
+            ),
           },
           {
             path: 'departments/list',
-            element: <DepartmentList />,
+            element: (
+              <ProtectedRoute permission="Departments.Read">
+                <DepartmentList />
+              </ProtectedRoute>
+            ),
           },
           {
             path: 'departments/employees',
-            element: <DepartmentEmployees />,
+            element: (
+              <ProtectedRoute permission="Departments.Read">
+                <DepartmentEmployees />
+              </ProtectedRoute>
+            ),
           },
           {
             path: 'departments/:id',
-            element: <DepartmentDetail />,
+            element: (
+              <ProtectedRoute permission="Departments.Read">
+                <DepartmentDetail />
+              </ProtectedRoute>
+            ),
           },
           {
             path: 'documents/archive',
-            element: <DocumentArchive />,
+            element: (
+              <ProtectedRoute permission="Documents.Read">
+                <DocumentArchive />
+              </ProtectedRoute>
+            ),
           },
           {
             path: 'documents/:id',
-            element: <DocumentDetail />,
+            element: (
+              <ProtectedRoute permission="Documents.Read">
+                <DocumentDetail />
+              </ProtectedRoute>
+            ),
           },
           {
             path: 'settings',
             children: [
               {
                 path: 'roles',
-                element: <RoleList />,
+                element: (
+                  <ProtectedRoute permission="Roles.Read">
+                    <RoleList />
+                  </ProtectedRoute>
+                ),
               },
               {
                 path: 'roles/:id',
-                element: <RoleDetail />,
+                element: (
+                  <ProtectedRoute permission="Roles.Read">
+                    <RoleDetail />
+                  </ProtectedRoute>
+                ),
               },
             ],
           },
@@ -127,41 +167,77 @@ export const router = createBrowserRouter([
             children: [
               {
                 path: 'timesheets',
-                element: <TimesheetList />,
+                element: (
+                  <ProtectedRoute permission="Timesheets.Read">
+                    <TimesheetList />
+                  </ProtectedRoute>
+                ),
               },
               {
                 path: 'timesheets/:employeeId',
-                element: <TimesheetDetailMatrix />,
+                element: (
+                  <ProtectedRoute permission="Timesheets.Read">
+                    <TimesheetDetailMatrix />
+                  </ProtectedRoute>
+                ),
               },
               {
                 path: 'payrolls',
-                element: <PayrollList />,
+                element: (
+                  <ProtectedRoute permission="Payrolls.Read">
+                    <PayrollList />
+                  </ProtectedRoute>
+                ),
               },
               {
                 path: 'payrolls/:employeeId',
-                element: <PayrollDetail />,
+                element: (
+                  <ProtectedRoute permission="Payrolls.Read">
+                    <PayrollDetail />
+                  </ProtectedRoute>
+                ),
               },
               {
                 path: 'overtime-types',
-                element: <OvertimeTypeList />,
+                element: (
+                  <ProtectedRoute permission="OvertimeTypes.Read">
+                    <OvertimeTypeList />
+                  </ProtectedRoute>
+                ),
               }
             ]
           },
           {
             path: 'users',
-            element: <UsersPage />,
+            element: (
+              <ProtectedRoute permission="Users.Read">
+                <UsersPage />
+              </ProtectedRoute>
+            ),
           },
           {
             path: 'settings/users',
-            element: <UsersPage />,
+            element: (
+              <ProtectedRoute permission="Users.Read">
+                <UsersPage />
+              </ProtectedRoute>
+            ),
           },
           {
             path: 'users/:id',
-            element: <UserDetail />,
+            element: (
+              <ProtectedRoute permission="Users.Read">
+                <UserDetail />
+              </ProtectedRoute>
+            ),
           },
           {
             path: 'settings/users/:id',
-            element: <UserDetail />,
+            element: (
+              <ProtectedRoute permission="Users.Read">
+                <UserDetail />
+              </ProtectedRoute>
+            ),
           },
           {
             path: 'settings/year-end',

@@ -23,15 +23,15 @@ export const financeApi = {
     return data;
   },
   updateCompensation: async (employeeId: string, command: any) => {
-    const { data } = await apiClient.post<string>(`/employees/${employeeId}/compensations`, command);
+    const { data } = await apiClient.post<string>(`/EmployeeCompensations/${employeeId}`, command);
     return data;
   },
   editCompensation: async (employeeId: string, id: string, command: any) => {
-    const { data } = await apiClient.put(`/employees/${employeeId}/compensations/${id}`, command);
+    const { data } = await apiClient.put(`/EmployeeCompensations/${employeeId}/${id}`, command);
     return data;
   },
   deleteCompensation: async (employeeId: string, id: string) => {
-    const { data } = await apiClient.delete(`/employees/${employeeId}/compensations/${id}`);
+    const { data } = await apiClient.delete(`/EmployeeCompensations/${employeeId}/${id}`);
     return data;
   }
 };

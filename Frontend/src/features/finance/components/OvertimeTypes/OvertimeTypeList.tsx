@@ -35,6 +35,7 @@ import { useOvertimeTypesList } from '../../hooks/useOvertimeTypesList';
 import { OvertimeTypeModal } from './OvertimeTypeModal';
 import ExcelJS from 'exceljs';
 import type { OvertimeType } from '../../types';
+import { HasPermission } from '../../../../components/HasPermission';
 
 const COLUMN_NAMES: Record<string, string> = {
   name: 'Overtime Name',
@@ -349,19 +350,21 @@ export const OvertimeTypeList = () => {
         </Box>
 
         <Stack direction="row" spacing={1.5}>
-          <Button
-            variant="contained"
-            startIcon={<AddRounded />}
-            onClick={handleAddClick}
-            sx={{
-              borderRadius: '10px',
-              fontWeight: 600,
-              textTransform: 'none',
-              boxShadow: 'none',
-            }}
-          >
-            Add Overtime
-          </Button>
+          <HasPermission requiredPermission="OvertimeTypes.Create">
+            <Button
+              variant="contained"
+              startIcon={<AddRounded />}
+              onClick={handleAddClick}
+              sx={{
+                borderRadius: '10px',
+                fontWeight: 600,
+                textTransform: 'none',
+                boxShadow: 'none',
+              }}
+            >
+              Add Overtime Type
+            </Button>
+          </HasPermission>
 
           <Tooltip title="Manage Columns" arrow>
             <Button
