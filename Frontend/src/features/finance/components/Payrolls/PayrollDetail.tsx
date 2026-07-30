@@ -41,7 +41,7 @@ import {
 } from '@mui/icons-material';
 import * as z from 'zod';
 import styles from './PayrollDetail.module.css';
-import { CURRENCY_CONFIGS, getCurrencySymbol, formatCompensationAmount } from '../../constants/currencyConstants';
+import { CURRENCY_CONFIGS, getCurrencySymbol, getCurrencyCode, formatCompensationAmount } from '../../constants/currencyConstants';
 
 const glassPanelSx = {
   background: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(24, 24, 24, 0.85)' : 'rgba(255, 255, 255, 0.85)',
@@ -172,28 +172,45 @@ export const PayrollDetail = () => {
 
   const slipRef = useRef<HTMLDivElement>(null);
 
+  // Parse backend-formatted strings like "1500.00 EUR" → { amount, currencyCode }
+  const parseSlipAmount = (raw: string): { amount: number; currencyCode: string } => {
+    const parts = (raw || '').trim().split(' ');
+    return { amount: parseFloat(parts[0]) || 0, currencyCode: parts[1] || '' };
+  };
+
+  // Format with TR locale: 15.000,38 EUR  (ASCII code, no special symbol → no jsPDF encoding bug)
+  const formatPdfAmount = (amount: number, currencyCode: string, negative = false): string => {
+    const formatted = new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(amount));
+    return `${negative ? '-' : ''}${formatted} ${currencyCode}`;
+  };
+
   const generatePdfDoc = () => {
     if (!selectedSlip) return null;
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
-    
-    // Header
+
+    // --- Header ---
     doc.setFontSize(22);
     doc.setFont("helvetica", "bold");
     doc.text("PAYROLL SLIP", pageWidth / 2, 22, { align: "center" });
-    
+
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
     doc.text(`Employee: ${employee?.firstName} ${employee?.lastName}`, 14, 35);
     doc.text(`Period: ${new Date(selectedSlip.year, selectedSlip.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}`, 14, 42);
     doc.text(`Issue Date: ${new Date(selectedSlip.issueDate).toLocaleDateString()}`, 14, 49);
     doc.text(`Calculation Type: ${selectedSlip.salaryTypes}`, 14, 56);
-    
-    // Earnings Table
+
+    // --- Earnings Table ---
+    // Line items have numeric amount + currency enum; use getCurrencyCode for ASCII-safe string
     const earnings = selectedSlip.lineItems?.filter((li: any) => li.itemType === 1) || [];
-    const earningsData = earnings.map((li: any) => [li.description, `${Number(li.amount).toFixed(2)} ${getCurrencySymbol(li.currency)}`]);
-    earningsData.push(["Total Earnings", `${Number(selectedSlip.totalEarnings).toFixed(2)} ${getCurrencySymbol(selectedSlip.currency)}`]);
+    const earningsData = earnings.map((li: any) => [
+      li.description,
+      formatPdfAmount(Number(li.amount), getCurrencyCode(li.currency))
+    ]);
+    const totEarnings = parseSlipAmount(selectedSlip.totalEarnings);
+    earningsData.push(["Total Earnings", formatPdfAmount(totEarnings.amount, totEarnings.currencyCode)]);
 
     autoTable(doc, {
       startY: 65,
@@ -212,8 +229,12 @@ export const PayrollDetail = () => {
 
     // Deductions Table
     const deductions = selectedSlip.lineItems?.filter((li: any) => li.itemType === 2) || [];
-    const deductionsData = deductions.map((li: any) => [li.description, `-${Number(li.amount).toFixed(2)} ${getCurrencySymbol(li.currency)}`]);
-    deductionsData.push(["Total Deductions", `-${Number(selectedSlip.totalDeductions).toFixed(2)} ${getCurrencySymbol(selectedSlip.currency)}`]);
+    const deductionsData = deductions.map((li: any) => [
+      li.description,
+      formatPdfAmount(Number(li.amount), getCurrencyCode(li.currency), true)
+    ]);
+    const totDeductions = parseSlipAmount(selectedSlip.totalDeductions);
+    deductionsData.push(["Total Deductions", formatPdfAmount(totDeductions.amount, totDeductions.currencyCode, true)]);
 
     autoTable(doc, {
       startY: (doc as any).lastAutoTable.finalY + 10,
@@ -232,18 +253,20 @@ export const PayrollDetail = () => {
 
     // Net Salary
     const finalY = (doc as any).lastAutoTable.finalY + 15;
-    
-    // Draw Net Salary Box
-    doc.setFillColor(245, 245, 245);
-    doc.roundedRect(14, finalY - 8, pageWidth - 28, 16, 2, 2, 'F');
+    const netParsed = parseSlipAmount(selectedSlip.netSalary);
+    const netText = formatPdfAmount(netParsed.amount, netParsed.currencyCode);
 
-    doc.setFontSize(14);
+    // Draw Net Salary Box — taller to prevent overflow
+    doc.setFillColor(245, 245, 245);
+    doc.roundedRect(14, finalY - 8, pageWidth - 28, 18, 2, 2, 'F');
+
+    doc.setFontSize(13);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 0, 0);
-    doc.text("NET SALARY", 18, finalY + 3);
-    
+    doc.text("NET SALARY", 18, finalY + 4);
+
     doc.setTextColor(25, 118, 210);
-    doc.text(`${Number(selectedSlip.netSalary).toFixed(2)} ${getCurrencySymbol(selectedSlip.currency)}`, pageWidth - 18, finalY + 3, { align: "right" });
+    doc.text(netText, pageWidth - 18, finalY + 4, { align: "right", maxWidth: pageWidth - 75 });
 
     return doc;
   };
