@@ -1,5 +1,5 @@
 using MediatR;
-using SoftPMS.Application.DTOs.EmployeeReference;
+using SoftPMS.Application.Features.EmployeeReferences.DTOs;
 
 namespace SoftPMS.Application.Features.EmployeeReferences.Queries.GetEmployeeReferences;
 

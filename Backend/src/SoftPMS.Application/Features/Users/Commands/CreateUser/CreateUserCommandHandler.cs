@@ -3,7 +3,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Exceptions;
 using SoftPMS.Application.Common.Interfaces;
-using SoftPMS.Application.DTOs.User;
+using SoftPMS.Application.Features.Users.DTOs;
 using SoftPMS.Domain.Entities;
 using BCrypt.Net;
 

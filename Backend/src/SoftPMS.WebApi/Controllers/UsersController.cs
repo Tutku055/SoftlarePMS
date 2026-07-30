@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SoftPMS.Application.Common.Models;
-using SoftPMS.Application.DTOs.User;
+using SoftPMS.Application.Features.Users.DTOs;
 using SoftPMS.Application.Features.Users.Commands.AssignRoleToUser;
 using SoftPMS.Application.Features.Users.Commands.CreateUser;
 using SoftPMS.Application.Features.Users.Commands.DeleteUser;
@@ -86,7 +86,7 @@ public sealed class UsersController : ApiControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AssignRole(
         Guid id,
-        [FromBody] SoftPMS.Application.DTOs.Users.AssignRoleRequestDto request,
+        [FromBody] SoftPMS.Application.Features.Users.DTOs.AssignRoleRequestDto request,
         CancellationToken ct)
     {
         await Sender.Send(new AssignRoleToUserCommand(id, request.RoleId), ct);
@@ -100,7 +100,7 @@ public sealed class UsersController : ApiControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ChangePassword(
         Guid id,
-        [FromBody] SoftPMS.Application.DTOs.Users.ChangePasswordRequestDto request,
+        [FromBody] SoftPMS.Application.Features.Users.DTOs.ChangePasswordRequestDto request,
         CancellationToken ct)
     {
         await Sender.Send(new Application.Features.Users.Commands.ChangePassword.ChangePasswordCommand(id, request.OldPassword, request.NewPassword), ct);

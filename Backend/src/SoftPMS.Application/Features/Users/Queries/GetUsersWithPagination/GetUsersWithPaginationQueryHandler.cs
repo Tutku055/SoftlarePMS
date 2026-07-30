@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Extensions;
 using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Application.Common.Models;
-using SoftPMS.Application.DTOs.User;
+using SoftPMS.Application.Features.Users.DTOs;
 
 namespace SoftPMS.Application.Features.Users.Queries.GetUsersWithPagination;
 

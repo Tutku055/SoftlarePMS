@@ -1,14 +1,14 @@
 using AutoMapper;
-using SoftPMS.Application.DTOs.Department;
-using SoftPMS.Application.DTOs.Employee;
-using SoftPMS.Application.DTOs.EmployeeAddress;
-using SoftPMS.Application.DTOs.EmployeeCompensation;
-using SoftPMS.Application.DTOs.Document;
-using SoftPMS.Application.DTOs.EmployeeNote;
-using SoftPMS.Application.DTOs.EmployeeReference;
-using SoftPMS.Application.DTOs.Permission;
-using SoftPMS.Application.DTOs.Role;
-using SoftPMS.Application.DTOs.User;
+using SoftPMS.Application.Features.Departments.DTOs;
+using SoftPMS.Application.Features.Employees.DTOs;
+using SoftPMS.Application.Features.Employees.DTOs;
+using SoftPMS.Application.Features.EmployeeCompensations.DTOs;
+using SoftPMS.Application.Features.Documents.DTOs;
+using SoftPMS.Application.Features.EmployeeNotes.DTOs;
+using SoftPMS.Application.Features.EmployeeReferences.DTOs;
+using SoftPMS.Application.Features.Permissions.DTOs;
+using SoftPMS.Application.Features.Roles.DTOs;
+using SoftPMS.Application.Features.Users.DTOs;
 using SoftPMS.Domain.Entities;
 
 namespace SoftPMS.Application.Mappings;

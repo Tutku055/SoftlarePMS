@@ -39,8 +39,9 @@ public class SoftPMSDbContext : DbContext, IApplicationDbContext
     public DbSet<EmployeeReference> EmployeeReferences { get; set; }
     #endregion
 
-    #region Audit
+    #region Audit & Settings
     public DbSet<AuditLog> AuditLogs { get; set; }
+    public DbSet<YearlyRolloverLog> YearlyRolloverLogs { get; set; }
     #endregion
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -49,5 +50,10 @@ public class SoftPMSDbContext : DbContext, IApplicationDbContext
 
         // Automatically applies all IEntityTypeConfiguration<T> classes in this assembly
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(SoftPMSDbContext).Assembly);
+    }
+
+    public Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        return Database.BeginTransactionAsync(cancellationToken);
     }
 }

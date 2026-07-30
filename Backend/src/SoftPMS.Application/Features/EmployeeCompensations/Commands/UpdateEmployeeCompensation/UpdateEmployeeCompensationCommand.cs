@@ -6,13 +6,14 @@ using SoftPMS.Domain.Enums;
 
 namespace SoftPMS.Application.Features.EmployeeCompensations.Commands.UpdateEmployeeCompensation;
 
-public record UpdateEmployeeCompensationCommand(
-    Guid EmployeeId,
-    decimal BaseSalary,
-    SalaryType SalaryType,
-    Currency Currency,
-    DateTime EffectiveDate
-) : IRequest<Guid>;
+public class UpdateEmployeeCompensationCommand : IRequest<Guid>
+{
+    public Guid EmployeeId { get; set; }
+    public decimal BaseSalary { get; set; }
+    public SalaryType SalaryType { get; set; }
+    public Currency Currency { get; set; }
+    public DateTime EffectiveDate { get; set; }
+}
 
 public class UpdateEmployeeCompensationCommandHandler : IRequestHandler<UpdateEmployeeCompensationCommand, Guid>
 {
@@ -45,6 +46,39 @@ public class UpdateEmployeeCompensationCommandHandler : IRequestHandler<UpdateEm
             }
             activeCompensation.EndDate = request.EffectiveDate.AddDays(-1);
             _context.EmployeeCompensations.Update(activeCompensation);
+
+            // If switching from Hourly to Monthly, set default values for vacation and hours
+            if (activeCompensation.SalaryType == SalaryType.Hourly && request.SalaryType == SalaryType.Monthly)
+            {
+                employee.WorkingHoursPerWeek = 40;
+                employee.AnnualVacationDays = 14;
+                employee.CarriedOverLeaves = 0;
+                _context.Employees.Update(employee);
+            }
+            // If switching to Hourly, reset all vacation counters to 0
+            else if (request.SalaryType == SalaryType.Hourly)
+            {
+                employee.WorkingHoursPerWeek = 0;
+                employee.AnnualVacationDays = 0;
+                employee.CarriedOverLeaves = 0;
+                _context.Employees.Update(employee);
+            }
+        }
+        else if (request.SalaryType == SalaryType.Monthly && employee.WorkingHoursPerWeek == 0)
+        {
+             // Fallback if no active compensation existed but transitioning to Monthly
+             employee.WorkingHoursPerWeek = 40;
+             employee.AnnualVacationDays = 14;
+             employee.CarriedOverLeaves = 0;
+             _context.Employees.Update(employee);
+        }
+        else if (request.SalaryType == SalaryType.Hourly)
+        {
+             // Fallback if no active compensation existed but transitioning to Hourly
+             employee.WorkingHoursPerWeek = 0;
+             employee.AnnualVacationDays = 0;
+             employee.CarriedOverLeaves = 0;
+             _context.Employees.Update(employee);
         }
 
         var newCompensation = new EmployeeCompensation

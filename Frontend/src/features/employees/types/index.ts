@@ -101,7 +101,8 @@ export interface EmployeeDto {
   probationEndDate?: string;
   gender?: number;
   workingHoursPerWeek?: number;
-  vacationDaysTotal?: number;
+  annualVacationDays?: number;
+  carriedOverLeaves?: number;
   email?: string;
   phone?: string;
   city?: string;
@@ -120,7 +121,9 @@ export interface CreateEmployeeDto {
   employmentStatus: number;
   hireDate: string;
   workingHoursPerWeek: number;
-  vacationDaysTotal: number;
+  annualVacationDays: number;
+  carriedOverLeaves: number;
+  salaryType: number;
   departmentId?: string;
   // Initial primary address (saved as separate EmployeeAddress entity)
   addressLine: string;
@@ -174,11 +177,14 @@ export interface EmployeeDetailDto {
   terminationDate?: string;
   probationEndDate?: string;
   workingHoursPerWeek: number;
-  vacationDaysTotal: number;
+  annualVacationDays: number;
+  carriedOverLeaves: number;
+  usedLeaveDaysThisYear: number;
   department?: DepartmentDto;
   
   addresses: EmployeeAddressDto[];
   compensation?: any;
+  compensations?: any[];
   documents: any[];
   notes: EmployeeNoteDto[];
   references: EmployeeReferenceDto[];
@@ -197,7 +203,8 @@ export interface UpdateEmployeeCommand {
   terminationDate?: string | null;
   probationEndDate?: string | null;
   workingHoursPerWeek: number;
-  vacationDaysTotal: number;
+  annualVacationDays: number;
+  carriedOverLeaves: number;
   departmentId?: string | null;
 }
 

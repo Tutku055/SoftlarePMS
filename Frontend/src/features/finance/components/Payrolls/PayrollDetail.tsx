@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { useReactToPrint } from 'react-to-print';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useEmployeeDetail } from '../../../employees/hooks/useEmployeeDetail';
@@ -36,7 +35,8 @@ import {
   PictureAsPdfRounded,
   SettingsRounded,
   ReceiptLongRounded,
-  PrintRounded
+  PrintRounded,
+  WarningRounded
 } from '@mui/icons-material';
 import * as z from 'zod';
 import styles from './PayrollDetail.module.css';
@@ -286,6 +286,9 @@ export const PayrollDetail = () => {
   const [salaryType, setSalaryType] = useState(2);
   const [effectiveDate, setEffectiveDate] = useState(new Date().toISOString().split('T')[0]);
   const [compErrors, setCompErrors] = useState<Record<string, string>>({});
+  const [confirmHourlyDialogOpen, setConfirmHourlyDialogOpen] = useState(false);
+  const [pendingCompensationCommand, setPendingCompensationCommand] = useState<any>(null);
+  const [deleteCompId, setDeleteCompId] = useState<string | null>(null);
 
   useEffect(() => {
     if (compensation) {
@@ -348,6 +351,31 @@ export const PayrollDetail = () => {
         effectiveDate: new Date(validation.data.effectiveDate).toISOString()
     };
 
+    let needsWarning = false;
+    if (editingCompId) {
+        const originalComp = employee?.compensations?.find((c: any) => c.id === editingCompId);
+        if (originalComp?.salaryType === 2 && validation.data.salaryType === 1) {
+            needsWarning = true;
+        }
+    } else {
+        const currentSalaryType = employee?.compensation?.salaryType || 2;
+        if (currentSalaryType === 2 && validation.data.salaryType === 1) {
+            needsWarning = true;
+        }
+    }
+
+    if (needsWarning) {
+        setPendingCompensationCommand(commandData);
+        setConfirmHourlyDialogOpen(true);
+        return;
+    }
+
+    executeSaveCompensation(commandData);
+  };
+
+  const executeSaveCompensation = (commandData: any) => {
+    if (!employeeId) return;
+    
     if (editingCompId) {
       editCompensation(
         { employeeId, id: editingCompId, command: commandData },
@@ -691,11 +719,7 @@ export const PayrollDetail = () => {
                         <Button 
                           size="small" 
                           color="error" 
-                          onClick={() => {
-                            if (window.confirm('Are you sure you want to delete this historical record?')) {
-                              deleteCompensation({ employeeId: employee.id, id: comp.id });
-                            }
-                          }}
+                          onClick={() => setDeleteCompId(comp.id)}
                         >
                           Delete
                         </Button>
@@ -726,6 +750,7 @@ export const PayrollDetail = () => {
         open={errorDialogOpen}
         onClose={() => setErrorDialogOpen(false)}
         title={errorMessage.includes("Timesheet not found") ? "Timesheet Required" : "Error"}
+        icon={<WarningRounded color={errorMessage.includes("Timesheet not found") ? "primary" : "error"} />}
         content={
           errorMessage.includes("Timesheet not found") 
             ? "There is no timesheet for this month. You need to generate the timesheet before calculating payroll." 
@@ -739,7 +764,7 @@ export const PayrollDetail = () => {
           }
         }}
         confirmText={errorMessage.includes("Timesheet not found") ? "Go to Timesheet Matrix" : "OK"}
-        showCancel={errorMessage.includes("Timesheet not found")}
+        hideCancel={!errorMessage.includes("Timesheet not found")}
       />
 
       {/* SLIP DETAILS DIALOG */}
@@ -831,10 +856,69 @@ export const PayrollDetail = () => {
             </Box>
           }
           confirmText="Close"
-          showCancel={false}
+          hideCancel
           onConfirm={() => setSelectedSlip(null)}
         />
       )}
+
+      <PopupDialog
+        open={confirmHourlyDialogOpen}
+        title="Confirm Contract Change"
+        icon={<WarningRounded color="warning" />}
+        confirmColor="warning"
+        content={
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Typography variant="body2">
+              Although the system can manage mid-month transitions from Monthly to Hourly contracts, we strongly recommend making this change at the <b>beginning of the month</b> for a healthier and more manageable payroll experience.
+            </Typography>
+            <Typography variant="body2" color="error.main" sx={{ fontWeight: 600 }}>
+              Please be aware: Proceeding with this change will permanently reset the employee's current annual vacation days and carried-over leaves to 0, as hourly contracts do not accrue paid leave.
+            </Typography>
+            <Typography variant="body2">
+              Are you sure you want to proceed?
+            </Typography>
+          </Box>
+        }
+        confirmText="Yes, Change to Hourly"
+        cancelText="Cancel"
+        onConfirm={() => {
+          setConfirmHourlyDialogOpen(false);
+          if (pendingCompensationCommand) {
+            executeSaveCompensation(pendingCompensationCommand);
+            setPendingCompensationCommand(null);
+          }
+        }}
+        onClose={() => {
+          setConfirmHourlyDialogOpen(false);
+          setPendingCompensationCommand(null);
+        }}
+      />
+
+      <PopupDialog
+        open={!!deleteCompId}
+        onClose={() => setDeleteCompId(null)}
+        title="Delete Compensation Record"
+        icon={<WarningRounded color="error" />}
+        confirmColor="error"
+        confirmText="Delete"
+        onConfirm={() => {
+          if (deleteCompId && employeeId) {
+            deleteCompensation({ employeeId, id: deleteCompId }, {
+              onSuccess: () => setDeleteCompId(null),
+              onError: (error: any) => {
+                setDeleteCompId(null);
+                setErrorMessage(extractErrorMessage(error));
+                setErrorDialogOpen(true);
+              }
+            });
+          }
+        }}
+        content={
+          <Typography variant="body2">
+            Are you sure you want to delete this historical compensation record? This action cannot be undone.
+          </Typography>
+        }
+      />
 
     </Box>
   );

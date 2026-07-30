@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Domain.Entities;
+using SoftPMS.Domain.Enums;
 using SoftPMS.Domain.Exceptions;
 
 namespace SoftPMS.Application.Features.Employees.Commands.CreateEmployee;
@@ -29,6 +30,11 @@ public sealed class CreateEmployeeCommandHandler(
         var now = dateTime.UtcNow;
         var actorId = currentUser.UserId;
 
+        // Enforce hourly constraints
+        var workingHours = request.SalaryType == Domain.Enums.SalaryType.Hourly ? 0 : request.WorkingHoursPerWeek;
+        var annualVacation = request.SalaryType == Domain.Enums.SalaryType.Hourly ? 0 : request.AnnualVacationDays;
+        var carriedOver = request.SalaryType == Domain.Enums.SalaryType.Hourly ? 0 : request.CarriedOverLeaves;
+
         // Build the employee aggregate root
         var employee = new Employee
         {
@@ -41,8 +47,9 @@ public sealed class CreateEmployeeCommandHandler(
             Profession        = request.Profession,
             EmploymentStatus  = request.EmploymentStatus,
             HireDate          = request.HireDate,
-            WorkingHoursPerWeek = request.WorkingHoursPerWeek,
-            VacationDaysTotal = request.VacationDaysTotal,
+            WorkingHoursPerWeek = workingHours,
+            AnnualVacationDays= annualVacation,
+            CarriedOverLeaves = carriedOver,
             DepartmentId      = request.DepartmentId,
             CreatedByUserId   = actorId,
             CreatedAt         = now,
@@ -62,8 +69,22 @@ public sealed class CreateEmployeeCommandHandler(
             CreatedAt   = now
         };
 
+        // Initial compensation
+        var initialCompensation = new EmployeeCompensation
+        {
+            Employee      = employee,
+            BaseSalary    = 0,
+            Currency      = Currency.EUR,
+            PayGrade      = "N/A",
+            SalaryType    = request.SalaryType,
+            EffectiveDate = request.HireDate,
+            CreatedAt     = now,
+            CreatedByUserId = actorId
+        };
+
         await context.Employees.AddAsync(employee, cancellationToken);
         await context.EmployeeAddresses.AddAsync(initialAddress, cancellationToken);
+        await context.EmployeeCompensations.AddAsync(initialCompensation, cancellationToken);
 
         await context.SaveChangesAsync(cancellationToken);
 

@@ -108,7 +108,8 @@ public class ApplicationDbContextInitialiser
                 .RuleFor(e => e.TerminationDate, f => null) //[cite: 1, 4]
                 .RuleFor(e => e.ProbationEndDate, (f, e) => e.HireDate.AddMonths(3)) //[cite: 1, 4]
                 .RuleFor(e => e.WorkingHoursPerWeek, f => f.Random.Decimal(20m, 40m)) //[cite: 1, 4]
-                .RuleFor(e => e.VacationDaysTotal, f => f.Random.Int(20, 30)) //[cite: 1, 4]
+                .RuleFor(e => e.AnnualVacationDays, f => f.Random.Int(14, 20))
+                .RuleFor(e => e.CarriedOverLeaves, f => f.Random.Int(0, 10))
                 .RuleFor(e => e.IsDeleted, false) //[cite: 1, 4]
                 .RuleFor(e => e.CreatedByUserId, creatorUserId) //[cite: 1, 4]
 

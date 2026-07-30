@@ -17,6 +17,7 @@ public sealed record UpdateEmployeeCommand(
     DateTime? TerminationDate,
     DateTime? ProbationEndDate,
     decimal WorkingHoursPerWeek,
-    int VacationDaysTotal,
+    int AnnualVacationDays,
+    int CarriedOverLeaves,
     Guid? DepartmentId
 ) : IRequest<Unit>;

@@ -3,7 +3,7 @@ using AutoMapper.QueryableExtensions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
-using SoftPMS.Application.DTOs.User;
+using SoftPMS.Application.Features.Users.DTOs;
 using SoftPMS.Domain.Exceptions;
 
 namespace SoftPMS.Application.Features.Users.Queries.GetUserById;

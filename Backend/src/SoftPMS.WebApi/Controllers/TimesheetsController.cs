@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SoftPMS.Application.DTOs.Timesheet;
+using SoftPMS.Application.Features.Timesheets.DTOs;
 using SoftPMS.Application.Features.Timesheets.Commands.GenerateMonthlyTimesheet;
 using SoftPMS.Application.Features.Timesheets.Commands.UpdateTimesheetEntry;
 using SoftPMS.Application.Features.Timesheets.Queries.GetMonthlyTimesheet;

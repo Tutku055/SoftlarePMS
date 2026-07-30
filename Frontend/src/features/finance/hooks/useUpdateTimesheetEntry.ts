@@ -15,6 +15,7 @@ export const useUpdateTimesheetEntry = () => {
     mutationFn: ({ employeeId, entryId, command }: UpdateProps) => financeApi.updateTimesheetEntry(employeeId, entryId, command),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['timesheet', variables.employeeId] });
+      queryClient.invalidateQueries({ queryKey: ['employee', variables.employeeId] });
     },
   });
 };

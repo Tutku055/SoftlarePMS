@@ -1,5 +1,5 @@
 using MediatR;
-using SoftPMS.Application.DTOs.EmployeeNote;
+using SoftPMS.Application.Features.EmployeeNotes.DTOs;
 using SoftPMS.Domain.Enums;
 
 namespace SoftPMS.Application.Features.EmployeeNotes.Queries.GetEmployeeNotes;

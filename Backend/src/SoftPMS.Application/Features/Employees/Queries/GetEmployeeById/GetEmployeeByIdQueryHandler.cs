@@ -2,7 +2,7 @@ using AutoMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
-using SoftPMS.Application.DTOs.Employee;
+using SoftPMS.Application.Features.Employees.DTOs;
 using SoftPMS.Domain.Exceptions;
 
 namespace SoftPMS.Application.Features.Employees.Queries.GetEmployeeById;
@@ -28,6 +28,19 @@ public sealed class GetEmployeeByIdQueryHandler(
             .FirstOrDefaultAsync(e => e.Id == request.EmployeeId, cancellationToken)
             ?? throw new NotFoundException(nameof(Domain.Entities.Employee), request.EmployeeId);
 
-        return mapper.Map<EmployeeDetailDto>(employee);
+        var dto = mapper.Map<EmployeeDetailDto>(employee);
+        
+        var currentYear = DateTime.UtcNow.Year;
+        // The used leave days is the count of TimesheetEntries where status is PaidLeave (3) for the current year
+        // We need to query this from the database
+        var usedLeavesThisYear = await context.TimesheetEntries
+            .Where(t => t.MonthlyTimesheet.EmployeeId == request.EmployeeId 
+                     && t.Date.Year == currentYear 
+                     && t.Status == Domain.Enums.TimesheetStatus.PaidLeave)
+            .CountAsync(cancellationToken);
+            
+        dto.UsedLeaveDaysThisYear = usedLeavesThisYear;
+
+        return dto;
     }
 }

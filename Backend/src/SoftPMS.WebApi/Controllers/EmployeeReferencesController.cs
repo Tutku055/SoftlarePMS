@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SoftPMS.Application.DTOs.EmployeeReference;
+using SoftPMS.Application.Features.EmployeeReferences.DTOs;
 using SoftPMS.Application.Features.EmployeeReferences.Commands.CreateEmployeeReference;
 using SoftPMS.Application.Features.EmployeeReferences.Commands.DeleteEmployeeReference;
 using SoftPMS.Application.Features.EmployeeReferences.Commands.UpdateEmployeeReference;

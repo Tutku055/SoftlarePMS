@@ -79,7 +79,8 @@ const menuConfig: MenuItem[] = [
     icon: <Settings />,
     children: [
       { title: 'Users', path: '/settings/users', permission: 'Users.Read' },
-      { title: 'Roles & Permissions', path: '/settings/roles', permission: 'Roles.Read' }
+      { title: 'Roles & Permissions', path: '/settings/roles', permission: 'Roles.Read' },
+      { title: 'Year-End Operations', path: '/settings/year-end', permission: 'SystemSettings.YearEndOperations' }
     ]
   }
 ];

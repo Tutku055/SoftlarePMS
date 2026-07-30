@@ -15,14 +15,16 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  TextField
+  TextField,
+  Alert
 } from '@mui/material';
 import {
   ArrowBackRounded,
   AutoFixHighRounded,
   SaveRounded,
   PrintRounded,
-  PictureAsPdfRounded
+  PictureAsPdfRounded,
+  WarningRounded
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
@@ -32,6 +34,8 @@ import { useGenerateTimesheet } from '../../hooks/useGenerateTimesheet';
 import { useUpdateTimesheetEntry } from '../../hooks/useUpdateTimesheetEntry';
 import { useEmployeeDetail } from '../../../employees/hooks/useEmployeeDetail';
 import { useOvertimeTypes } from '../../hooks/useOvertimeTypes';
+import { useYearClosureStatus } from '../../hooks/useYearClosureStatus';
+import { PopupDialog } from '../../../../components/PopupDialog/PopupDialog';
 import type { TimesheetEntry } from '../../types';
 
 // Status values match backend TimesheetStatus enum (1-based)
@@ -55,11 +59,20 @@ export const TimesheetDetailMatrix = () => {
 
   const { data: employee, isLoading: isLoadingEmp } = useEmployeeDetail(employeeId);
   const { data: timesheet, isLoading: isLoadingTs, isError: isErrorTs } = useTimesheetDetail(employeeId || '', year, month);
+  const { data: closureStatus } = useYearClosureStatus(year);
   const { data: overtimeTypes } = useOvertimeTypes();
   const { mutate: generateTimesheet, isPending: isGenerating } = useGenerateTimesheet();
   const { mutate: updateEntry, isPending: isUpdating } = useUpdateTimesheetEntry();
 
+  const isPreviousYearPendingClosure = timesheet?.isPreviousYearPendingClosure || closureStatus?.isPending || false;
+  
+  const hasHourlyEntries = useMemo(() => {
+    return timesheet?.entries.some(e => e.salaryType === 1) ?? false;
+  }, [timesheet?.entries]);
+
   const [editEntry, setEditEntry] = useState<TimesheetEntry | null>(null);
+  const [lockedPopupOpen, setLockedPopupOpen] = useState(false);
+  const [errorDialog, setErrorDialog] = useState<{ open: boolean; message: string }>({ open: false, message: '' });
   const [editStatus, setEditStatus] = useState<number>(0);
   const [editOvertime, setEditOvertime] = useState<number>(0);
   const [editOvertimeTypeId, setEditOvertimeTypeId] = useState<string>('');
@@ -194,7 +207,16 @@ export const TimesheetDetailMatrix = () => {
   };
 
   const handleSaveEdit = () => {
-    if (!employeeId || !editEntry) return;
+    if (!employeeId || !editEntry || !employee) return;
+
+    if (editStatus === 3 && editEntry.status !== 3) {
+      const balance = (employee.annualVacationDays || 0) + (employee.carriedOverLeaves || 0) - (employee.usedLeaveDaysThisYear || 0);
+      if (balance <= 0) {
+        setErrorDialog({ open: true, message: 'You do not have enough vacation balance left to take a Paid Leave.' });
+        return;
+      }
+    }
+
     updateEntry({
       employeeId,
       entryId: editEntry.id,
@@ -210,6 +232,15 @@ export const TimesheetDetailMatrix = () => {
     }, {
       onSuccess: () => {
         setEditEntry(null);
+      },
+      onError: (error: any) => {
+        let msg = 'An error occurred while updating the entry.';
+        if (error?.response?.data?.detail) msg = error.response.data.detail;
+        else if (error?.response?.data?.title) msg = error.response.data.title;
+        else if (typeof error?.response?.data === 'string') msg = error.response.data;
+        else if (error?.message) msg = error.message;
+        
+        setErrorDialog({ open: true, message: msg });
       }
     });
   };
@@ -284,22 +315,93 @@ export const TimesheetDetailMatrix = () => {
         </Stack>
       </Box>
 
+      {/* WARNING BANNER */}
+      {isPreviousYearPendingClosure && (
+        <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
+          <strong>Year-End Period Closing Required:</strong> You cannot view, create, or update timesheets for {year} until {year - 1} has been officially closed.
+        </Alert>
+      )}
+
+      {/* LEAVE COUNTERS */}
+      {employee && !hasHourlyEntries && (
+        <Box sx={{ ...glassPanelSx, mb: 3, p: 2, display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'space-between', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(25, 118, 210, 0.05)' : 'rgba(25, 118, 210, 0.02)' }}>
+          <Box>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Annual Leave Right</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: 'text.primary' }}>{employee.annualVacationDays || 0} Days</Typography>
+          </Box>
+          <Box sx={{ borderLeft: '1px solid', borderColor: 'divider', pl: 2 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Carried Over</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: 'info.main' }}>+{employee.carriedOverLeaves || 0} Days</Typography>
+          </Box>
+          <Box sx={{ borderLeft: '1px solid', borderColor: 'divider', pl: 2 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Total Right</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>{(employee.annualVacationDays || 0) + (employee.carriedOverLeaves || 0)} Days</Typography>
+          </Box>
+          <Box sx={{ borderLeft: '1px solid', borderColor: 'divider', pl: 2 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Used This Year</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: 'error.main' }}>-{employee.usedLeaveDaysThisYear || 0} Days</Typography>
+          </Box>
+          <Box sx={{ borderLeft: '1px solid', borderColor: 'divider', pl: 2 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Remaining</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>{((employee.annualVacationDays || 0) + (employee.carriedOverLeaves || 0)) - (employee.usedLeaveDaysThisYear || 0)} Days</Typography>
+          </Box>
+        </Box>
+      )}
+
       {/* MATRIX CONTAINER */}
       <Box sx={{ ...glassPanelSx, p: 0, overflow: 'hidden' }}>
         {isLoadingTs ? (
           <Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress /></Box>
         ) : (!timesheet || isErrorTs) ? (
           <Box sx={{ p: 6, textAlign: 'center' }}>
-            <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>No timesheet generated for this month.</Typography>
-            <Button
-              variant="contained"
-              startIcon={<AutoFixHighRounded />}
-              onClick={handleGenerate}
-              disabled={isGenerating}
-              sx={{ borderRadius: 1, textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}
-            >
-              {isGenerating ? 'Generating...' : 'Generate Timesheet'}
-            </Button>
+            {!isPreviousYearPendingClosure ? (
+              <Box sx={{ textAlign: 'center', py: 8 }}>
+                <PictureAsPdfRounded sx={{ fontSize: 64, color: 'text.secondary', mb: 2, opacity: 0.2 }} />
+                <Typography variant="h6" color="text.secondary" gutterBottom>No Timesheet for this period</Typography>
+                
+                {(() => {
+                  const periodDate = new Date(year, month - 1, 1);
+                  const hireDate = employee?.hireDate ? new Date(employee.hireDate) : null;
+                  const hireMonth = hireDate ? new Date(hireDate.getFullYear(), hireDate.getMonth(), 1) : null;
+                  const isBeforeHireMonth = hireMonth && periodDate < hireMonth;
+                  
+                  if (isBeforeHireMonth) {
+                    return (
+                      <Typography variant="body2" color="error.main" sx={{ mt: 2, fontWeight: 600 }}>
+                        Cannot generate timesheets for months prior to the employee's hire date.
+                      </Typography>
+                    );
+                  }
+                  
+                  return (
+                    <Button
+                      variant="contained"
+                      startIcon={<AutoFixHighRounded />}
+                      onClick={handleGenerate}
+                      disabled={isGenerating || isPreviousYearPendingClosure}
+                      sx={{
+                        mt: 2,
+                        px: 4,
+                        py: 1.5,
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        boxShadow: '0 4px 14px 0 rgba(0,118,255,0.39)',
+                        '&:hover': { boxShadow: '0 6px 20px rgba(0,118,255,0.23)' }
+                      }}
+                    >
+                      {isGenerating ? 'Generating...' : 'Auto-Generate Matrix'}
+                    </Button>
+                  );
+                })()}
+              </Box>
+            ) : (
+              <Box sx={{ textAlign: 'center', py: 8 }}>
+                <Typography variant="h6" color="text.secondary">Cannot generate timesheet.</Typography>
+                <Typography variant="body2" color="text.secondary">Please close the previous year first.</Typography>
+              </Box>
+            )}
           </Box>
         ) : (
           <Box sx={{ overflowX: 'auto' }}>
@@ -325,16 +427,37 @@ export const TimesheetDetailMatrix = () => {
                 if (!day) return <Box key={`empty-${idx}`} sx={{ p: 1, bgcolor: 'transparent', minHeight: 100 }} />;
                 
                 const isWeekend = new Date(year, month - 1, day).getDay() === 0 || new Date(year, month - 1, day).getDay() === 6;
+                const currentDate = new Date(year, month - 1, day);
+                const hireDate = employee?.hireDate ? new Date(employee.hireDate) : null;
+                if (hireDate) {
+                  hireDate.setHours(0, 0, 0, 0); // Normalize hire date time
+                }
+                const isBeforeHireDate = hireDate && currentDate < hireDate;
+
                 const dayStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 const entry = timesheet.entries.find((e: any) => e.date.startsWith(dayStr));
                 
-                if (!entry) {
+                if (!entry || isBeforeHireDate) {
                   return (
-                    <Box key={`day-${day}`} sx={{ p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 2, minHeight: 100, position: 'relative', bgcolor: isWeekend ? 'rgba(0,0,0,0.02)' : 'transparent' }}>
-                      <Typography variant="caption" sx={{ position: 'absolute', top: 6, left: 8, fontWeight: 700, color: isWeekend ? 'error.main' : 'text.secondary', fontSize: '0.85rem' }}>
-                        {day}
-                      </Typography>
-                    </Box>
+                    <Tooltip title={isBeforeHireDate ? "Before Hire Date" : ""} placement="top" key={`day-${day}`}>
+                      <Box 
+                        sx={{ 
+                          p: 1, 
+                          border: '1px solid', 
+                          borderColor: 'divider', 
+                          borderRadius: 2, 
+                          minHeight: 100, 
+                          position: 'relative', 
+                          bgcolor: isBeforeHireDate ? 'action.disabledBackground' : (isWeekend ? 'rgba(0,0,0,0.02)' : 'transparent'),
+                          cursor: isBeforeHireDate ? 'not-allowed' : 'default',
+                          opacity: isBeforeHireDate ? 0.6 : 1
+                        }}
+                      >
+                        <Typography variant="caption" sx={{ position: 'absolute', top: 6, left: 8, fontWeight: 700, color: isWeekend ? 'error.main' : 'text.secondary', fontSize: '0.85rem' }}>
+                          {day}
+                        </Typography>
+                      </Box>
+                    </Tooltip>
                   );
                 }
 
@@ -345,22 +468,35 @@ export const TimesheetDetailMatrix = () => {
                 return (
                   <Tooltip title={tooltipText} arrow placement="top" key={`day-${day}`}>
                     <Box
-                      onClick={() => handleOpenEdit(entry)}
+                      onClick={() => {
+                        if (!isPreviousYearPendingClosure) {
+                          if (hasHourlyEntries && entry.status === 3) {
+                            setLockedPopupOpen(true);
+                            return;
+                          }
+                          handleOpenEdit(entry);
+                        }
+                      }}
                       sx={{
-                        p: 1,
+                        p: 1.5,
                         border: '1px solid',
-                        borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-                        borderRadius: 2,
-                        minHeight: 100,
+                        borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                        borderRadius: 1,
+                        minHeight: 80,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 0.5,
                         position: 'relative',
-                        cursor: 'pointer',
-                        bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                        transition: 'all 0.2s',
-                        '&:hover': {
-                          bgcolor: 'action.hover',
-                          borderColor: 'primary.main',
+                        bgcolor: config.bgLight,
+                        cursor: isPreviousYearPendingClosure ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        '&:hover': isPreviousYearPendingClosure ? {} : {
+                          bgcolor: config.bgDark,
                           transform: 'translateY(-2px)',
-                          boxShadow: 3
+                          boxShadow: (theme) => theme.palette.mode === 'dark' 
+                            ? '0 4px 12px rgba(0,0,0,0.5)' 
+                            : '0 4px 12px rgba(0,0,0,0.05)',
+                          borderColor: config.color
                         }
                       }}
                     >
@@ -413,9 +549,15 @@ export const TimesheetDetailMatrix = () => {
                   setEditUnpaidLeaveHours(0);
                 }
               }}>
-                {Object.entries(STATUS_CONFIG).map(([val, config]) => (
-                  <MenuItem key={val} value={Number(val)}>{config.label}</MenuItem>
-                ))}
+                {Object.entries(STATUS_CONFIG).map(([val, config]) => {
+                  const numVal = Number(val);
+                  // Hide Paid Leave if ANY Hourly entry exists in the month
+                  if (numVal === 3 && hasHourlyEntries) return null;
+                  
+                  return (
+                    <MenuItem key={val} value={numVal}>{config.label}</MenuItem>
+                  );
+                })}
               </Select>
             </FormControl>
 
@@ -505,10 +647,32 @@ export const TimesheetDetailMatrix = () => {
             startIcon={<SaveRounded />}
             sx={{ textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}
           >
-            {isUpdating ? 'Saving...' : 'Save'}
+            {isUpdating ? 'Saving...' : 'Save Entry'}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <PopupDialog
+        open={lockedPopupOpen}
+        title="Entry Locked"
+        content="This record is locked because Paid Leave cannot be modified in a month that contains an Hourly compensation period."
+        confirmText="OK"
+        onConfirm={() => setLockedPopupOpen(false)}
+        hideCancel
+        onClose={() => setLockedPopupOpen(false)}
+      />
+
+      <PopupDialog
+        open={errorDialog.open}
+        title="Action Denied"
+        content={errorDialog.message}
+        confirmText="Close"
+        confirmColor="error"
+        onConfirm={() => setErrorDialog({ open: false, message: '' })}
+        hideCancel
+        icon={<WarningRounded color="error" />}
+        onClose={() => setErrorDialog({ open: false, message: '' })}
+      />
     </Box>
   );
 };

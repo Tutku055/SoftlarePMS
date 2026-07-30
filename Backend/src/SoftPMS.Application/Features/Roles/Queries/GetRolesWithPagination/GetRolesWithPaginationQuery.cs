@@ -1,5 +1,5 @@
 using SoftPMS.Application.Common.Models;
-using SoftPMS.Application.DTOs.Role;
+using SoftPMS.Application.Features.Roles.DTOs;
 using MediatR;
 
 namespace SoftPMS.Application.Features.Roles.Queries.GetRolesWithPagination;

@@ -1,5 +1,5 @@
 using MediatR;
-using SoftPMS.Application.DTOs.Auth;
+using SoftPMS.Application.Features.Auth.DTOs;
 
 namespace SoftPMS.Application.Features.Auth.Commands.RefreshToken;
 

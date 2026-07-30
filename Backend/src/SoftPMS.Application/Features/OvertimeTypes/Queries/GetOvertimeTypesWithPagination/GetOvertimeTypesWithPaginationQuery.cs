@@ -1,6 +1,6 @@
 using MediatR;
 using SoftPMS.Application.Common.Models;
-using SoftPMS.Application.DTOs.OvertimeType;
+using SoftPMS.Application.Features.OvertimeTypes.DTOs;
 using System.Collections.Generic;
 
 namespace SoftPMS.Application.Features.OvertimeTypes.Queries.GetOvertimeTypesWithPagination;

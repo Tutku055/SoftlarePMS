@@ -92,7 +92,9 @@ export const EmployeeCreation: React.FC = () => {
     employmentStatus: 1, 
     hireDate: new Date().toISOString().split('T')[0],
     workingHoursPerWeek: 40,
-    vacationDaysTotal: 30,
+    annualVacationDays: 14,
+    carriedOverLeaves: 0,
+    salaryType: 2, // Default to Monthly (2)
     departmentId: '',
     addressLine: '',
     postalCode: '',
@@ -107,7 +109,7 @@ export const EmployeeCreation: React.FC = () => {
     const { name, value } = e.target;
     setFormState(prev => ({
       ...prev,
-      [name]: ['workingHoursPerWeek', 'vacationDaysTotal'].includes(name)
+      [name]: ['workingHoursPerWeek', 'annualVacationDays', 'carriedOverLeaves'].includes(name)
         ? (value === '' ? 0 : Number(value))
         : value
     }));
@@ -117,7 +119,25 @@ export const EmployeeCreation: React.FC = () => {
   };
 
   const handleSelectChange = (name: string, value: string | number) => {
-    setFormState(prev => ({ ...prev, [name]: value }));
+    setFormState(prev => {
+      const newState = { ...prev, [name]: value };
+      
+      // If SalaryType changes to Hourly (1), reset vacation/hours to 0
+      if (name === 'salaryType' && value === 1) {
+        newState.workingHoursPerWeek = 0;
+        newState.annualVacationDays = 0;
+        newState.carriedOverLeaves = 0;
+      }
+      // If SalaryType changes to Monthly (2), set some sensible defaults if they were 0
+      else if (name === 'salaryType' && value === 2) {
+        newState.workingHoursPerWeek = 40;
+        newState.annualVacationDays = 14;
+        newState.carriedOverLeaves = 0;
+      }
+
+      return newState;
+    });
+
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -148,10 +168,11 @@ export const EmployeeCreation: React.FC = () => {
 
     if (!formState.hireDate) newErrors.hireDate = 'Required';
 
-    if (formState.workingHoursPerWeek <= 0) newErrors.workingHoursPerWeek = '> 0';
-    else if (formState.workingHoursPerWeek > 60) newErrors.workingHoursPerWeek = '<= 60';
+    if (formState.salaryType === 2 && formState.workingHoursPerWeek <= 0) newErrors.workingHoursPerWeek = '> 0';
+    else if (formState.salaryType === 2 && formState.workingHoursPerWeek > 60) newErrors.workingHoursPerWeek = '<= 60';
 
-    if (formState.vacationDaysTotal < 0) newErrors.vacationDaysTotal = '>= 0';
+    if (formState.salaryType === 2 && formState.annualVacationDays < 0) newErrors.annualVacationDays = '>= 0';
+    if (formState.salaryType === 2 && formState.carriedOverLeaves < 0) newErrors.carriedOverLeaves = '>= 0';
 
     if (!formState.addressLine.trim()) newErrors.addressLine = 'Required';
     else if (formState.addressLine.length > 200) newErrors.addressLine = 'Max 200 chars';
@@ -379,6 +400,19 @@ export const EmployeeCreation: React.FC = () => {
               {errors.employmentStatus && <FormHelperText>{errors.employmentStatus}</FormHelperText>}
             </FormControl>
 
+            <FormControl fullWidth sx={getPremiumInputSx(true, false)}>
+              <InputLabel id="salary-type-label">Salary Type *</InputLabel>
+              <Select
+                labelId="salary-type-label"
+                value={formState.salaryType}
+                label="Salary Type *"
+                onChange={(e) => handleSelectChange('salaryType', e.target.value)}
+              >
+                <MenuItem value={1}>Hourly</MenuItem>
+                <MenuItem value={2}>Monthly</MenuItem>
+              </Select>
+            </FormControl>
+
             <TextField
               label="Hire Date *"
               name="hireDate"
@@ -408,39 +442,43 @@ export const EmployeeCreation: React.FC = () => {
               {errors.departmentId && <FormHelperText>{errors.departmentId}</FormHelperText>}
             </FormControl>
 
-            <TextField
-              label="Hours / Week *"
-              name="workingHoursPerWeek"
-              type="number"
-              value={formState.workingHoursPerWeek || ''}
-              onChange={handleInputChange}
-              error={!!errors.workingHoursPerWeek}
-              helperText={errors.workingHoursPerWeek}
-              sx={getPremiumInputSx(true, !!errors.workingHoursPerWeek)}
-              fullWidth
-              slotProps={{
-                input: {
-                  startAdornment: <InputAdornment position="start"><AccessTimeRounded fontSize="small" /></InputAdornment>,
-                }
-              }}
-            />
+            {formState.salaryType === 2 && (
+              <>
+                <TextField
+                  label="Hours / Week *"
+                  name="workingHoursPerWeek"
+                  type="number"
+                  value={formState.workingHoursPerWeek || ''}
+                  onChange={handleInputChange}
+                  error={!!errors.workingHoursPerWeek}
+                  helperText={errors.workingHoursPerWeek}
+                  sx={getPremiumInputSx(true, !!errors.workingHoursPerWeek)}
+                  fullWidth
+                  slotProps={{
+                    input: {
+                      startAdornment: <InputAdornment position="start"><AccessTimeRounded fontSize="small" /></InputAdornment>,
+                    }
+                  }}
+                />
 
-            <TextField
-              label="Vacation Days *"
-              name="vacationDaysTotal"
-              type="number"
-              value={formState.vacationDaysTotal || ''}
-              onChange={handleInputChange}
-              error={!!errors.vacationDaysTotal}
-              helperText={errors.vacationDaysTotal}
-              sx={getPremiumInputSx(true, !!errors.vacationDaysTotal)}
-              fullWidth
-              slotProps={{
-                input: {
-                  startAdornment: <InputAdornment position="start"><FlightTakeoffRounded fontSize="small" /></InputAdornment>,
-                }
-              }}
-            />
+                <TextField
+                  label="Annual Vacation Days *"
+                  name="annualVacationDays"
+                  type="number"
+                  value={formState.annualVacationDays || ''}
+                  onChange={handleInputChange}
+                  error={!!errors.annualVacationDays}
+                  helperText={errors.annualVacationDays}
+                  sx={getPremiumInputSx(true, !!errors.annualVacationDays)}
+                  fullWidth
+                  slotProps={{
+                    input: {
+                      startAdornment: <InputAdornment position="start"><FlightTakeoffRounded fontSize="small" /></InputAdornment>,
+                    }
+                  }}
+                />
+              </>
+            )}
           </div>
         </Box>
 

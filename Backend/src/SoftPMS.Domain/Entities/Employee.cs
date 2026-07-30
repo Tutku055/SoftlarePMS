@@ -28,8 +28,9 @@ public class Employee: BaseEntity
 
     public decimal WorkingHoursPerWeek { get; set; }
 
-    public int VacationDaysTotal { get; set; }
+    public int AnnualVacationDays { get; set; } = 14;
 
+    public int CarriedOverLeaves { get; set; } = 0;
     public bool IsDeleted { get; set; } = false;
 
     public Guid CreatedByUserId { get; set; }

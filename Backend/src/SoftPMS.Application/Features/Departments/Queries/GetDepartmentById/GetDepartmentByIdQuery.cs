@@ -1,5 +1,5 @@
 using MediatR;
-using SoftPMS.Application.DTOs.Department;
+using SoftPMS.Application.Features.Departments.DTOs;
 
 namespace SoftPMS.Application.Features.Departments.Queries.GetDepartmentById;
 

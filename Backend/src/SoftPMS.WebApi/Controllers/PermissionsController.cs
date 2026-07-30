@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SoftPMS.Application.DTOs.Permission;
+using SoftPMS.Application.Features.Permissions.DTOs;
 using SoftPMS.Application.Features.Permissions.Queries.GetPermissions;
 using SoftPMS.WebApi.Authorization;
 

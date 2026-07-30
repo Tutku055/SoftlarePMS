@@ -16,6 +16,7 @@ import {
 import { SaveRounded } from '@mui/icons-material';
 import { useUpdateCompensation } from '../../../finance/hooks/useUpdateCompensation';
 import * as z from 'zod';
+import { PopupDialog } from '../../../../components/PopupDialog/PopupDialog';
 
 const compensationSchema = z.object({
   baseSalary: z.number().positive("Base Salary must be greater than 0"),
@@ -83,25 +84,36 @@ export const CompensationModal = ({
 
     setErrors({});
 
-    updateCompensation(
-      {
-        employeeId,
-        command: {
-          baseSalary: validation.data.baseSalary,
-          currency: validation.data.currency,
-          salaryType: validation.data.salaryType,
-          effectiveDate: new Date(validation.data.effectiveDate).toISOString()
+    const executeSave = () => {
+      updateCompensation(
+        {
+          employeeId,
+          command: {
+            baseSalary: validation.data.baseSalary,
+            currency: validation.data.currency,
+            salaryType: validation.data.salaryType,
+            effectiveDate: new Date(validation.data.effectiveDate).toISOString()
+          }
+        },
+        {
+          onSuccess: () => {
+            onClose();
+          }
         }
-      },
-      {
-        onSuccess: () => {
-          onClose();
-        }
-      }
-    );
+      );
+    };
+
+    if (currentSalaryType === 2 && salaryType === 1) {
+      setConfirmHourlyDialogOpen(true);
+    } else {
+      executeSave();
+    }
   };
 
+  const [confirmHourlyDialogOpen, setConfirmHourlyDialogOpen] = useState(false);
+
   return (
+    <>
     <Dialog open={open} onClose={() => !isPending && onClose()} maxWidth="xs" fullWidth>
       <DialogTitle sx={{ fontWeight: 700, borderBottom: '1px solid', borderColor: 'divider', pb: 1.5 }}>
         Update Compensation
@@ -155,16 +167,33 @@ export const CompensationModal = ({
       </DialogContent>
       <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
         <Button onClick={onClose} disabled={isPending} sx={{ textTransform: 'none', fontWeight: 600 }}>Cancel</Button>
-        <Button 
-          variant="contained" 
-          onClick={handleSave} 
-          disabled={isPending}
-          startIcon={<SaveRounded />}
-          sx={{ textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}
-        >
-          {isPending ? 'Saving...' : 'Save Changes'}
+        <Button onClick={handleSave} variant="contained" disabled={isPending} startIcon={<SaveRounded />}>
+          Save Changes
         </Button>
       </DialogActions>
     </Dialog>
+
+    <PopupDialog
+      open={confirmHourlyDialogOpen}
+      title="Confirm Contract Change"
+      content="Changing compensation to Hourly mid-month is supported but can cause management complexity. It is healthier to do this at the beginning of the month. Proceeding will permanently reset the employee's earned and carried over vacation days to 0. Are you sure?"
+      confirmText="Yes, Change to Hourly"
+      cancelText="Cancel"
+      onConfirm={() => {
+        setConfirmHourlyDialogOpen(false);
+        // re-run save bypass the check because state is tricky, we can just call updateCompensation directly
+        updateCompensation({
+          employeeId,
+          command: {
+            baseSalary: Number(baseSalary),
+            currency,
+            salaryType,
+            effectiveDate: new Date(effectiveDate).toISOString()
+          }
+        }, { onSuccess: () => onClose() });
+      }}
+      onClose={() => setConfirmHourlyDialogOpen(false)}
+    />
+    </>
   );
 };

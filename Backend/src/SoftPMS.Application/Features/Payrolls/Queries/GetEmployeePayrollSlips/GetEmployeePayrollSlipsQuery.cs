@@ -1,7 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
-using SoftPMS.Application.DTOs.Payroll;
+using SoftPMS.Application.Features.Payrolls.DTOs;
 
 namespace SoftPMS.Application.Features.Payrolls.Queries.GetEmployeePayrollSlips;
 

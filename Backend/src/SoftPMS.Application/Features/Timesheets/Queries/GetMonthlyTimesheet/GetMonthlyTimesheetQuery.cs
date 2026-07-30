@@ -1,7 +1,11 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
-using SoftPMS.Application.DTOs.Timesheet;
+using SoftPMS.Application.Features.Timesheets.DTOs;
+
+using SoftPMS.Application.Features.Timesheets.Queries.GetMonthlyTimesheet;
+using Microsoft.Extensions.Options;
+using SoftPMS.Application.Common.Settings;
 
 namespace SoftPMS.Application.Features.Timesheets.Queries.GetMonthlyTimesheet;
 
@@ -10,10 +14,12 @@ public record GetMonthlyTimesheetQuery(Guid EmployeeId, int Year, int Month) : I
 public class GetMonthlyTimesheetQueryHandler : IRequestHandler<GetMonthlyTimesheetQuery, MonthlyTimesheetDto?>
 {
     private readonly IApplicationDbContext _context;
+    private readonly SoftPMS.Application.Common.Settings.SystemSettings _settings;
 
-    public GetMonthlyTimesheetQueryHandler(IApplicationDbContext context)
+    public GetMonthlyTimesheetQueryHandler(IApplicationDbContext context, IOptions<SoftPMS.Application.Common.Settings.SystemSettings> options)
     {
         _context = context;
+        _settings = options.Value;
     }
 
     public async Task<MonthlyTimesheetDto?> Handle(GetMonthlyTimesheetQuery request, CancellationToken cancellationToken)
@@ -57,6 +63,14 @@ public class GetMonthlyTimesheetQueryHandler : IRequestHandler<GetMonthlyTimeshe
             })
             .ToList();
 
+        bool isPreviousYearPendingClosure = false;
+        if (request.Year > _settings.GoLiveYear)
+        {
+            var isPrevYearClosed = await _context.YearlyRolloverLogs
+                .AnyAsync(r => r.YearClosed == request.Year - 1, cancellationToken);
+            isPreviousYearPendingClosure = !isPrevYearClosed;
+        }
+
         return new MonthlyTimesheetDto(
             timesheet.Id,
             timesheet.EmployeeId,
@@ -65,6 +79,7 @@ public class GetMonthlyTimesheetQueryHandler : IRequestHandler<GetMonthlyTimeshe
             timesheet.TotalWorkedDays,
             timesheet.TotalOvertimeHours,
             timesheet.TotalAbsentDays,
-            entries);
+            entries,
+            isPreviousYearPendingClosure);
     }
 }

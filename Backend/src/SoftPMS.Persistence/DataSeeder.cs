@@ -55,6 +55,7 @@ public static class DatabaseSeeder
         ("Users.Delete",     "Delete user accounts"),
         ("Users.ChangePassword", "Change user password"),
         ("Permissions.Read", "View available permissions"),
+        ("SystemSettings.YearEndOperations", "Manage year-end operations and leave rollovers"),
     ];
 
     private const string AdminRoleName = "Admin";

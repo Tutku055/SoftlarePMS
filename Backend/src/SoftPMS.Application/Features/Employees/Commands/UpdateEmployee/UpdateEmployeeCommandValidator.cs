@@ -28,8 +28,11 @@ public sealed class UpdateEmployeeCommandValidator : AbstractValidator<UpdateEmp
             .GreaterThan(0).WithMessage("Working hours must be greater than 0.")
             .LessThanOrEqualTo(60).WithMessage("Working hours must not exceed 60 per week.");
 
-        RuleFor(x => x.VacationDaysTotal)
-            .GreaterThanOrEqualTo(0).WithMessage("Vacation days cannot be negative.");
+        RuleFor(x => x.AnnualVacationDays)
+            .GreaterThanOrEqualTo(0).WithMessage("Annual vacation days cannot be negative.");
+
+        RuleFor(x => x.CarriedOverLeaves)
+            .GreaterThanOrEqualTo(0).WithMessage("Carried over leaves cannot be negative.");
 
         // Termination date, if provided, must be after hire date
         RuleFor(x => x.TerminationDate)

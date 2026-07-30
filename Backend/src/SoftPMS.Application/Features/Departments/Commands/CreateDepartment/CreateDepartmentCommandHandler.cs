@@ -1,7 +1,7 @@
 using AutoMapper;
 using MediatR;
 using SoftPMS.Application.Common.Interfaces;
-using SoftPMS.Application.DTOs.Department;
+using SoftPMS.Application.Features.Departments.DTOs;
 using SoftPMS.Domain.Entities;
 
 namespace SoftPMS.Application.Features.Departments.Commands.CreateDepartment;

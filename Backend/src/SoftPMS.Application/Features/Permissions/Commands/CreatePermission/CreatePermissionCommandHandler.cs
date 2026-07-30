@@ -2,7 +2,7 @@ using AutoMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
-using SoftPMS.Application.DTOs.Permission;
+using SoftPMS.Application.Features.Permissions.DTOs;
 using SoftPMS.Domain.Entities;
 
 namespace SoftPMS.Application.Features.Permissions.Commands.CreatePermission;

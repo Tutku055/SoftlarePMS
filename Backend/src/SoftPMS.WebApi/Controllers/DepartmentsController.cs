@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SoftPMS.Application.Common.Models;
-using SoftPMS.Application.DTOs.Department;
+using SoftPMS.Application.Features.Departments.DTOs;
 using SoftPMS.Application.Features.Departments.Commands.CreateDepartment;
 using SoftPMS.Application.Features.Departments.Commands.DeleteDepartment;
 using SoftPMS.Application.Features.Departments.Commands.UpdateDepartment;

@@ -1,5 +1,5 @@
 using MediatR;
-using SoftPMS.Application.DTOs.Permission;
+using SoftPMS.Application.Features.Permissions.DTOs;
 
 namespace SoftPMS.Application.Features.Permissions.Queries.GetPermissionById;
 

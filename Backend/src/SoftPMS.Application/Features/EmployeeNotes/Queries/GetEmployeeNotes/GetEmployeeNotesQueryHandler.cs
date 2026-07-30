@@ -3,7 +3,7 @@ using AutoMapper.QueryableExtensions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
-using SoftPMS.Application.DTOs.EmployeeNote;
+using SoftPMS.Application.Features.EmployeeNotes.DTOs;
 
 namespace SoftPMS.Application.Features.EmployeeNotes.Queries.GetEmployeeNotes;
 

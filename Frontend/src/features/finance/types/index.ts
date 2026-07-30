@@ -7,6 +7,7 @@ export interface MonthlyTimesheet {
   totalOvertimeHours: number;
   totalAbsentDays: number;
   entries: TimesheetEntry[];
+  isPreviousYearPendingClosure?: boolean;
 }
 
 export interface TimesheetEntry {

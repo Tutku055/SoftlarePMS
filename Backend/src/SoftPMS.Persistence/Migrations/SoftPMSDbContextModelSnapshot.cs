@@ -158,6 +158,12 @@ namespace SoftPMS.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("AnnualVacationDays")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CarriedOverLeaves")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -212,9 +218,6 @@ namespace SoftPMS.Persistence.Migrations
 
                     b.Property<DateTime?>("TerminationDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<int>("VacationDaysTotal")
-                        .HasColumnType("int");
 
                     b.Property<decimal>("WorkingHoursPerWeek")
                         .HasPrecision(5, 2)
@@ -766,6 +769,26 @@ namespace SoftPMS.Persistence.Migrations
                         .HasDatabaseName("IX_Users_Username");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("SoftPMS.Domain.Entities.YearlyRolloverLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ClosedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("YearClosed")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("YearlyRolloverLogs");
                 });
 
             modelBuilder.Entity("SoftPMS.Domain.Entities.Document", b =>

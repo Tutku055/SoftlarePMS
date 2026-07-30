@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SoftPMS.Application.Common.Models;
-using SoftPMS.Application.DTOs.Employee;
-using SoftPMS.Application.DTOs.Role;
+using SoftPMS.Application.Features.Employees.DTOs;
+using SoftPMS.Application.Features.Roles.DTOs;
 using SoftPMS.Application.Features.Roles.Commands.AssignPermissionsToRole;
 using SoftPMS.Application.Features.Roles.Commands.CreateRole;
 using SoftPMS.Application.Features.Roles.Commands.DeleteRole;

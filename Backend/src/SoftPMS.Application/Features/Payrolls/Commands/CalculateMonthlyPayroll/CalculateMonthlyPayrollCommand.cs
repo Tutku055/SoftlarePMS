@@ -4,6 +4,7 @@ using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Domain.Entities;
 using SoftPMS.Application.Common.Exceptions;
 using FluentValidation.Results;
+using SoftPMS.Domain.Exceptions;
 
 namespace SoftPMS.Application.Features.Payrolls.Commands.CalculateMonthlyPayroll;
 
@@ -22,8 +23,9 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
 
     public async Task<Guid> Handle(CalculateMonthlyPayrollCommand request, CancellationToken cancellationToken)
     {
-        var startOfMonth = new DateTime(request.Year, request.Month, 1);
-        var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
+        var startOfMonthDate = new DateTime(request.Year, request.Month, 1);
+        var endOfMonthDate = new DateTime(request.Year, request.Month, DateTime.DaysInMonth(request.Year, request.Month));
+        var startOfNextMonth = startOfMonthDate.AddMonths(1); // exclusive upper bound
 
         // 1. Fetch timesheet with entries
         var timesheet = await _context.MonthlyTimesheets
@@ -33,18 +35,49 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
 
         if (timesheet == null)
         {
-            throw new ValidationException(new List<ValidationFailure> 
+            throw new SoftPMS.Application.Common.Exceptions.ValidationException(new List<ValidationFailure> 
             { 
                 new("Timesheet", "Timesheet not found for this month. Please generate it from the Timesheet Matrix.") 
             });
-        } // 2. Fetch all compensations active during this month
-        var compensations = await _context.EmployeeCompensations
-            .Where(c => c.EmployeeId == request.EmployeeId && c.EffectiveDate <= endOfMonth && (c.EndDate == null || c.EndDate >= startOfMonth))
+        }
+        
+        var employee = await _context.Employees.FirstOrDefaultAsync(e => e.Id == request.EmployeeId, cancellationToken)
+            ?? throw new NotFoundException(nameof(Employee), request.EmployeeId);
+
+
+        var dbCompensations = await _context.EmployeeCompensations
+            .Where(c => c.EmployeeId == request.EmployeeId)
             .OrderBy(c => c.EffectiveDate)
             .ToListAsync(cancellationToken);
 
+        var earliestComp = dbCompensations.FirstOrDefault();
+
+        // Helper function to get actual effective start date of a compensation,
+        // treating the earliest compensation as covering from the employee's HireDate if HireDate < EffectiveDate.
+        DateTime GetEffectiveStart(EmployeeCompensation c)
+        {
+            var effDate = c.EffectiveDate.Date;
+            if (earliestComp != null && c.Id == earliestComp.Id && employee.HireDate.Date < effDate)
+            {
+                return employee.HireDate.Date;
+            }
+            return effDate;
+        }
+
+        // 2. Filter compensations active during this month in memory
+        var compensations = dbCompensations
+            .Where(c => GetEffectiveStart(c) < startOfNextMonth 
+                && (c.EndDate == null || c.EndDate.Value.Date >= startOfMonthDate))
+            .OrderBy(c => c.EffectiveDate)
+            .ToList();
+
         if (!compensations.Any())
-            throw new Exception("No active compensation found for employee in the given month.");
+        {
+            throw new SoftPMS.Application.Common.Exceptions.ValidationException(new List<ValidationFailure> 
+            { 
+                new("Compensation", "No active compensation found for this employee in the selected month. Please ensure a compensation record exists before calculating payroll.") 
+            });
+        }
 
         var earningsByCurrency = new Dictionary<Domain.Enums.Currency, decimal>();
         var deductionsByCurrency = new Dictionary<Domain.Enums.Currency, decimal>();
@@ -65,9 +98,11 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
             .Where(c => c.SalaryType == Domain.Enums.SalaryType.Monthly)
             .Select(c => 
             {
-                var ws = c.EffectiveDate > startOfMonth ? c.EffectiveDate : startOfMonth;
-                var we = (c.EndDate != null && c.EndDate < endOfMonth) ? c.EndDate.Value : endOfMonth;
-                return (we - ws).Days + 1;
+                var effStart = GetEffectiveStart(c);
+                var effectiveStart = effStart > startOfMonthDate ? effStart : startOfMonthDate;
+                var ws = effectiveStart > employee.HireDate.Date ? effectiveStart : employee.HireDate.Date;
+                var we = (c.EndDate != null && c.EndDate.Value.Date < endOfMonthDate) ? c.EndDate.Value.Date : endOfMonthDate;
+                return we >= ws ? (we - ws).Days + 1 : 0;
             })
             .Sum();
             
@@ -84,9 +119,14 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
                 baseSalaryByCurrency[compensation.Currency] = 0;
             }
 
-            var windowStart = compensation.EffectiveDate > startOfMonth ? compensation.EffectiveDate : startOfMonth;
-            var windowEnd = (compensation.EndDate != null && compensation.EndDate < endOfMonth) ? compensation.EndDate.Value : endOfMonth;
-            var entriesInWindow = timesheet.Entries.Where(e => e.Date >= windowStart && e.Date <= windowEnd).ToList();
+            var effStart = GetEffectiveStart(compensation);
+            var effectiveStart = effStart > startOfMonthDate ? effStart : startOfMonthDate;
+            var windowStart = effectiveStart > employee.HireDate.Date ? effectiveStart : employee.HireDate.Date;
+            var windowEnd = (compensation.EndDate != null && compensation.EndDate.Value.Date < endOfMonthDate) ? compensation.EndDate.Value.Date : endOfMonthDate;
+            
+            if (windowStart > windowEnd) continue; // Not active in this window after hire date adjustment
+            
+            var entriesInWindow = timesheet.Entries.Where(e => e.Date.Date >= windowStart && e.Date.Date <= windowEnd).ToList();
             
             decimal windowBaseSalary = 0;
             decimal windowDeductions = 0;
@@ -105,8 +145,9 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
                 
                 var unpaidCount = entriesInWindow.Count(e => e.Status == Domain.Enums.TimesheetStatus.UnpaidLeave);
                 var absentCount = entriesInWindow.Count(e => e.Status == Domain.Enums.TimesheetStatus.Absent);
+                var paidLeaveCount = entriesInWindow.Count(e => e.Status == Domain.Enums.TimesheetStatus.PaidLeave);
 
-                var payableDays = activeDaysInWindow - (unpaidCount + absentCount);
+                var payableDays = activeDaysInWindow; // Base salary is calculated for all active days in window
                 
                 windowBaseSalary = payableDays * dailyRate;
                 windowDeductions = (unpaidCount + absentCount) * dailyRate;
@@ -114,18 +155,40 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
                 lineItems.Add(new PayrollSlipLineItem
                 {
                     ItemType = Domain.Enums.SlipItemType.Earning,
-                    Description = $"Base Salary (Payable Days: {payableDays})",
+                    Description = $"Base Salary ({payableDays} days)",
                     Amount = windowBaseSalary,
                     Currency = compensation.Currency
                 });
 
-                if (windowDeductions > 0)
+                if (paidLeaveCount > 0)
+                {
+                    lineItems.Add(new PayrollSlipLineItem
+                    {
+                        ItemType = Domain.Enums.SlipItemType.Earning,
+                        Description = $"Paid Leave ({paidLeaveCount} days) - Included in Base",
+                        Amount = 0m,
+                        Currency = compensation.Currency
+                    });
+                }
+
+                if (unpaidCount > 0)
                 {
                     lineItems.Add(new PayrollSlipLineItem
                     {
                         ItemType = Domain.Enums.SlipItemType.Deduction,
-                        Description = $"Absences/Unpaid Leaves ({unpaidCount + absentCount} days)",
-                        Amount = windowDeductions,
+                        Description = $"Unpaid Leaves ({unpaidCount} days)",
+                        Amount = unpaidCount * dailyRate,
+                        Currency = compensation.Currency
+                    });
+                }
+
+                if (absentCount > 0)
+                {
+                    lineItems.Add(new PayrollSlipLineItem
+                    {
+                        ItemType = Domain.Enums.SlipItemType.Deduction,
+                        Description = $"Absences ({absentCount} days)",
+                        Amount = absentCount * dailyRate,
                         Currency = compensation.Currency
                     });
                 }
@@ -194,6 +257,31 @@ public class CalculateMonthlyPayrollCommandHandler : IRequestHandler<CalculateMo
                     Amount = windowBaseSalary,
                     Currency = compensation.Currency
                 });
+
+                var unpaidCount = entriesInWindow.Count(e => e.Status == Domain.Enums.TimesheetStatus.UnpaidLeave);
+                var absentCount = entriesInWindow.Count(e => e.Status == Domain.Enums.TimesheetStatus.Absent);
+
+                if (unpaidCount > 0)
+                {
+                    lineItems.Add(new PayrollSlipLineItem
+                    {
+                        ItemType = Domain.Enums.SlipItemType.Deduction,
+                        Description = $"Unpaid Leaves ({unpaidCount} days)",
+                        Amount = 0m,
+                        Currency = compensation.Currency
+                    });
+                }
+
+                if (absentCount > 0)
+                {
+                    lineItems.Add(new PayrollSlipLineItem
+                    {
+                        ItemType = Domain.Enums.SlipItemType.Deduction,
+                        Description = $"Absences ({absentCount} days)",
+                        Amount = 0m,
+                        Currency = compensation.Currency
+                    });
+                }
 
                 var overtimeGroups = entriesInWindow.Where(e => e.OvertimeHours > 0)
                     .GroupBy(e => e.OvertimeTypeId)

@@ -6,86 +6,40 @@ using SoftPMS.WebApi.Authorization;
 
 namespace SoftPMS.WebApi.Controllers;
 
-/// <summary>Request body for updating an employee's compensation.</summary>
-public class UpdateCompensationRequest
-{
-    /// <summary>The base salary amount.</summary>
-    public decimal BaseSalary { get; set; }
-    
-    /// <summary>The type of salary (e.g., Monthly, Hourly).</summary>
-    public SalaryType SalaryType { get; set; }
-    
-    /// <summary>The currency code.</summary>
-    public Currency Currency { get; set; }
-    
-    /// <summary>The date this compensation becomes effective.</summary>
-    public DateTime EffectiveDate { get; set; }
-}
-
-/// <summary>Request body for editing an existing compensation.</summary>
-public class EditCompensationRequest
-{
-    public decimal BaseSalary { get; set; }
-    public SalaryType SalaryType { get; set; }
-    public Currency Currency { get; set; }
-    public DateTime EffectiveDate { get; set; }
-}
-
 [Authorize]
-[Route("api/employees/{employeeId}/compensations")]
 public class EmployeeCompensationsController : ApiControllerBase
 {
     /// <summary>Updates compensation details for an employee.</summary>
-    [HttpPost]
+    [HttpPost("{employeeId:guid}")]
     [HasPermission("Compensations.Manage")]
-    public async Task<ActionResult<Guid>> UpdateCompensation(Guid employeeId, [FromBody] UpdateCompensationRequest request)
+    public async Task<ActionResult<Guid>> UpdateCompensation(Guid employeeId, [FromBody] UpdateEmployeeCompensationCommand command)
     {
-        try
+        if (employeeId != command.EmployeeId)
         {
-            var command = new UpdateEmployeeCompensationCommand(
-                employeeId,
-                request.BaseSalary,
-                request.SalaryType,
-                request.Currency,
-                request.EffectiveDate
-            );
+            command.EmployeeId = employeeId;
+        }
 
-            var result = await Sender.Send(command);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { detail = ex.Message });
-        }
+        var result = await Sender.Send(command);
+        return Ok(result);
     }
 
     /// <summary>Edits an existing compensation record.</summary>
-    [HttpPut("{id}")]
+    [HttpPut("{employeeId:guid}/{id:guid}")]
     [HasPermission("Compensations.Manage")]
-    public async Task<ActionResult> EditCompensation(Guid employeeId, Guid id, [FromBody] EditCompensationRequest request)
+    public async Task<ActionResult> EditCompensation(Guid employeeId, Guid id, [FromBody] SoftPMS.Application.Features.EmployeeCompensations.Commands.EditEmployeeCompensation.EditEmployeeCompensationCommand command)
     {
-        try
+        if (id != command.Id || employeeId != command.EmployeeId)
         {
-            var command = new SoftPMS.Application.Features.EmployeeCompensations.Commands.EditEmployeeCompensation.EditEmployeeCompensationCommand(
-                id,
-                employeeId,
-                request.BaseSalary,
-                request.SalaryType,
-                request.Currency,
-                request.EffectiveDate
-            );
+            command.Id = id;
+            command.EmployeeId = employeeId;
+        }
 
-            await Sender.Send(command);
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { detail = ex.Message });
-        }
+        await Sender.Send(command);
+        return NoContent();
     }
 
     /// <summary>Deletes a historical compensation record.</summary>
-    [HttpDelete("{id}")]
+    [HttpDelete("{employeeId:guid}/{id:guid}")]
     [HasPermission("Compensations.Manage")]
     public async Task<ActionResult> DeleteCompensation(Guid employeeId, Guid id)
     {

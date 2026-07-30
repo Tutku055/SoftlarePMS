@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SoftPMS.Application.DTOs.Payroll;
+using SoftPMS.Application.Features.Payrolls.DTOs;
 using SoftPMS.Application.Features.Payrolls.Commands.CalculateMonthlyPayroll;
 using SoftPMS.Application.Features.Payrolls.Queries.GetEmployeePayrollSlips;
 using SoftPMS.WebApi.Authorization;

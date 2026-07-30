@@ -20,7 +20,9 @@ public sealed record CreateEmployeeCommand(
     EmploymentStatus EmploymentStatus,
     DateTime HireDate,
     decimal WorkingHoursPerWeek,
-    int VacationDaysTotal,
+    int AnnualVacationDays,
+    int CarriedOverLeaves,
+    SalaryType SalaryType,
 
     // --- Initial address (required at creation) ---
     string AddressLine,

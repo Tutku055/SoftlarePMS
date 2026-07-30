@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Application.Common.Models;
-using SoftPMS.Application.DTOs.Document;
+using SoftPMS.Application.Features.Documents.DTOs;
 using SoftPMS.Domain.Enums;
 
 namespace SoftPMS.Application.Features.Documents.Queries;

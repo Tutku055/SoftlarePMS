@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SoftPMS.Application.DTOs.Auth;
+using SoftPMS.Application.Features.Auth.DTOs;
 using SoftPMS.Application.Features.Auth.Commands.Login;
 using SoftPMS.Application.Features.Auth.Commands.RefreshToken;
 

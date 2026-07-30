@@ -39,8 +39,11 @@ public sealed class CreateEmployeeCommandValidator : AbstractValidator<CreateEmp
             .GreaterThan(0).WithMessage("Working hours per week must be greater than 0.")
             .LessThanOrEqualTo(60).WithMessage("Working hours per week must not exceed 60.");
 
-        RuleFor(x => x.VacationDaysTotal)
-            .GreaterThanOrEqualTo(0).WithMessage("Vacation days cannot be negative.");
+        RuleFor(x => x.AnnualVacationDays)
+            .GreaterThanOrEqualTo(0).WithMessage("Annual vacation days cannot be negative.");
+            
+        RuleFor(x => x.CarriedOverLeaves)
+            .GreaterThanOrEqualTo(0).WithMessage("Carried over leaves cannot be negative.");
 
         // Initial address
         RuleFor(x => x.AddressLine)

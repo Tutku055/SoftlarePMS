@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SoftPMS.Application.Common.Models;
-using SoftPMS.Application.DTOs.Employee;
+using SoftPMS.Application.Features.Employees.DTOs;
 using SoftPMS.Application.Features.Employees.Commands.CreateEmployee;
 using SoftPMS.Application.Features.Employees.Commands.DeleteEmployee;
 using SoftPMS.Application.Features.Employees.Commands.UpdateEmployee;

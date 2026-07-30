@@ -3,7 +3,7 @@ using AutoMapper.QueryableExtensions;
 using MediatR;
 using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Application.Common.Models;
-using SoftPMS.Application.DTOs.Department;
+using SoftPMS.Application.Features.Departments.DTOs;
 using SoftPMS.Application.Common.Extensions;
 
 namespace SoftPMS.Application.Features.Departments.Queries.GetDepartmentsWithPagination;

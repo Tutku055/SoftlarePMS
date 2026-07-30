@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Extensions;
 using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Application.Common.Models;
-using SoftPMS.Application.DTOs.OvertimeType;
+using SoftPMS.Application.Features.OvertimeTypes.DTOs;
 
 namespace SoftPMS.Application.Features.OvertimeTypes.Queries.GetOvertimeTypesWithPagination;
 

@@ -1,5 +1,5 @@
 using SoftPMS.Application.Common.Models;
-using SoftPMS.Application.DTOs.Department;
+using SoftPMS.Application.Features.Departments.DTOs;
 using MediatR;
 
 namespace SoftPMS.Application.Features.Departments.Queries.GetDepartmentsWithPagination;

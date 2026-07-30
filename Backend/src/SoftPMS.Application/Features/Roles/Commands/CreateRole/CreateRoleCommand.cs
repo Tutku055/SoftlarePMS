@@ -1,5 +1,5 @@
 using MediatR;
-using SoftPMS.Application.DTOs.Role;
+using SoftPMS.Application.Features.Roles.DTOs;
 
 namespace SoftPMS.Application.Features.Roles.Commands.CreateRole;
 

@@ -2,7 +2,7 @@ using System.Security.Claims;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
-using SoftPMS.Application.DTOs.Auth;
+using SoftPMS.Application.Features.Auth.DTOs;
 using SoftPMS.Domain.Exceptions;
 
 namespace SoftPMS.Application.Features.Auth.Commands.RefreshToken;

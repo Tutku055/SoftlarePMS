@@ -3,7 +3,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SoftPMS.Domain.Exceptions;
 using SoftPMS.Application.Common.Interfaces;
-using SoftPMS.Application.DTOs.Document;
+using SoftPMS.Application.Features.Documents.DTOs;
 using SoftPMS.Domain.Entities;
 
 namespace SoftPMS.Application.Features.Documents.Queries;

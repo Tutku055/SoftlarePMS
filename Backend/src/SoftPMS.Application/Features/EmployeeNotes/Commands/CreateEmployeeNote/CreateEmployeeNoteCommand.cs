@@ -1,5 +1,5 @@
 using MediatR;
-using SoftPMS.Application.DTOs.EmployeeNote;
+using SoftPMS.Application.Features.EmployeeNotes.DTOs;
 
 namespace SoftPMS.Application.Features.EmployeeNotes.Commands.CreateEmployeeNote;
 

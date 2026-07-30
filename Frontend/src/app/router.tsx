@@ -8,6 +8,7 @@ import { EmployeeDetail } from '../features/employees/EmployeeDetail';
 import { EmployeeCreation } from '../features/employees/EmployeeCreation';
 import { DepartmentList } from '../features/departments/components/DepartmentList/DepartmentList';
 import { DepartmentDetail } from '../features/departments/components/DepartmentDetail/DepartmentDetail';
+import { YearEndOperations } from '../features/settings/components/YearEndOperations/YearEndOperations';
 import { DepartmentEmployees } from '../features/departments/components/DepartmentEmployees/DepartmentEmployees';
 import { DocumentArchive } from '../features/documents/components/DocumentArchive/DocumentArchive';
 import { DocumentDetail } from '../features/documents/components/DocumentDetail/DocumentDetail';
@@ -44,6 +45,16 @@ const PrivateRoute = () => {
   }
 
   return <Outlet />;
+};
+
+const ProtectedRoute = ({ permission, children }: { permission: string, children: React.ReactNode }) => {
+  const hasPermission = useAuthStore((state) => state.hasPermission);
+  
+  if (!hasPermission(permission)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return <>{children}</>;
 };
 
 export const router = createBrowserRouter([
@@ -151,6 +162,14 @@ export const router = createBrowserRouter([
           {
             path: 'settings/users/:id',
             element: <UserDetail />,
+          },
+          {
+            path: 'settings/year-end',
+            element: (
+              <ProtectedRoute permission="SystemSettings.YearEndOperations">
+                <YearEndOperations />
+              </ProtectedRoute>
+            ),
           }
         ]
       }

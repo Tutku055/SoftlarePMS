@@ -3,7 +3,7 @@ using AutoMapper.QueryableExtensions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
-using SoftPMS.Application.DTOs.Permission;
+using SoftPMS.Application.Features.Permissions.DTOs;
 
 namespace SoftPMS.Application.Features.Permissions.Queries.GetPermissions;
 

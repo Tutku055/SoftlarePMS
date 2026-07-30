@@ -150,7 +150,8 @@ export const EmployeeDetail = () => {
     hireDate: '',
     probationEndDate: '',
     workingHoursPerWeek: 0,
-    vacationDaysTotal: 0,
+    annualVacationDays: 0,
+    carriedOverLeaves: 0,
     departmentId: '',
   });
 
@@ -246,7 +247,8 @@ export const EmployeeDetail = () => {
         hireDate: employee.hireDate?.split('T')[0] || '',
         probationEndDate: employee.probationEndDate?.split('T')[0] || '',
         workingHoursPerWeek: employee.workingHoursPerWeek || 0,
-        vacationDaysTotal: employee.vacationDaysTotal || 0,
+        annualVacationDays: employee.annualVacationDays || 0,
+        carriedOverLeaves: employee.carriedOverLeaves || 0,
         departmentId: employee.department?.id || '',
       });
 
@@ -280,7 +282,8 @@ export const EmployeeDetail = () => {
       departmentId: formState.departmentId || null,
       probationEndDate: formState.probationEndDate || null,
       workingHoursPerWeek: Number(formState.workingHoursPerWeek),
-      vacationDaysTotal: Number(formState.vacationDaysTotal),
+      annualVacationDays: Number(formState.annualVacationDays),
+      carriedOverLeaves: Number(formState.carriedOverLeaves),
     });
     if (addressState.addressLine) {
       updateAddress({
@@ -301,7 +304,8 @@ export const EmployeeDetail = () => {
       departmentId: formState.departmentId || null,
       probationEndDate: formState.probationEndDate || null,
       workingHoursPerWeek: Number(formState.workingHoursPerWeek),
-      vacationDaysTotal: Number(formState.vacationDaysTotal),
+      annualVacationDays: Number(formState.annualVacationDays),
+      carriedOverLeaves: Number(formState.carriedOverLeaves),
     });
   };
 
@@ -478,7 +482,8 @@ export const EmployeeDetail = () => {
             <TextField label="Hire Date" name="hireDate" type="date" value={formState.hireDate} onChange={handleChange} size="small" fullWidth slotProps={{ inputLabel: { shrink: true } }} sx={premiumInputSx} />
             <TextField label="Probation End Date" name="probationEndDate" type="date" value={formState.probationEndDate} onChange={handleChange} size="small" fullWidth slotProps={{ inputLabel: { shrink: true } }} sx={premiumInputSx} />
             <TextField label="Working Hours / Week" name="workingHoursPerWeek" type="number" value={formState.workingHoursPerWeek} onChange={handleChange} size="small" fullWidth sx={premiumInputSx} />
-            <TextField label="Vacation Days Total" name="vacationDaysTotal" type="number" value={formState.vacationDaysTotal} onChange={handleChange} size="small" fullWidth sx={premiumInputSx} />
+            <TextField label="Annual Vacation Days" name="annualVacationDays" type="number" value={formState.annualVacationDays} onChange={handleChange} size="small" fullWidth sx={premiumInputSx} />
+            <TextField label="Carried Over Leaves" name="carriedOverLeaves" type="number" value={formState.carriedOverLeaves} onChange={handleChange} size="small" fullWidth sx={premiumInputSx} />
             <TextField select label="Department" name="departmentId" value={formState.departmentId} onChange={handleChange} size="small" fullWidth sx={premiumInputSx}>
               <MenuItem value=""><em>None</em></MenuItem>
               {departmentOptions.map((d: any) => <MenuItem key={d.value} value={d.value}>{d.label}</MenuItem>)}
@@ -792,6 +797,7 @@ export const EmployeeDetail = () => {
         employeeId={id || ''}
         currentBaseSalary={employee.compensation?.baseSalary || 0}
         currentCurrency={employee.compensation?.currency || 1}
+        currentSalaryType={employee.compensation?.salaryType}
       />
     </Box>
   );

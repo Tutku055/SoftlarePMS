@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SoftPMS.Application.DTOs.EmployeeNote;
+using SoftPMS.Application.Features.EmployeeNotes.DTOs;
 using SoftPMS.Application.Features.EmployeeNotes.Commands.CreateEmployeeNote;
 using SoftPMS.Application.Features.EmployeeNotes.Commands.DeleteEmployeeNote;
 using SoftPMS.Application.Features.EmployeeNotes.Commands.UpdateEmployeeNote;

@@ -4,8 +4,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Application.Common.Models;
-using SoftPMS.Application.DTOs.Document;
-using SoftPMS.Application.Features.Documents.Commands;
+using SoftPMS.Application.Features.Documents.DTOs;
+using SoftPMS.Application.Features.Documents.Commands.UploadDocument;
+using SoftPMS.Application.Features.Documents.Commands.UploadDocumentChunk;
+using SoftPMS.Application.Features.Documents.Commands.DeleteDocument;
+using SoftPMS.Application.Features.Documents.Commands.UpdateDocumentAvailability;
+using SoftPMS.Application.Features.Documents.Commands.UpdateDocument;
+using SoftPMS.Application.Features.Documents.Commands.CheckDocumentsIntegrity;
 using SoftPMS.Application.Features.Documents.Queries;
 using SoftPMS.Domain.Enums;
 using SoftPMS.WebApi.Authorization;
@@ -13,7 +18,6 @@ using SoftPMS.WebApi.Authorization;
 namespace SoftPMS.WebApi.Controllers;
 
 [Authorize]
-[Route("api/[controller]")]
 public sealed class DocumentsController : ApiControllerBase
 {
     private readonly IStorageService _storageService;
@@ -30,45 +34,10 @@ public sealed class DocumentsController : ApiControllerBase
     [HasPermission("Documents.Read")]
     [ProducesResponseType(typeof(PaginatedList<DocumentDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDocuments(
-        [FromQuery] Guid? referenceId, 
-        [FromQuery] DocumentModule? ownerModule, 
-        [FromQuery] DocumentType? documentType, 
-        [FromQuery] string? fileName,
-        [FromQuery] string? fileNameOperator,
-        [FromQuery] long? minFileSizeBytes,
-        [FromQuery] long? maxFileSizeBytes,
-        [FromQuery] string? extension,
-        [FromQuery] string? extensionOperator,
-        [FromQuery] DateTime? expiryDateStart,
-        [FromQuery] DateTime? expiryDateEnd,
-        [FromQuery] DateTime? uploadDateStart,
-        [FromQuery] DateTime? uploadDateEnd,
-        [FromQuery] string? quickSearch,
-        [FromQuery] bool? isAvailable,
-        [FromQuery] int pageNumber = 1, 
-        [FromQuery] int pageSize = 10,
+        [FromQuery] GetDocumentsQuery query,
         CancellationToken ct = default)
     {
-        var result = await Sender.Send(new GetDocumentsQuery
-        {
-            ReferenceId = referenceId,
-            OwnerModule = ownerModule,
-            DocumentType = documentType,
-            FileName = fileName,
-            FileNameOperator = fileNameOperator,
-            MinFileSizeBytes = minFileSizeBytes,
-            MaxFileSizeBytes = maxFileSizeBytes,
-            Extension = extension,
-            ExtensionOperator = extensionOperator,
-            ExpiryDateStart = expiryDateStart,
-            ExpiryDateEnd = expiryDateEnd,
-            UploadDateStart = uploadDateStart,
-            UploadDateEnd = uploadDateEnd,
-            IsAvailable = isAvailable,
-            QuickSearch = quickSearch,
-            PageNumber = pageNumber,
-            PageSize = pageSize
-        }, ct);
+        var result = await Sender.Send(query, ct);
 
         return Ok(result);
     }
@@ -90,7 +59,7 @@ public sealed class DocumentsController : ApiControllerBase
         CancellationToken ct)
     {
         if (file == null || file.Length == 0)
-            return BadRequest("File is empty.");
+            return BadRequest(new { message = "File is empty." });
 
         var command = new UploadDocumentCommand
         {
@@ -130,7 +99,7 @@ public sealed class DocumentsController : ApiControllerBase
         CancellationToken ct)
     {
         if (file == null || file.Length == 0)
-            return BadRequest("Chunk is empty.");
+            return BadRequest(new { message = "Chunk is empty." });
 
         var command = new UploadDocumentChunkCommand
         {
@@ -216,7 +185,7 @@ public sealed class DocumentsController : ApiControllerBase
     public async Task<IActionResult> UpdateDocument(Guid id, [FromBody] UpdateDocumentCommand command, CancellationToken ct)
     {
         if (id != command.Id)
-            return BadRequest("ID mismatch");
+            return BadRequest(new { message = "ID mismatch" });
 
         await Sender.Send(command, ct);
         return NoContent();

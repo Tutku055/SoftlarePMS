@@ -1,7 +1,7 @@
 using AutoMapper;
 using MediatR;
 using SoftPMS.Application.Common.Interfaces;
-using SoftPMS.Application.DTOs.EmployeeReference;
+using SoftPMS.Application.Features.EmployeeReferences.DTOs;
 using SoftPMS.Domain.Entities;
 using SoftPMS.Domain.Exceptions;
 

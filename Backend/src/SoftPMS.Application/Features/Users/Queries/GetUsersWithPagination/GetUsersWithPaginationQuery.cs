@@ -1,6 +1,6 @@
 using MediatR;
 using SoftPMS.Application.Common.Models;
-using SoftPMS.Application.DTOs.User;
+using SoftPMS.Application.Features.Users.DTOs;
 
 namespace SoftPMS.Application.Features.Users.Queries.GetUsersWithPagination;
 

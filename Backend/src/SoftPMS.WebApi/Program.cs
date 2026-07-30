@@ -18,6 +18,9 @@ builder.Services.AddPersistenceServices(
     builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured."));
 
+builder.Services.Configure<SoftPMS.Application.Common.Settings.SystemSettings>(
+    builder.Configuration.GetSection("SystemSettings"));
+
 // ── JWT Bearer authentication ─────────────────────────────────────────────────
 var jwtSection = builder.Configuration.GetSection("JwtSettings");
 var secretKey  = jwtSection["SecretKey"]

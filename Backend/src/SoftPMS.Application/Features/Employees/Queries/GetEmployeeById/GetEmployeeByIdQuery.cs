@@ -1,5 +1,5 @@
 using MediatR;
-using SoftPMS.Application.DTOs.Employee;
+using SoftPMS.Application.Features.Employees.DTOs;
 
 namespace SoftPMS.Application.Features.Employees.Queries.GetEmployeeById;
 
