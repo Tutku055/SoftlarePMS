@@ -30,25 +30,24 @@ import { useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../../components/DataTable/DataTable';
 import type { CustomFilterValue, DataTableColumnDef } from '../../../../components/DataTable/DataTable';
 import { useEmployees } from '../../../employees/hooks/useEmployees';
+import { useDepartments } from '../../../employees/hooks/useDepartments';
+import { useProfessionsLookup } from '../../../professions/hooks/useProfessionsLookup';
 import { BulkOperationsPanel } from './BulkOperationsPanel';
 import ExcelJS from 'exceljs';
 import { BulkTimesheetScope } from '../../types';
 
 const COLUMN_NAMES: Record<string, string> = {
   employeeNo: 'Employee No',
-  firstName: 'First Name',
-  lastName: 'Last Name',
+  fullName: 'Full Name',
+  departmentId: 'Department',
   profession: 'Profession',
-  department: 'Department'
 };
-
-type QuickFilter = 'all' | 'active';
 
 export const TimesheetList = () => {
   const [quickSearch, setQuickSearch] = useState('');
   const [debouncedQuickSearch, setDebouncedQuickSearch] = useState('');
-  const [activeQuickFilter, setActiveQuickFilter] = useState<QuickFilter>('all');
   const [columnFilters, setColumnFilters] = useState<Record<string, CustomFilterValue>>({});
+  const [baseActiveCount, setBaseActiveCount] = useState<number>(0);
 
   const handleCustomFilterChange = useCallback((field: string, value: string, operator: string) => {
     setColumnFilters((prev) => {
@@ -82,28 +81,43 @@ export const TimesheetList = () => {
   const [columnMenuAnchor, setColumnMenuAnchor] = useState<null | HTMLElement>(null);
   const [columnVisibility, setColumnVisibility] = useState<GridColumnVisibilityModel>({
     employeeNo: true,
-    firstName: true,
-    lastName: true,
+    fullName: true,
+    departmentId: true,
     profession: true,
-    department: true,
   });
 
   const buildFilters = useCallback(
-    (_qf: QuickFilter, cols: Record<string, CustomFilterValue>, qs: string) => {
+    (cols: Record<string, CustomFilterValue>, qs: string) => {
       const filters: { field: string; operator: string; value: string }[] = [];
+      
+      // ALWAYS enforce Active Employees Only
+      filters.push({ field: 'employmentStatus', operator: 'equals', value: '1' });
 
       Object.entries(cols).forEach(([field, filterData]) => {
         const { value, operator } = filterData;
         if (!value) return;
-        filters.push({ field, operator, value });
+
+        if (field === 'fullName') {
+          if (operator === 'firstName') {
+            filters.push({ field: 'firstName', operator: 'contains', value });
+          } else if (operator === 'lastName') {
+            filters.push({ field: 'lastName', operator: 'contains', value });
+          } else {
+            const parts = value.trim().split(/\s+/);
+            parts.forEach(part => {
+              filters.push({ field: 'quickSearch', operator: 'contains', value: part });
+            });
+          }
+        } else {
+          filters.push({ field, operator, value });
+        }
       });
 
       if (qs.trim()) {
-        filters.push({ field: 'quickSearch', operator: 'contains', value: qs.trim() });
-      }
-
-      if (_qf === 'active') {
-        filters.push({ field: 'employmentStatus', operator: 'equals', value: '1' });
+        const parts = qs.trim().split(/\s+/);
+        parts.forEach(part => {
+          filters.push({ field: 'quickSearch', operator: 'contains', value: part });
+        });
       }
 
       return filters;
@@ -117,25 +131,18 @@ export const TimesheetList = () => {
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => {
-      setApiFilters(buildFilters(activeQuickFilter, columnFilters, debouncedQuickSearch));
+      setApiFilters(buildFilters(columnFilters, debouncedQuickSearch));
       setPaginationModel((prev) => ({ ...prev, page: 0 }));
     }, 350);
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
-  }, [columnFilters, activeQuickFilter, debouncedQuickSearch, buildFilters]);
+  }, [columnFilters, debouncedQuickSearch, buildFilters]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuickSearch(quickSearch), 350);
     return () => clearTimeout(t);
   }, [quickSearch]);
-
-  const handleQuickFilterClick = (code: QuickFilter) => {
-    const newCode = activeQuickFilter === code ? 'all' : code;
-    setActiveQuickFilter(newCode);
-    setQuickSearch('');
-    setPaginationModel((prev) => ({ ...prev, page: 0 }));
-  };
 
   const handleColumnToggle = (field: string) =>
     setColumnVisibility((prev) => ({ ...prev, [field]: !prev[field] }));
@@ -151,6 +158,28 @@ export const TimesheetList = () => {
     pageSize: paginationModel.pageSize,
     filters: apiFilters,
   });
+
+  useEffect(() => {
+    // Only update base count when no user-applied filters/search exist
+    const hasSearch = debouncedQuickSearch.trim().length > 0;
+    const hasColumnFilters = Object.values(columnFilters).some(f => !!f.value);
+    
+    if (!hasSearch && !hasColumnFilters && data?.totalCount !== undefined) {
+      setBaseActiveCount(data.totalCount);
+    }
+  }, [data?.totalCount, debouncedQuickSearch, columnFilters]);
+
+  const { data: deptData } = useDepartments();
+  const departmentOptions = useMemo(
+    () => deptData?.items.map((d: any) => ({ value: d.id, label: d.name })) || [],
+    [deptData]
+  );
+
+  const { data: profData } = useProfessionsLookup();
+  const professionOptions = useMemo(
+    () => profData?.map((p: any) => ({ value: p.name, label: p.name })) || [],
+    [profData]
+  );
 
   const currentVisibleIds = data?.items?.map((item: any) => String(item.id)) || [];
   const effectivelySelectedIds = new Set(selectedRowIds);
@@ -214,8 +243,8 @@ export const TimesheetList = () => {
 
     const allColumns = [
       { id: 'employeeNo', label: 'Employee No', getValue: (emp: any) => emp.employeeNo },
-      { id: 'firstName', label: 'First Name', getValue: (emp: any) => emp.firstName },
-      { id: 'lastName', label: 'Last Name', getValue: (emp: any) => emp.lastName },
+      { id: 'fullName', label: 'Full Name', getValue: (emp: any) => `${emp.firstName} ${emp.lastName}` },
+      { id: 'departmentId', label: 'Department', getValue: (emp: any) => emp.department?.name || '' },
       { id: 'profession', label: 'Profession', getValue: (emp: any) => emp.professionName || '-' },
     ];
 
@@ -224,7 +253,7 @@ export const TimesheetList = () => {
     worksheet.columns = visibleColumns.map(col => ({
       header: col.label,
       key: col.id,
-      width: 25
+      width: 20
     }));
 
     const headerRow = worksheet.getRow(1);
@@ -243,14 +272,33 @@ export const TimesheetList = () => {
       const row = worksheet.addRow(rowData);
       row.height = 22;
       const isEven = index % 2 === 0;
-      row.eachCell((cell) => {
+
+      row.eachCell((cell, colNumber) => {
+        const colId = visibleColumns[colNumber - 1].id;
+
         cell.font = { name: 'Segoe UI', size: 10, color: { argb: '333333' } };
         cell.alignment = { vertical: 'middle', horizontal: 'left' };
-        cell.border = { bottom: { style: 'thin', color: { argb: 'EBF0F5' } } };
+        cell.border = {
+          bottom: { style: 'thin', color: { argb: 'EBF0F5' } },
+          right: { style: 'thin', color: { argb: 'F4F7F9' } }
+        };
+
         if (!isEven) {
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F9FAFC' } };
         }
+
       });
+    });
+
+    worksheet.columns.forEach((column) => {
+      let maxLen = 0;
+      column.eachCell?.({ includeEmpty: true }, (cell) => {
+        const valueLen = cell.value ? cell.value.toString().length : 0;
+        if (valueLen > maxLen) {
+          maxLen = valueLen;
+        }
+      });
+      column.width = Math.max(maxLen + 4, 14);
     });
 
     const buffer = await workbook.xlsx.writeBuffer();
@@ -281,11 +329,12 @@ export const TimesheetList = () => {
       )
     },
     {
-      field: 'firstName',
-      headerName: 'First Name',
+      field: 'fullName',
+      headerName: 'Full Name',
       flex: 1.5,
-      minWidth: 150,
-      filterType: 'text',
+      minWidth: 200,
+      filterType: 'fullName',
+      valueGetter: (_, row: any) => `${row.firstName} ${row.lastName}`,
       renderCell: (params) => (
         <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
           {params.value}
@@ -293,13 +342,15 @@ export const TimesheetList = () => {
       )
     },
     {
-      field: 'lastName',
-      headerName: 'Last Name',
+      field: 'departmentId',
+      headerName: 'Department',
       flex: 1.5,
-      minWidth: 150,
-      filterType: 'text',
+      minWidth: 180,
+      filterType: 'multi-select',
+      filterOptions: departmentOptions,
+      valueGetter: (_, row: any) => row.department?.name || 'N/A',
       renderCell: (params) => (
-        <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
           {params.value}
         </Typography>
       )
@@ -309,28 +360,16 @@ export const TimesheetList = () => {
       headerName: 'Profession',
       flex: 1.5,
       minWidth: 180,
-      filterType: 'text',
+      filterType: 'multi-select',
+      filterOptions: professionOptions,
       valueGetter: (_, row: any) => row.professionName || '-',
       renderCell: (params) => (
         <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary' }}>
           {params.value}
         </Typography>
       )
-    },
-    {
-      field: 'department',
-      headerName: 'Department',
-      flex: 1.5,
-      minWidth: 180,
-      filterType: 'text',
-      valueGetter: (_, row: any) => row.department?.name || 'N/A',
-      renderCell: (params) => (
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          {params.value}
-        </Typography>
-      )
     }
-  ], []);
+  ], [departmentOptions, professionOptions]);
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1536, margin: '0 auto' }}>
@@ -506,47 +545,10 @@ export const TimesheetList = () => {
             }}
           />
 
-          <Divider sx={{ opacity: 0.4 }} />
-
-          <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-            <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600, color: 'text.secondary' }}>
-              <AutoAwesomeRounded fontSize="small" /> Quick Filters:
-            </Typography>
-
-            {(['all', 'active'] as QuickFilter[]).map((code) => {
-              const labels: Record<QuickFilter, string> = {
-                all: 'All Employees',
-                active: 'Active Employees'
-              };
-              const isActive = activeQuickFilter === code;
-              
-              return (
-                <Chip
-                  key={code}
-                  label={labels[code]}
-                  onClick={() => handleQuickFilterClick(code)}
-                  sx={{
-                    fontWeight: 500,
-                    borderRadius: '8px',
-                    border: '1px solid',
-                    borderColor: isActive ? 'text.primary' : 'divider',
-                    backgroundColor: isActive ? 'text.primary' : 'transparent',
-                    color: isActive ? 'background.paper' : 'text.primary',
-                    boxShadow: isActive ? '0 2px 6px rgba(0,0,0,0.15)' : 'none',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                       backgroundColor: isActive 
-                        ? (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)'
-                        : 'action.hover',
-                    }
-                  }}
-                />
-              );
-            })}
-
-            {activeColumnFilterCount > 0 && (
-              <>
-                <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+          {activeColumnFilterCount > 0 && (
+            <>
+              <Divider sx={{ opacity: 0.4 }} />
+              <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
                 <Badge badgeContent={activeColumnFilterCount} color="primary">
                   <Chip
                     icon={<FilterAltRounded />}
@@ -558,9 +560,9 @@ export const TimesheetList = () => {
                     sx={{ fontWeight: 600 }}
                   />
                 </Badge>
-              </>
-            )}
-          </Stack>
+              </Stack>
+            </>
+          )}
         </Stack>
       </Box>
 
@@ -573,7 +575,7 @@ export const TimesheetList = () => {
         setScope={setScope}
         departmentId={departmentId}
         setDepartmentId={setDepartmentId}
-        totalCount={data?.totalCount || 0}
+        totalCount={baseActiveCount}
       />
 
       <Box 

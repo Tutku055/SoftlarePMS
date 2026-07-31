@@ -30,6 +30,7 @@ import { DataTable } from '../../../../components/DataTable/DataTable';
 import type { CustomFilterValue, DataTableColumnDef } from '../../../../components/DataTable/DataTable';
 import { useEmployees } from '../../../employees/hooks/useEmployees';
 import { useDepartments } from '../../../employees/hooks/useDepartments';
+import { useProfessionsLookup } from '../../../professions/hooks/useProfessionsLookup';
 import ExcelJS from 'exceljs';
 
 const COLUMN_NAMES: Record<string, string> = {
@@ -149,21 +150,21 @@ export const PayrollList = () => {
   const handleQuickFilterClick = (code: QuickFilter) => {
     const newCode = activeQuickFilter === code ? 'all' : code;
     setActiveQuickFilter(newCode);
-    
-    // Quick filters reset ALL existing filters
-    setQuickSearch('');
-    
-    if (newCode === 'new_hires') {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      thirtyDaysAgo.setHours(0, 0, 0, 0);
-      setColumnFilters({
-        hireDate: { operator: 'after', value: thirtyDaysAgo.toISOString().split('T')[0] }
-      });
-    } else {
-      setColumnFilters({});
-    }
 
+    setColumnFilters((prev) => {
+      const next = { ...prev };
+      if (newCode === 'new_hires') {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        thirtyDaysAgo.setHours(0, 0, 0, 0);
+        next['hireDate'] = { operator: 'after', value: thirtyDaysAgo.toISOString().split('T')[0] };
+      } else {
+        delete next['hireDate'];
+      }
+      return next;
+    });
+
+    setQuickSearch('');
     setPaginationModel((prev) => ({ ...prev, page: 0 }));
   };
 
@@ -184,6 +185,9 @@ export const PayrollList = () => {
 
   const { data: deptData } = useDepartments();
   const departmentOptions = deptData?.items.map((d: any) => ({ value: d.id, label: d.name })) || [];
+
+  const { data: profData } = useProfessionsLookup();
+  const professionOptions = profData?.map((p: any) => ({ value: p.name, label: p.name })) || [];
 
   const handleExport = async () => {
     if (!data?.items?.length) return;
@@ -276,7 +280,8 @@ export const PayrollList = () => {
       headerName: 'Profession',
       flex: 1.5,
       minWidth: 150,
-      filterType: 'text',
+      filterType: 'multi-select',
+      filterOptions: professionOptions,
       valueGetter: (_, row: any) => row.professionName || '-',
       renderCell: (params) => (
         <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary' }}>

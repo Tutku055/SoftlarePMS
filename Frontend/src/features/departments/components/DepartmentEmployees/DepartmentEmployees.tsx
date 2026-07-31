@@ -16,6 +16,7 @@ import { DataTable } from '../../../../components/DataTable/DataTable';
 import type { DataTableColumnDef, CustomFilterValue } from '../../../../components/DataTable/DataTable';
 import { useEmployees } from '../../../employees/hooks/useEmployees';
 import { useDepartmentsLookup } from '../../hooks/useDepartmentsLookup';
+import { useProfessionsLookup } from '../../../professions/hooks/useProfessionsLookup';
 
 const premiumInputSx = {
   '& .MuiOutlinedInput-root': {
@@ -65,6 +66,8 @@ export const DepartmentEmployees = () => {
   };
 
   const { data: departmentsLookup, isLoading: isDepartmentsLoading } = useDepartmentsLookup();
+  const { data: profData } = useProfessionsLookup();
+  const professionOptions = profData?.map((p: any) => ({ value: p.name, label: p.name })) || [];
 
   // Create filters array
   const filters: any[] = [];
@@ -129,7 +132,8 @@ export const DepartmentEmployees = () => {
       headerName: 'Profession',
       flex: 1.5,
       minWidth: 200,
-      filterType: 'text',
+      filterType: 'multi-select',
+      filterOptions: professionOptions,
       valueGetter: (_, row: any) => row.professionName || '-',
       renderCell: (params) => (
         <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary' }}>

@@ -61,16 +61,56 @@ public static class EmployeeQueryExtensions
                     _ => query.Where(e => e.LastName.ToLower().Contains(val))
                 };
             }
-            else if (string.Equals(field, "profession", StringComparison.OrdinalIgnoreCase))
+            else if (string.Equals(field, "profession", StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(field, "professionId", StringComparison.OrdinalIgnoreCase))
             {
-                query = op switch
+                var parts = val.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                               .Select(p => p.Trim())
+                               .Where(p => !string.IsNullOrEmpty(p))
+                               .ToList();
+
+                if (parts.Any())
                 {
-                    "equals" => query.Where(e => e.Profession != null && e.Profession.Name.ToLower() == val),
-                    "contains" => query.Where(e => e.Profession != null && e.Profession.Name.ToLower().Contains(val)),
-                    "startswith" => query.Where(e => e.Profession != null && e.Profession.Name.ToLower().StartsWith(val)),
-                    "endswith" => query.Where(e => e.Profession != null && e.Profession.Name.ToLower().EndsWith(val)),
-                    _ => query.Where(e => e.Profession != null && e.Profession.Name.ToLower().Contains(val))
-                };
+                    var guids = parts.Select(p => Guid.TryParse(p, out var g) ? g : Guid.Empty)
+                                     .Where(g => g != Guid.Empty)
+                                     .ToList();
+
+                    var namesLower = parts.Where(p => !Guid.TryParse(p, out _))
+                                          .Select(p => p.ToLower())
+                                          .ToList();
+
+                    if (guids.Any() && namesLower.Any())
+                    {
+                        query = op switch
+                        {
+                            "in" or "is" or "equals" => query.Where(e => (e.ProfessionId.HasValue && guids.Contains(e.ProfessionId.Value)) ||
+                                                                         (e.Profession != null && namesLower.Contains(e.Profession.Name.ToLower()))),
+                            "notin" or "not in" or "not" => query.Where(e => (!e.ProfessionId.HasValue || !guids.Contains(e.ProfessionId.Value)) &&
+                                                                             (e.Profession == null || !namesLower.Contains(e.Profession.Name.ToLower()))),
+                            _ => query.Where(e => (e.ProfessionId.HasValue && guids.Contains(e.ProfessionId.Value)) ||
+                                                  (e.Profession != null && namesLower.Contains(e.Profession.Name.ToLower())))
+                        };
+                    }
+                    else if (guids.Any())
+                    {
+                        query = op switch
+                        {
+                            "in" or "is" or "equals" => query.Where(e => e.ProfessionId.HasValue && guids.Contains(e.ProfessionId.Value)),
+                            "notin" or "not in" or "not" => query.Where(e => !e.ProfessionId.HasValue || !guids.Contains(e.ProfessionId.Value)),
+                            _ => query.Where(e => e.ProfessionId.HasValue && guids.Contains(e.ProfessionId.Value))
+                        };
+                    }
+                    else
+                    {
+                        query = op switch
+                        {
+                            "in" or "is" or "equals" => query.Where(e => e.Profession != null && namesLower.Contains(e.Profession.Name.ToLower())),
+                            "notin" or "not in" or "not" => query.Where(e => e.Profession == null || !namesLower.Contains(e.Profession.Name.ToLower())),
+                            "contains" => query.Where(e => e.Profession != null && namesLower.Any(n => e.Profession.Name.ToLower().Contains(n))),
+                            _ => query.Where(e => e.Profession != null && namesLower.Contains(e.Profession.Name.ToLower()))
+                        };
+                    }
+                }
             }
             else if (string.Equals(field, "employmentStatus", StringComparison.OrdinalIgnoreCase))
             {

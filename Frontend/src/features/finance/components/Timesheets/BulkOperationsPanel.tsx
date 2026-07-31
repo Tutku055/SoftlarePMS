@@ -17,7 +17,8 @@ import {
   TextField,
   InputLabel,
   FormControl,
-  Snackbar
+  Snackbar,
+  Chip,
 } from '@mui/material';
 import {
   AutoAwesomeRounded,
@@ -313,7 +314,11 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
                 onChange={(e) => handleScopeChange(Number(e.target.value) as BulkTimesheetScope)}
               >
                 <FormControlLabel value={BulkTimesheetScope.AllActive} control={<Radio size="small" />} label={`All Active Employees (${totalCount})`} />
-                <FormControlLabel value={BulkTimesheetScope.Department} control={<Radio size="small" />} label="By Department" />
+                <FormControlLabel 
+                  value={BulkTimesheetScope.Department} 
+                  control={<Radio size="small" />} 
+                  label="By Department"
+                />
                 <FormControlLabel 
                   value={BulkTimesheetScope.Selected} 
                   control={<Radio size="small" />} 
@@ -322,18 +327,21 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
               </RadioGroup>
 
               {scope === BulkTimesheetScope.Department && (
-                <FormControl size="small" fullWidth sx={{ mt: 2 }}>
-                  <InputLabel>Department</InputLabel>
-                  <Select
-                    label="Department"
-                    value={departmentId}
-                    onChange={(e) => setDepartmentId(e.target.value)}
-                  >
-                    {departments?.map((dep) => (
-                      <MenuItem key={dep.id} value={dep.id}>{dep.name}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <Stack direction="row" spacing={1.5} sx={{ mt: 2, alignItems: 'center' }}>
+                  <FormControl size="small" fullWidth>
+                    <InputLabel>Department</InputLabel>
+                    <Select
+                      label="Department"
+                      value={departmentId}
+                      onChange={(e) => setDepartmentId(e.target.value)}
+                      MenuProps={{ disableScrollLock: true }}
+                    >
+                      {departments?.map((dep) => (
+                        <MenuItem key={dep.id} value={dep.id}>{dep.name}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Stack>
               )}
             </Box>
 

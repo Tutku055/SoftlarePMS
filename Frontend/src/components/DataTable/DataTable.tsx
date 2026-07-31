@@ -173,8 +173,14 @@ const FilterHeader: React.FC<FilterHeaderProps> = ({
           size="small"
           value={operator}
           onChange={(e) => onCustomFilterChange(field, value, e.target.value)}
+          onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
+          slotProps={{
+            select: {
+              MenuProps: { disableScrollLock: true }
+            }
+          }}
           sx={{
             width: '92px',
             flexShrink: 0,
@@ -196,8 +202,14 @@ const FilterHeader: React.FC<FilterHeaderProps> = ({
             size="small"
             value={value}
             onChange={(e) => onCustomFilterChange(field, e.target.value, operator)}
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
+            slotProps={{
+              select: {
+                MenuProps: { disableScrollLock: true }
+              }
+            }}
             sx={{
               flex: 1,
               ...premiumInputSx,
@@ -227,6 +239,7 @@ const FilterHeader: React.FC<FilterHeaderProps> = ({
             slotProps={{
               select: {
                 multiple: true,
+                MenuProps: { disableScrollLock: true },
                 renderValue: (selected: any) => {
                   const arr = selected as string[];
                   if (arr.length === 0 || (arr.length === 1 && arr[0] === '')) return 'All';
@@ -235,6 +248,7 @@ const FilterHeader: React.FC<FilterHeaderProps> = ({
                 }
               }
             }}
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             sx={{
@@ -256,6 +270,7 @@ const FilterHeader: React.FC<FilterHeaderProps> = ({
             size="small"
             value={value}
             onChange={(e) => onCustomFilterChange(field, e.target.value, operator)}
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             sx={{
@@ -271,6 +286,7 @@ const FilterHeader: React.FC<FilterHeaderProps> = ({
             placeholder={filterType === 'fileSize' ? `Value (MB)...` : `Value...`}
             value={value}
             onChange={(e) => onCustomFilterChange(field, e.target.value, operator)}
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             sx={{
@@ -285,6 +301,7 @@ const FilterHeader: React.FC<FilterHeaderProps> = ({
             placeholder={`Value...`}
             value={value}
             onChange={(e) => onCustomFilterChange(field, e.target.value, operator)}
+            onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             sx={{
@@ -315,6 +332,10 @@ export const DataTable = ({
   selectedRowIds,
   onSelectionChange,
 }: DataTableProps) => {
+  const customFiltersRef = React.useRef(customFilters);
+  customFiltersRef.current = customFilters;
+  const onCustomFilterChangeRef = React.useRef(onCustomFilterChange);
+  onCustomFilterChangeRef.current = onCustomFilterChange;
 
   const mappedColumns: GridColDef[] = React.useMemo(() => columns.map((col) => {
     const gridCol: GridColDef = { ...col } as GridColDef;
@@ -325,14 +346,14 @@ export const DataTable = ({
           field={col.field}
           headerName={col.headerName || col.field}
           filterType={col.filterType!}
-          customFilters={customFilters}
-          onCustomFilterChange={onCustomFilterChange}
+          customFilters={customFiltersRef.current}
+          onCustomFilterChange={(f, v, o) => onCustomFilterChangeRef.current(f, v, o)}
           options={col.filterOptions}
         />
       );
     }
     return gridCol;
-  }), [columns, customFilters, onCustomFilterChange]);
+  }), [columns]);
 
   return (
     <Box sx={{ width: '100%' }}>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -33,6 +33,7 @@ import { DataTable } from '../../components/DataTable/DataTable';
 import type { CustomFilterValue, DataTableColumnDef } from '../../components/DataTable/DataTable';
 import { useEmployees } from './hooks/useEmployees';
 import { useDepartments } from './hooks/useDepartments';
+import { useProfessionsLookup } from '../professions/hooks/useProfessionsLookup';
 import ExcelJS from 'exceljs';
 
 const COLUMN_NAMES: Record<string, string> = {
@@ -204,7 +205,10 @@ export const Roster = () => {
   });
 
   const { data: deptData } = useDepartments();
-  const departmentOptions = deptData?.items.map((d: any) => ({ value: d.id, label: d.name })) || [];
+  const departmentOptions = useMemo(() => deptData?.items.map((d: any) => ({ value: d.id, label: d.name })) || [], [deptData]);
+
+  const { data: profData } = useProfessionsLookup();
+  const professionOptions = useMemo(() => profData?.map((p: any) => ({ value: p.name, label: p.name })) || [], [profData]);
 
   // ─── PREMIUM EXPORT (REAL EXCEL & AUTO-DESIGN) ───────────────────────────
   const handleExport = async () => {
@@ -371,7 +375,8 @@ export const Roster = () => {
       headerName: 'Profession',
       flex: 1.5,
       minWidth: 150,
-      filterType: 'text',
+      filterType: 'multi-select',
+      filterOptions: professionOptions,
       valueGetter: (_, row: any) => row.professionName || '-',
       renderCell: (params) => (
         <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.secondary' }}>
