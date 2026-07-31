@@ -41,7 +41,8 @@ public class CalculateHourlySalaryCommandHandler : IRequestHandler<CalculateHour
         
         decimal hourlyWage = compensation.BaseSalary;
         
-        // Base salary covers Worked, PaidLeave and Holiday hours; Absent/UnpaidLeave = 0 hrs, no deduction needed.
+        // Base salary covers Worked, PaidLeave and Holiday hours; Absent/UnpaidLeave/NotEmployed = 0 hrs, no deduction needed.
+        // Note: TimesheetStatus.NotEmployed is strictly IGNORED during earning and deduction calculations.
         var payableHourlyEntries = timesheet.Entries.Where(e => 
             e.Status == Domain.Enums.TimesheetStatus.Worked || 
             e.Status == Domain.Enums.TimesheetStatus.PaidLeave || 

@@ -305,6 +305,12 @@ public class BulkTimesheetOperationCommandHandler : IRequestHandler<BulkTimeshee
 
                 foreach (var entry in matchingEntries)
                 {
+                    if (entry.Status == TimesheetStatus.NotEmployed)
+                    {
+                        addSkipped($"Not Employed on {entry.Date:yyyy-MM-dd}", fullName);
+                        continue;
+                    }
+
                     if (request.Action == BulkTimesheetAction.ApplyStatus)
                     {
                         entry.Status = request.Status!.Value;

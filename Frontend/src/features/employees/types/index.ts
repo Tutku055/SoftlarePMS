@@ -201,7 +201,6 @@ export interface UpdateEmployeeCommand {
   nationality: string;
   professionId: string;
   employmentStatus: number;
-  hireDate: string;
   terminationDate?: string | null;
   probationEndDate?: string | null;
   workingHoursPerWeek: number;

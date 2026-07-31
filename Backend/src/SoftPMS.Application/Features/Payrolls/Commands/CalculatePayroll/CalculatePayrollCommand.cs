@@ -37,6 +37,19 @@ public class CalculatePayrollCommandHandler : IRequestHandler<CalculatePayrollCo
 
         if (activeCompensation == null)
         {
+            // Fallback for mid-month hires where compensation might be recorded as starting on the 1st of the next month.
+            // If it's the employee's hire month, grab the earliest available compensation.
+            if (employee.HireDate.Year == request.Year && employee.HireDate.Month == request.Month)
+            {
+                activeCompensation = await _context.EmployeeCompensations
+                    .Where(c => c.EmployeeId == request.EmployeeId)
+                    .OrderBy(c => c.EffectiveDate)
+                    .FirstOrDefaultAsync(cancellationToken);
+            }
+        }
+
+        if (activeCompensation == null)
+        {
             throw new SoftPMS.Application.Common.Exceptions.ValidationException(new List<ValidationFailure> 
             { 
                 new("Compensation", "No active compensation found for this employee in the selected month. Please ensure a compensation record exists before calculating payroll.") 

@@ -79,9 +79,18 @@ public class GenerateMonthlyTimesheetCommandHandler : IRequestHandler<GenerateMo
         {
             var date = new DateTime(request.Year, request.Month, i);
             
-            // Exclude days before the hire date within the hire month.
-            if (date < employee.HireDate.Date)
+            // Handle days before the hire date or after the termination date.
+            if (date < employee.HireDate.Date || (employee.TerminationDate.HasValue && date > employee.TerminationDate.Value.Date))
             {
+                timesheet.Entries.Add(new TimesheetEntry
+                {
+                    Date = date,
+                    Status = TimesheetStatus.NotEmployed,
+                    OvertimeHours = 0,
+                    WorkedHours = 0,
+                    PaidLeaveHours = 0,
+                    UnpaidLeaveHours = 0
+                });
                 continue;
             }
 

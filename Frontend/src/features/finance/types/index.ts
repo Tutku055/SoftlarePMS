@@ -15,7 +15,7 @@ export interface TimesheetEntry {
   id: string;
   monthlyTimesheetId: string;
   date: string;
-  status: number; // matches backend TimesheetStatus enum: 1=Worked, 2=Weekend, 3=PaidLeave, 4=UnpaidLeave, 5=Absent, 6=Holiday
+  status: number; // matches backend TimesheetStatus enum: 1=Worked, 2=Weekend, 3=PaidLeave, 4=UnpaidLeave, 5=Absent, 6=Holiday, 7=NotEmployed
   overtimeHours: number;
   overtimeTypeId?: string;
   salaryType: number;

@@ -50,6 +50,7 @@ const STATUS_CONFIG: Record<number, { label: string, color: string, bgDark: stri
   4: { label: 'Unpaid Leave', color: '#7b1fa2', bgDark: 'rgba(123, 31, 162, 0.15)', bgLight: 'rgba(123, 31, 162, 0.1)' },
   5: { label: 'Absent',       color: '#d32f2f', bgDark: 'rgba(211, 47, 47, 0.15)',  bgLight: 'rgba(211, 47, 47, 0.1)' },
   6: { label: 'Holiday',      color: '#0288d1', bgDark: 'rgba(2, 136, 209, 0.15)',  bgLight: 'rgba(2, 136, 209, 0.1)' },
+  7: { label: 'Not Employed', color: '#9e9e9e', bgDark: 'rgba(158, 158, 158, 0.15)', bgLight: 'rgba(158, 158, 158, 0.1)' },
 };
 
 export const TimesheetDetailMatrix = () => {
@@ -468,48 +469,29 @@ export const TimesheetDetailMatrix = () => {
                 
                 const isWeekend = new Date(year, month - 1, day).getDay() === 0 || new Date(year, month - 1, day).getDay() === 6;
                 const currentDate = new Date(year, month - 1, day);
-                const hireDate = employee?.hireDate ? new Date(employee.hireDate) : null;
-                if (hireDate) {
-                  hireDate.setHours(0, 0, 0, 0); // Normalize hire date time
-                }
-                const isBeforeHireDate = hireDate && currentDate < hireDate;
-
                 const dayStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 const entry = timesheet.entries.find((e: any) => e.date.startsWith(dayStr));
                 
-                if (!entry || isBeforeHireDate) {
+                if (!entry) {
                   return (
-                    <Tooltip title={isBeforeHireDate ? "Before Hire Date" : ""} placement="top" key={`day-${day}`}>
-                      <Box 
-                        sx={{ 
-                          p: 1, 
-                          border: '1px solid', 
-                          borderColor: 'divider', 
-                          borderRadius: 2, 
-                          minHeight: 100, 
-                          position: 'relative', 
-                          bgcolor: isBeforeHireDate ? 'action.disabledBackground' : (isWeekend ? 'rgba(0,0,0,0.02)' : 'transparent'),
-                          cursor: isBeforeHireDate ? 'not-allowed' : 'default',
-                          opacity: isBeforeHireDate ? 0.6 : 1
-                        }}
-                      >
-                        <Typography variant="caption" sx={{ position: 'absolute', top: 6, left: 8, fontWeight: 700, color: isWeekend ? 'error.main' : 'text.secondary', fontSize: '0.85rem' }}>
-                          {day}
-                        </Typography>
-                      </Box>
-                    </Tooltip>
+                    <Box key={`day-${day}`} sx={{ p: 1, border: '1px solid', borderColor: 'divider', borderRadius: 2, minHeight: 100, position: 'relative', bgcolor: isWeekend ? 'rgba(0,0,0,0.02)' : 'transparent' }}>
+                      <Typography variant="caption" sx={{ position: 'absolute', top: 6, left: 8, fontWeight: 700, color: isWeekend ? 'error.main' : 'text.secondary', fontSize: '0.85rem' }}>
+                        {day}
+                      </Typography>
+                    </Box>
                   );
                 }
 
                 const config = STATUS_CONFIG[entry.status];
+                const isNotEmployed = entry.status === 7;
                 const otTypeName = entry.overtimeTypeId && overtimeTypes ? overtimeTypes.find(t => t.id === entry.overtimeTypeId)?.name : null;
-                const tooltipText = `${config.label} ${entry.overtimeHours > 0 ? `(+${entry.overtimeHours}h OT${otTypeName ? ` - ${otTypeName}` : ''})` : ''}`;
+                const tooltipText = isNotEmployed ? 'Not Employed' : `${config.label} ${entry.overtimeHours > 0 ? `(+${entry.overtimeHours}h OT${otTypeName ? ` - ${otTypeName}` : ''})` : ''}`;
                 
                 return (
                   <Tooltip title={tooltipText} arrow placement="top" key={`day-${day}`}>
                     <Box
                       onClick={() => {
-                        if (!isPreviousYearPendingClosure && !isLocked) {
+                        if (!isPreviousYearPendingClosure && !isLocked && !isNotEmployed) {
                           handleOpenEdit(entry);
                         }
                       }}
@@ -524,9 +506,10 @@ export const TimesheetDetailMatrix = () => {
                         gap: 0.5,
                         position: 'relative',
                         bgcolor: config.bgLight,
-                        cursor: (isPreviousYearPendingClosure || isLocked) ? 'not-allowed' : 'pointer',
+                        cursor: (isPreviousYearPendingClosure || isLocked || isNotEmployed) ? 'not-allowed' : 'pointer',
                         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                        '&:hover': (isPreviousYearPendingClosure || isLocked) ? {} : {
+                        opacity: isNotEmployed ? 0.6 : 1,
+                        '&:hover': (isPreviousYearPendingClosure || isLocked || isNotEmployed) ? {} : {
                           bgcolor: config.bgDark,
                           transform: 'translateY(-2px)',
                           boxShadow: (theme) => theme.palette.mode === 'dark' 

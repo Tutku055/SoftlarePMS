@@ -402,6 +402,7 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
                     <MenuItem value={3}>Paid Leave</MenuItem>
                     <MenuItem value={4}>Unpaid Leave</MenuItem>
                     <MenuItem value={5}>Absent</MenuItem>
+                    <MenuItem value={6}>Holiday</MenuItem>
                   </Select>
                 </FormControl>
               )}

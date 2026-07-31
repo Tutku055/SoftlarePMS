@@ -13,7 +13,6 @@ public sealed record UpdateEmployeeCommand(
     string Nationality,
     Guid? ProfessionId,
     EmploymentStatus EmploymentStatus,
-    DateTime HireDate,
     DateTime? TerminationDate,
     DateTime? ProbationEndDate,
     decimal WorkingHoursPerWeek,

@@ -14,6 +14,11 @@ public sealed class UpdateEmployeeCommandHandler(
         var employee = await context.Employees.FindAsync([request.EmployeeId], cancellationToken)
             ?? throw new NotFoundException(nameof(Domain.Entities.Employee), request.EmployeeId);
 
+        if (request.TerminationDate.HasValue && request.TerminationDate.Value < employee.HireDate)
+        {
+            throw new ValidationException("Termination date cannot be before the hire date.");
+        }
+
         // Apply core profile changes
         employee.FirstName          = request.FirstName;
         employee.LastName           = request.LastName;
@@ -22,7 +27,6 @@ public sealed class UpdateEmployeeCommandHandler(
         employee.Nationality        = request.Nationality;
         employee.ProfessionId       = request.ProfessionId;
         employee.EmploymentStatus   = request.EmploymentStatus;
-        employee.HireDate           = request.HireDate;
         employee.TerminationDate    = request.TerminationDate;
         employee.ProbationEndDate   = request.ProbationEndDate;
         employee.WorkingHoursPerWeek = request.WorkingHoursPerWeek;

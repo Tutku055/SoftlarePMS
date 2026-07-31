@@ -12,7 +12,6 @@ public record UpdateEmployeeDto(
     string Nationality,
     Guid? ProfessionId,
     EmploymentStatus EmploymentStatus,
-    DateTime HireDate,
     decimal WorkingHoursPerWeek,
     int AnnualVacationDays,
     int CarriedOverLeaves

@@ -91,6 +91,8 @@ public class CalculateMonthlySalaryCommandHandler : IRequestHandler<CalculateMon
         // Only count entries from the employee's effective window (hire date / compensation end date).
         var entriesInWindow = timesheet.Entries.Where(e => e.Date.Date >= effectiveStart && e.Date.Date <= windowEnd).ToList();
         
+        // Note: TimesheetStatus.NotEmployed is strictly IGNORED during earning and deduction calculations.
+        // It contributes 0 to worked hours and causes no deductions.
         var unpaidCount = entriesInWindow.Count(e => e.Status == Domain.Enums.TimesheetStatus.UnpaidLeave);
         var absentCount = entriesInWindow.Count(e => e.Status == Domain.Enums.TimesheetStatus.Absent);
         var paidLeaveCount = entriesInWindow.Count(e => e.Status == Domain.Enums.TimesheetStatus.PaidLeave);

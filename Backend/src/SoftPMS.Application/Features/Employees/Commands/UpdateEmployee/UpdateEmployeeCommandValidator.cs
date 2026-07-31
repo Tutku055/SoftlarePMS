@@ -31,10 +31,5 @@ public sealed class UpdateEmployeeCommandValidator : AbstractValidator<UpdateEmp
         RuleFor(x => x.CarriedOverLeaves)
             .GreaterThanOrEqualTo(0).WithMessage("Carried over leaves cannot be negative.");
 
-        // Termination date, if provided, must be after hire date
-        RuleFor(x => x.TerminationDate)
-            .GreaterThan(x => x.HireDate)
-            .When(x => x.TerminationDate.HasValue)
-            .WithMessage("Termination date must be after hire date.");
     }
 }

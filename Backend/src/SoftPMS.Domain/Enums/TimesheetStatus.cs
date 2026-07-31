@@ -7,5 +7,6 @@ public enum TimesheetStatus
     PaidLeave = 3,
     UnpaidLeave = 4,
     Absent = 5,
-    Holiday = 6
+    Holiday = 6,
+    NotEmployed = 7
 }

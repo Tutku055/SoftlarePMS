@@ -278,14 +278,15 @@ export const EmployeeDetail = () => {
 
   const handleSave = () => {
     if (!id) return;
+    const { hireDate, ...restFormState } = formState;
     updateEmployee({
       employeeId: id,
-      ...formState,
-      departmentId: formState.departmentId || null,
-      probationEndDate: formState.probationEndDate || null,
-      workingHoursPerWeek: Number(formState.workingHoursPerWeek),
-      annualVacationDays: Number(formState.annualVacationDays),
-      carriedOverLeaves: Number(formState.carriedOverLeaves),
+      ...restFormState,
+      departmentId: restFormState.departmentId || null,
+      probationEndDate: restFormState.probationEndDate || null,
+      workingHoursPerWeek: Number(restFormState.workingHoursPerWeek),
+      annualVacationDays: Number(restFormState.annualVacationDays),
+      carriedOverLeaves: Number(restFormState.carriedOverLeaves),
     });
     if (addressState.addressLine) {
       updateAddress({
@@ -299,15 +300,16 @@ export const EmployeeDetail = () => {
   const handleTerminate = () => {
     if (!id) return;
     setFormState(prev => ({ ...prev, employmentStatus: 3 }));
+    const { hireDate, ...restFormState } = formState;
     updateEmployee({
       employeeId: id,
-      ...formState,
+      ...restFormState,
       employmentStatus: 3,
-      departmentId: formState.departmentId || null,
-      probationEndDate: formState.probationEndDate || null,
-      workingHoursPerWeek: Number(formState.workingHoursPerWeek),
-      annualVacationDays: Number(formState.annualVacationDays),
-      carriedOverLeaves: Number(formState.carriedOverLeaves),
+      departmentId: restFormState.departmentId || null,
+      probationEndDate: restFormState.probationEndDate || null,
+      workingHoursPerWeek: Number(restFormState.workingHoursPerWeek),
+      annualVacationDays: Number(restFormState.annualVacationDays),
+      carriedOverLeaves: Number(restFormState.carriedOverLeaves),
     });
   };
 
@@ -491,7 +493,7 @@ export const EmployeeDetail = () => {
             <TextField select label="Employment Status" name="employmentStatus" value={formState.employmentStatus} onChange={handleChange} size="small" fullWidth sx={premiumInputSx}>
               {statuses.map((s) => <MenuItem key={s.value} value={s.value}>{s.label}</MenuItem>)}
             </TextField>
-            <TextField label="Hire Date" name="hireDate" type="date" value={formState.hireDate} onChange={handleChange} size="small" fullWidth slotProps={{ inputLabel: { shrink: true } }} sx={premiumInputSx} />
+            <TextField label="Hire Date" name="hireDate" type="date" value={formState.hireDate} size="small" fullWidth slotProps={{ inputLabel: { shrink: true } }} sx={premiumInputSx} disabled />
             <TextField label="Probation End Date" name="probationEndDate" type="date" value={formState.probationEndDate} onChange={handleChange} size="small" fullWidth slotProps={{ inputLabel: { shrink: true } }} sx={premiumInputSx} />
             <TextField label="Working Hours / Week" name="workingHoursPerWeek" type="number" value={formState.workingHoursPerWeek} onChange={handleChange} size="small" fullWidth sx={premiumInputSx} />
             <TextField label="Annual Vacation Days" name="annualVacationDays" type="number" value={formState.annualVacationDays} onChange={handleChange} size="small" fullWidth sx={premiumInputSx} />
