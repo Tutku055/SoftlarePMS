@@ -9,5 +9,6 @@ public record MonthlyTimesheetDto(
     decimal TotalOvertimeHours,
     decimal TotalAbsentDays,
     List<TimesheetEntryDto> Entries,
+    bool IsLocked = false,
     bool IsPreviousYearPendingClosure = false
 );

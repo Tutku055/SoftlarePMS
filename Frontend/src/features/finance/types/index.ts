@@ -8,6 +8,7 @@ export interface MonthlyTimesheet {
   totalAbsentDays: number;
   entries: TimesheetEntry[];
   isPreviousYearPendingClosure?: boolean;
+  isLocked: boolean;
 }
 
 export interface TimesheetEntry {

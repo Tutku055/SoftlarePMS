@@ -24,7 +24,9 @@ import {
   SaveRounded,
   PrintRounded,
   PictureAsPdfRounded,
-  WarningRounded
+  WarningRounded,
+  LockRounded,
+  LockOpenRounded
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import jsPDF from 'jspdf';
@@ -35,6 +37,7 @@ import { useUpdateTimesheetEntry } from '../../hooks/useUpdateTimesheetEntry';
 import { useEmployeeDetail } from '../../../employees/hooks/useEmployeeDetail';
 import { useOvertimeTypes } from '../../hooks/useOvertimeTypes';
 import { useYearClosureStatus } from '../../hooks/useYearClosureStatus';
+import { useToggleTimesheetLock } from '../../hooks/useToggleTimesheetLock';
 import { PopupDialog } from '../../../../components/PopupDialog/PopupDialog';
 import type { TimesheetEntry } from '../../types';
 import { useAuthStore } from '../../../../store/useAuthStore';
@@ -65,8 +68,10 @@ export const TimesheetDetailMatrix = () => {
   const { data: overtimeTypes } = useOvertimeTypes();
   const { mutate: generateTimesheet, isPending: isGenerating } = useGenerateTimesheet();
   const { mutate: updateEntry, isPending: isUpdating } = useUpdateTimesheetEntry();
+  const { mutate: toggleLock, isPending: isTogglingLock } = useToggleTimesheetLock();
 
   const isPreviousYearPendingClosure = timesheet?.isPreviousYearPendingClosure || closureStatus?.isPending || false;
+  const isLocked = timesheet?.isLocked || false;
   
   const hasHourlyEntries = useMemo(() => {
     return timesheet?.entries.some(e => e.salaryType === 1) ?? false;
@@ -308,6 +313,20 @@ export const TimesheetDetailMatrix = () => {
         </Stack>
 
         <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+          {timesheet && hasPermission('Timesheets.Lock') && (
+            <Tooltip title={isLocked ? "Unlock Timesheet" : "Lock Timesheet"}>
+              <IconButton 
+                onClick={() => employeeId && toggleLock({ employeeId, year, month, lock: !isLocked })}
+                disabled={isTogglingLock}
+                sx={{ 
+                  color: isLocked ? 'error.main' : 'success.main', 
+                  bgcolor: isLocked ? 'error.50' : 'success.50' 
+                }}
+              >
+                {isLocked ? <LockRounded /> : <LockOpenRounded />}
+              </IconButton>
+            </Tooltip>
+          )}
           <Tooltip title="Print">
             <IconButton onClick={handlePrint} sx={{ color: 'primary.main', bgcolor: 'primary.50' }}>
               <PrintRounded />
@@ -337,6 +356,11 @@ export const TimesheetDetailMatrix = () => {
       {isPreviousYearPendingClosure && (
         <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
           <strong>Year-End Period Closing Required:</strong> You cannot view, create, or update timesheets for {year} until {year - 1} has been officially closed.
+        </Alert>
+      )}
+      {!isPreviousYearPendingClosure && isLocked && (
+        <Alert severity="info" icon={<LockRounded />} sx={{ mb: 3, borderRadius: 2 }}>
+          <strong>Timesheet Locked:</strong> This timesheet is locked for the selected period. Entries cannot be modified.
         </Alert>
       )}
 
@@ -485,7 +509,7 @@ export const TimesheetDetailMatrix = () => {
                   <Tooltip title={tooltipText} arrow placement="top" key={`day-${day}`}>
                     <Box
                       onClick={() => {
-                        if (!isPreviousYearPendingClosure) {
+                        if (!isPreviousYearPendingClosure && !isLocked) {
                           handleOpenEdit(entry);
                         }
                       }}
@@ -500,9 +524,9 @@ export const TimesheetDetailMatrix = () => {
                         gap: 0.5,
                         position: 'relative',
                         bgcolor: config.bgLight,
-                        cursor: isPreviousYearPendingClosure ? 'not-allowed' : 'pointer',
+                        cursor: (isPreviousYearPendingClosure || isLocked) ? 'not-allowed' : 'pointer',
                         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                        '&:hover': isPreviousYearPendingClosure ? {} : {
+                        '&:hover': (isPreviousYearPendingClosure || isLocked) ? {} : {
                           bgcolor: config.bgDark,
                           transform: 'translateY(-2px)',
                           boxShadow: (theme) => theme.palette.mode === 'dark' 

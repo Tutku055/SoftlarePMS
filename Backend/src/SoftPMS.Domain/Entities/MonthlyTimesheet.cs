@@ -16,6 +16,8 @@ public class MonthlyTimesheet : BaseEntity
 
     public decimal TotalAbsentDays { get; set; }
 
+    public bool IsLocked { get; set; }
+
     // Navigation properties
     public virtual Employee Employee { get; set; } = null!;
 

@@ -41,6 +41,7 @@ public static class DatabaseSeeder
         ("Professions.Delete", "Delete professions"),
         ("Timesheets.Read", "View timesheets"),
         ("Timesheets.Manage", "Manage timesheets (generate, update entries)"),
+        ("Timesheets.Lock", "Lock or unlock timesheets"),
         ("Payrolls.Read", "View payroll slips"),
         ("Payrolls.Manage", "Calculate and manage payroll slips"),
         ("Compensations.Manage", "Manage employee compensations"),

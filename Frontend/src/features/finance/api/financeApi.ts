@@ -14,6 +14,10 @@ export const financeApi = {
     const { data } = await apiClient.put<boolean>(`/employees/${employeeId}/timesheets/entries/${entryId}`, command);
     return data;
   },
+  toggleTimesheetLock: async (employeeId: string, year: number, month: number, lock: boolean) => {
+    const { data } = await apiClient.put<boolean>(`/employees/${employeeId}/timesheets/${year}/${month}/lock`, { lock });
+    return data;
+  },
   getPayrollSlips: async (employeeId: string) => {
     const { data } = await apiClient.get<PayrollSlip[]>(`/employees/${employeeId}/payrolls`);
     return data;

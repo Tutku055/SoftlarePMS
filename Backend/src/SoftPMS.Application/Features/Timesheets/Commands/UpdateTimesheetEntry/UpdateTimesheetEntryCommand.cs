@@ -38,6 +38,9 @@ public class UpdateTimesheetEntryCommandHandler : IRequestHandler<UpdateTimeshee
         if (entry == null)
             throw new Exception("Timesheet entry not found");
 
+        if (entry.MonthlyTimesheet.IsLocked)
+            throw new BusinessRuleException("Cannot update entries in a locked timesheet.");
+
         if (entry.Date.Year > _settings.GoLiveYear)
         {
             var isPrevYearClosed = await _context.YearlyRolloverLogs

@@ -81,6 +81,7 @@ public class GetMonthlyTimesheetQueryHandler : IRequestHandler<GetMonthlyTimeshe
             timesheet.TotalOvertimeHours,
             timesheet.TotalAbsentDays,
             entries,
+            timesheet.IsLocked,
             isPreviousYearPendingClosure);
     }
 }

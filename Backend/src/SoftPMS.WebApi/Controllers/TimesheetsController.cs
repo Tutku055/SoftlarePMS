@@ -69,4 +69,18 @@ public class TimesheetsController : ApiControllerBase
             request.UnpaidLeaveHours));
         return Ok(result);
     }
+
+    /// <summary>Locks or unlocks a monthly timesheet.</summary>
+    [HttpPut("{year}/{month}/lock")]
+    [HasPermission("Timesheets.Lock")]
+    public async Task<ActionResult<bool>> ToggleTimesheetLock(Guid employeeId, int year, int month, [FromBody] ToggleLockRequest request)
+    {
+        var result = await Sender.Send(new SoftPMS.Application.Features.Timesheets.Commands.ToggleTimesheetLock.ToggleTimesheetLockCommand(employeeId, year, month, request.Lock));
+        return Ok(result);
+    }
+}
+
+public class ToggleLockRequest
+{
+    public bool Lock { get; set; }
 }
