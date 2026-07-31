@@ -34,6 +34,7 @@ import {
 } from '../../types';
 import { useDepartmentsLookup } from '../../../departments/hooks/useDepartmentsLookup';
 import { useBulkTimesheetOperation } from '../../hooks/useBulkTimesheetOperation';
+import { useOvertimeTypes } from '../../hooks/useOvertimeTypes';
 import { PopupDialog } from '../../../../components/PopupDialog/PopupDialog';
 
 interface BulkOperationsPanelProps {
@@ -60,6 +61,7 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
   totalCount,
 }) => {
   const { data: departments } = useDepartmentsLookup();
+  const { data: overtimeTypes } = useOvertimeTypes();
   const bulkMutation = useBulkTimesheetOperation();
 
   // Panel State
@@ -81,6 +83,18 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
 
   // Action State
   const [status, setStatus] = useState<number | ''>(''); // TimesheetStatus enum values
+  const [overtimeHours, setOvertimeHours] = useState<number | ''>('');
+  const [overtimeTypeId, setOvertimeTypeId] = useState<string>('');
+  const [paidLeaveHours, setPaidLeaveHours] = useState<number | ''>('');
+  const [unpaidLeaveHours, setUnpaidLeaveHours] = useState<number | ''>('');
+
+  useEffect(() => {
+    setStatus('');
+    setOvertimeHours('');
+    setOvertimeTypeId('');
+    setPaidLeaveHours('');
+    setUnpaidLeaveHours('');
+  }, [action]);
   
   // Result Dialog State
   const [resultDialogOpen, setResultDialogOpen] = useState(false);
@@ -100,11 +114,11 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
   // Rule 5 Enforcer
   useEffect(() => {
     if (periodType === BulkTimesheetPeriodType.Month) {
-      if (action === BulkTimesheetAction.ApplyStatus) {
+      if (action === BulkTimesheetAction.ApplyStatus || action === BulkTimesheetAction.ApplyOvertime || action === BulkTimesheetAction.ApplyLeaveHours) {
         setAction(BulkTimesheetAction.GenerateTimesheet);
       }
     } else {
-      if (action !== BulkTimesheetAction.ApplyStatus) {
+      if (action !== BulkTimesheetAction.ApplyStatus && action !== BulkTimesheetAction.ApplyOvertime && action !== BulkTimesheetAction.ApplyLeaveHours) {
         setAction(BulkTimesheetAction.ApplyStatus);
       }
     }
@@ -125,6 +139,10 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
         departmentId: scope === BulkTimesheetScope.Department ? departmentId : undefined,
         employeeIds: scope === BulkTimesheetScope.Selected ? Array.from(selectedRowIds) : undefined,
         status: action === BulkTimesheetAction.ApplyStatus ? Number(status) : undefined,
+        overtimeHours: action === BulkTimesheetAction.ApplyOvertime && overtimeHours !== '' ? Number(overtimeHours) : undefined,
+        overtimeTypeId: action === BulkTimesheetAction.ApplyOvertime && overtimeTypeId ? overtimeTypeId : undefined,
+        paidLeaveHours: action === BulkTimesheetAction.ApplyLeaveHours && paidLeaveHours !== '' ? Number(paidLeaveHours) : undefined,
+        unpaidLeaveHours: action === BulkTimesheetAction.ApplyLeaveHours && unpaidLeaveHours !== '' ? Number(unpaidLeaveHours) : undefined,
       });
 
       if (res.skipped === 0) {
@@ -149,6 +167,10 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
     if (scope === BulkTimesheetScope.Department && !departmentId) return true;
     if (scope === BulkTimesheetScope.Selected && selectedRowIds.size === 0) return true;
     if (action === BulkTimesheetAction.ApplyStatus && status === '') return true;
+    if (action === BulkTimesheetAction.ApplyOvertime && (overtimeHours === '' || Number(overtimeHours) <= 0 || !overtimeTypeId)) return true;
+    if (action === BulkTimesheetAction.ApplyLeaveHours && (
+      (paidLeaveHours === '' || Number(paidLeaveHours) <= 0) && (unpaidLeaveHours === '' || Number(unpaidLeaveHours) <= 0)
+    )) return true;
     if (periodType === BulkTimesheetPeriodType.DayInterval && (!startDate || !endDate)) return true;
     return false;
   };
@@ -335,6 +357,18 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
                   disabled={periodType === BulkTimesheetPeriodType.Month}
                 />
                 <FormControlLabel 
+                  value={BulkTimesheetAction.ApplyOvertime} 
+                  control={<Radio size="small" />} 
+                  label="Add Overtime" 
+                  disabled={periodType === BulkTimesheetPeriodType.Month}
+                />
+                <FormControlLabel 
+                  value={BulkTimesheetAction.ApplyLeaveHours} 
+                  control={<Radio size="small" />} 
+                  label="Add Leave Hours" 
+                  disabled={periodType === BulkTimesheetPeriodType.Month}
+                />
+                <FormControlLabel 
                   value={BulkTimesheetAction.Lock} 
                   control={<Radio size="small" />} 
                   label="Lock Timesheets" 
@@ -368,6 +402,55 @@ export const BulkOperationsPanel: React.FC<BulkOperationsPanelProps> = ({
                 <Alert severity="warning" sx={{ mt: 2, py: 0, '& .MuiAlert-message': { py: 1 } }}>
                   Paid leave can only be applied to monthly salaried employees. Hourly employees will be skipped.
                 </Alert>
+              )}
+
+              {action === BulkTimesheetAction.ApplyOvertime && (
+                <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                  <FormControl size="small" fullWidth>
+                    <InputLabel>Overtime Type</InputLabel>
+                    <Select
+                      label="Overtime Type"
+                      value={overtimeTypeId}
+                      onChange={(e) => setOvertimeTypeId(e.target.value)}
+                    >
+                      {overtimeTypes?.map((t) => (
+                        <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    label="Overtime Hours"
+                    type="number"
+                    size="small"
+                    fullWidth
+                    slotProps={{ htmlInput: { min: 0, step: 0.5 } }}
+                    value={overtimeHours}
+                    onChange={(e) => setOvertimeHours(e.target.value ? Number(e.target.value) : '')}
+                  />
+                </Stack>
+              )}
+
+              {action === BulkTimesheetAction.ApplyLeaveHours && (
+                <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+                  <TextField
+                    label="Paid Leave (Hours)"
+                    type="number"
+                    size="small"
+                    fullWidth
+                    slotProps={{ htmlInput: { min: 0, step: 0.5 } }}
+                    value={paidLeaveHours}
+                    onChange={(e) => setPaidLeaveHours(e.target.value ? Number(e.target.value) : '')}
+                  />
+                  <TextField
+                    label="Unpaid Leave (Hours)"
+                    type="number"
+                    size="small"
+                    fullWidth
+                    slotProps={{ htmlInput: { min: 0, step: 0.5 } }}
+                    value={unpaidLeaveHours}
+                    onChange={(e) => setUnpaidLeaveHours(e.target.value ? Number(e.target.value) : '')}
+                  />
+                </Stack>
               )}
 
               <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>

@@ -96,6 +96,8 @@ export const BulkTimesheetAction = {
   ApplyStatus: 2,
   Lock: 3,
   Unlock: 4,
+  ApplyOvertime: 5,
+  ApplyLeaveHours: 6,
 } as const;
 
 export type BulkTimesheetAction = typeof BulkTimesheetAction[keyof typeof BulkTimesheetAction];
@@ -128,6 +130,10 @@ export interface BulkTimesheetOperationRequest {
   departmentId?: string;
   employeeIds?: string[];
   status?: number;
+  overtimeHours?: number;
+  overtimeTypeId?: string;
+  paidLeaveHours?: number;
+  unpaidLeaveHours?: number;
 }
 
 export interface BulkOperationResultDto {

@@ -106,12 +106,28 @@ public class UpdateTimesheetEntryCommandHandler : IRequestHandler<UpdateTimeshee
             throw new BusinessRuleException("Overtime Type should not be set when there are no Overtime Hours.");
         }
 
+        var overtime = request.OvertimeHours;
+        var otTypeId = request.OvertimeTypeId;
+        var paidLeave = request.PaidLeaveHours;
+        var unpaidLeave = request.UnpaidLeaveHours;
+
+        if (request.Status == TimesheetStatus.Absent || 
+            request.Status == TimesheetStatus.PaidLeave || 
+            request.Status == TimesheetStatus.UnpaidLeave || 
+            request.Status == TimesheetStatus.Holiday)
+        {
+            overtime = 0;
+            otTypeId = null;
+            paidLeave = 0;
+            unpaidLeave = 0;
+        }
+
         entry.Status = request.Status;
-        entry.OvertimeHours = request.OvertimeHours;
-        entry.OvertimeTypeId = request.OvertimeTypeId;
+        entry.OvertimeHours = overtime;
+        entry.OvertimeTypeId = otTypeId;
         entry.WorkedHours = request.WorkedHours;
-        entry.PaidLeaveHours = request.PaidLeaveHours;
-        entry.UnpaidLeaveHours = request.UnpaidLeaveHours;
+        entry.PaidLeaveHours = paidLeave;
+        entry.UnpaidLeaveHours = unpaidLeave;
 
         // Recalculate MonthlyTimesheet totals
         var timesheet = entry.MonthlyTimesheet;

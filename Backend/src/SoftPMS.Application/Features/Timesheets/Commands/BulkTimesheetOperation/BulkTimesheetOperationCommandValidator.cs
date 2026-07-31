@@ -20,15 +20,32 @@ public class BulkTimesheetOperationCommandValidator : AbstractValidator<BulkTime
             .WithMessage("When period is 'Month', only Generate Timesheet and Manage Lock actions are allowed.");
 
         RuleFor(x => x.Action)
-            .Must(a => a == BulkTimesheetAction.ApplyStatus)
+            .Must(a => a == BulkTimesheetAction.ApplyStatus || a == BulkTimesheetAction.ApplyOvertime || a == BulkTimesheetAction.ApplyLeaveHours)
             .When(x => x.PeriodType == BulkTimesheetPeriodType.Day || x.PeriodType == BulkTimesheetPeriodType.DayInterval)
-            .WithMessage("When period is 'Day' or 'Day Interval', only Apply Status action is allowed.");
+            .WithMessage("When period is 'Day' or 'Day Interval', only Apply Status, Apply Overtime, and Apply Leave Hours actions are allowed.");
 
         // ApplyStatus requires a Status value
         RuleFor(x => x.Status)
             .NotNull()
             .When(x => x.Action == BulkTimesheetAction.ApplyStatus)
             .WithMessage("A status must be specified for the Apply Status action.");
+
+        // ApplyOvertime requires OvertimeHours and OvertimeTypeId
+        RuleFor(x => x.OvertimeHours)
+            .GreaterThan(0)
+            .When(x => x.Action == BulkTimesheetAction.ApplyOvertime)
+            .WithMessage("Overtime hours must be greater than 0.");
+
+        RuleFor(x => x.OvertimeTypeId)
+            .NotNull()
+            .When(x => x.Action == BulkTimesheetAction.ApplyOvertime)
+            .WithMessage("Overtime type must be selected.");
+
+        // ApplyLeaveHours requires at least one of PaidLeaveHours or UnpaidLeaveHours
+        RuleFor(x => x)
+            .Must(x => (x.PaidLeaveHours ?? 0) > 0 || (x.UnpaidLeaveHours ?? 0) > 0)
+            .When(x => x.Action == BulkTimesheetAction.ApplyLeaveHours)
+            .WithMessage("At least one of Paid Leave or Unpaid Leave hours must be greater than 0.");
 
         // Day period requires Day value
         RuleFor(x => x.Day)
@@ -52,11 +69,7 @@ public class BulkTimesheetOperationCommandValidator : AbstractValidator<BulkTime
             .When(x => x.PeriodType == BulkTimesheetPeriodType.DayInterval)
             .WithMessage("End date is required for day interval.");
 
-        RuleFor(x => x)
-            .Must(x => x.StartDate!.Value.Year == x.Year && x.StartDate.Value.Month == x.Month
-                     && x.EndDate!.Value.Year == x.Year && x.EndDate.Value.Month == x.Month)
-            .When(x => x.PeriodType == BulkTimesheetPeriodType.DayInterval && x.StartDate.HasValue && x.EndDate.HasValue)
-            .WithMessage("Start and end dates must fall within the selected month.");
+
 
         RuleFor(x => x)
             .Must(x => x.StartDate!.Value <= x.EndDate!.Value)

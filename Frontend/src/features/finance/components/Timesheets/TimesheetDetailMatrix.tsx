@@ -583,6 +583,8 @@ export const TimesheetDetailMatrix = () => {
                 if ([3, 4, 5, 6].includes(val)) {
                   setEditPaidLeaveHours(0);
                   setEditUnpaidLeaveHours(0);
+                  setEditOvertime(0);
+                  setEditOvertimeTypeId('');
                 }
               }}>
                 {Object.entries(STATUS_CONFIG).map(([val, config]) => {

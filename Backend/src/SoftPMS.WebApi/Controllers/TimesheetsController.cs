@@ -24,6 +24,10 @@ public class BulkTimesheetOperationRequest
     public Guid? DepartmentId { get; set; }
     public List<Guid>? EmployeeIds { get; set; }
     public TimesheetStatus? Status { get; set; }
+    public decimal? OvertimeHours { get; set; }
+    public Guid? OvertimeTypeId { get; set; }
+    public decimal? PaidLeaveHours { get; set; }
+    public decimal? UnpaidLeaveHours { get; set; }
 }
 
 // Route params are excluded from body records to avoid .NET 10 OpenAPI null-metadata crash.
@@ -112,7 +116,11 @@ public class TimesheetsController : ApiControllerBase
             request.EndDate,
             request.DepartmentId,
             request.EmployeeIds,
-            request.Status));
+            request.Status,
+            request.OvertimeHours,
+            request.OvertimeTypeId,
+            request.PaidLeaveHours,
+            request.UnpaidLeaveHours));
         return Ok(result);
     }
 }

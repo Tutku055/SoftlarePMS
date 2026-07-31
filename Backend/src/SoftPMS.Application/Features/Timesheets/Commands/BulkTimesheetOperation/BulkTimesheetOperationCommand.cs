@@ -21,7 +21,11 @@ public record BulkTimesheetOperationCommand(
     DateTime? EndDate,
     Guid? DepartmentId,
     List<Guid>? EmployeeIds,
-    TimesheetStatus? Status
+    TimesheetStatus? Status,
+    decimal? OvertimeHours,
+    Guid? OvertimeTypeId,
+    decimal? PaidLeaveHours,
+    decimal? UnpaidLeaveHours
 ) : IRequest<BulkOperationResultDto>;
 
 public class BulkTimesheetOperationCommandHandler : IRequestHandler<BulkTimesheetOperationCommand, BulkOperationResultDto>
@@ -89,7 +93,9 @@ public class BulkTimesheetOperationCommandHandler : IRequestHandler<BulkTimeshee
                     processed = await HandleGenerateTimesheet(request, employees, AddSkipped, cancellationToken);
                     break;
                 case BulkTimesheetAction.ApplyStatus:
-                    processed = await HandleApplyStatus(request, employees, AddSkipped, cancellationToken);
+                case BulkTimesheetAction.ApplyOvertime:
+                case BulkTimesheetAction.ApplyLeaveHours:
+                    processed = await HandleDailyOperations(request, employees, AddSkipped, cancellationToken);
                     break;
                 case BulkTimesheetAction.Lock:
                 case BulkTimesheetAction.Unlock:
@@ -194,7 +200,7 @@ public class BulkTimesheetOperationCommandHandler : IRequestHandler<BulkTimeshee
         return processed;
     }
 
-    private async Task<int> HandleApplyStatus(
+    private async Task<int> HandleDailyOperations(
         BulkTimesheetOperationCommand request,
         List<EmployeeSlim> employees,
         Action<string, string> addSkipped,
@@ -202,15 +208,6 @@ public class BulkTimesheetOperationCommandHandler : IRequestHandler<BulkTimeshee
     {
         int processed = 0;
         var employeeIds = employees.Select(e => e.Id).ToList();
-        var targetStatus = request.Status!.Value;
-
-        // Load timesheets with entries
-        var timesheets = await _context.MonthlyTimesheets
-            .Include(t => t.Entries)
-            .Where(t => employeeIds.Contains(t.EmployeeId) && t.Year == request.Year && t.Month == request.Month)
-            .ToListAsync(cancellationToken);
-
-        var timesheetMap = timesheets.ToDictionary(t => t.EmployeeId);
 
         // Resolve target dates
         var targetDates = new List<DateTime>();
@@ -224,17 +221,24 @@ public class BulkTimesheetOperationCommandHandler : IRequestHandler<BulkTimeshee
                 targetDates.Add(d);
         }
 
+        if (targetDates.Count == 0) return 0;
+
+        // Group dates by Year and Month
+        var targetMonths = targetDates
+            .GroupBy(d => new { d.Year, d.Month })
+            .ToList();
+
         // For PaidLeave, load compensations
         Dictionary<Guid, SalaryType>? compensationMap = null;
-        if (targetStatus == TimesheetStatus.PaidLeave)
+        if (request.Action == BulkTimesheetAction.ApplyStatus && request.Status == TimesheetStatus.PaidLeave)
         {
-            var startOfMonth = new DateTime(request.Year, request.Month, 1);
-            var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
+            var minDate = targetDates.Min();
+            var maxDate = targetDates.Max();
 
             var compensations = await _context.EmployeeCompensations
                 .Where(c => employeeIds.Contains(c.EmployeeId)
-                    && c.EffectiveDate <= endOfMonth
-                    && (c.EndDate == null || c.EndDate >= startOfMonth))
+                    && c.EffectiveDate <= maxDate
+                    && (c.EndDate == null || c.EndDate >= minDate))
                 .ToListAsync(cancellationToken);
 
             compensationMap = new Dictionary<Guid, SalaryType>();
@@ -249,60 +253,100 @@ public class BulkTimesheetOperationCommandHandler : IRequestHandler<BulkTimeshee
             }
         }
 
-        foreach (var emp in employees)
+        foreach (var monthGroup in targetMonths)
         {
-            string fullName = $"{emp.FirstName} {emp.LastName}";
+            var year = monthGroup.Key.Year;
+            var month = monthGroup.Key.Month;
+            var datesInMonth = monthGroup.ToList();
 
-            if (!timesheetMap.TryGetValue(emp.Id, out var timesheet))
-            {
-                addSkipped("No timesheet for this month", fullName);
-                continue;
-            }
+            var timesheets = await _context.MonthlyTimesheets
+                .Include(t => t.Entries)
+                .Where(t => employeeIds.Contains(t.EmployeeId) && t.Year == year && t.Month == month)
+                .ToListAsync(cancellationToken);
 
-            if (timesheet.IsLocked)
-            {
-                addSkipped("Timesheet is locked", fullName);
-                continue;
-            }
+            var timesheetMap = timesheets.ToDictionary(t => t.EmployeeId);
 
-            // PaidLeave restriction: skip hourly employees
-            if (targetStatus == TimesheetStatus.PaidLeave && compensationMap != null)
+            foreach (var emp in employees)
             {
-                if (compensationMap.TryGetValue(emp.Id, out var salaryType) && salaryType == SalaryType.Hourly)
+                string fullName = $"{emp.FirstName} {emp.LastName}";
+
+                if (!timesheetMap.TryGetValue(emp.Id, out var timesheet))
                 {
-                    addSkipped("Hourly employee (Paid Leave not applicable)", fullName);
+                    addSkipped($"No timesheet for {year}-{month:D2}", fullName);
                     continue;
                 }
-            }
 
-            // Apply status to matching entries
-            var matchingEntries = timesheet.Entries
-                .Where(e => targetDates.Any(d => e.Date.Date == d.Date))
-                .ToList();
-
-            if (matchingEntries.Count == 0)
-            {
-                addSkipped("No matching entries for the selected dates", fullName);
-                continue;
-            }
-
-            foreach (var entry in matchingEntries)
-            {
-                entry.Status = targetStatus;
-                if (targetStatus != TimesheetStatus.Worked)
+                if (timesheet.IsLocked)
                 {
-                    entry.OvertimeHours = 0;
-                    entry.OvertimeTypeId = null;
+                    addSkipped($"Timesheet is locked for {year}-{month:D2}", fullName);
+                    continue;
                 }
+
+                // PaidLeave restriction: skip hourly employees
+                if (request.Action == BulkTimesheetAction.ApplyStatus && request.Status == TimesheetStatus.PaidLeave && compensationMap != null)
+                {
+                    if (compensationMap.TryGetValue(emp.Id, out var salaryType) && salaryType == SalaryType.Hourly)
+                    {
+                        addSkipped("Hourly employee (Paid Leave not applicable)", fullName);
+                        continue;
+                    }
+                }
+
+                // Apply operations to matching entries
+                var matchingEntries = timesheet.Entries
+                    .Where(e => datesInMonth.Any(d => e.Date.Date == d.Date))
+                    .ToList();
+
+                if (matchingEntries.Count == 0)
+                {
+                    addSkipped($"No matching entries for {year}-{month:D2}", fullName);
+                    continue;
+                }
+
+                foreach (var entry in matchingEntries)
+                {
+                    if (request.Action == BulkTimesheetAction.ApplyStatus)
+                    {
+                        entry.Status = request.Status!.Value;
+                        if (request.Status.Value != TimesheetStatus.Worked)
+                        {
+                            entry.OvertimeHours = 0;
+                            entry.OvertimeTypeId = null;
+                        }
+                    }
+                    else if (request.Action == BulkTimesheetAction.ApplyOvertime)
+                    {
+                        if (entry.Status == TimesheetStatus.Worked || entry.Status == TimesheetStatus.Weekend || entry.Status == TimesheetStatus.Holiday)
+                        {
+                            entry.OvertimeHours = request.OvertimeHours!.Value;
+                            entry.OvertimeTypeId = request.OvertimeTypeId;
+                        }
+                        else
+                        {
+                            addSkipped($"Cannot apply overtime to {entry.Status} status ({entry.Date:yyyy-MM-dd})", fullName);
+                        }
+                    }
+                    else if (request.Action == BulkTimesheetAction.ApplyLeaveHours)
+                    {
+                        if (request.PaidLeaveHours.HasValue && request.PaidLeaveHours.Value > 0)
+                        {
+                            entry.PaidLeaveHours = request.PaidLeaveHours.Value;
+                        }
+                        if (request.UnpaidLeaveHours.HasValue && request.UnpaidLeaveHours.Value > 0)
+                        {
+                            entry.UnpaidLeaveHours = request.UnpaidLeaveHours.Value;
+                        }
+                    }
+                }
+
+                // Recalculate totals
+                timesheet.TotalWorkedDays = timesheet.Entries.Count(e => e.Status == TimesheetStatus.Worked);
+                timesheet.TotalAbsentDays = timesheet.Entries.Count(e => e.Status == TimesheetStatus.Absent);
+                timesheet.TotalOvertimeHours = timesheet.Entries.Sum(e => e.OvertimeHours);
+
+                _context.MonthlyTimesheets.Update(timesheet);
+                processed++;
             }
-
-            // Recalculate totals
-            timesheet.TotalWorkedDays = timesheet.Entries.Count(e => e.Status == TimesheetStatus.Worked);
-            timesheet.TotalAbsentDays = timesheet.Entries.Count(e => e.Status == TimesheetStatus.Absent);
-            timesheet.TotalOvertimeHours = timesheet.Entries.Sum(e => e.OvertimeHours);
-
-            _context.MonthlyTimesheets.Update(timesheet);
-            processed++;
         }
 
         return processed;
