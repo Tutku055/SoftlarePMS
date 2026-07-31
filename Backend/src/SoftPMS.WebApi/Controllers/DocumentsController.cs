@@ -2,15 +2,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
-using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Application.Common.Models;
 using SoftPMS.Application.Features.Documents.DTOs;
 using SoftPMS.Application.Features.Documents.Commands.UploadDocument;
 using SoftPMS.Application.Features.Documents.Commands.UploadDocumentChunk;
 using SoftPMS.Application.Features.Documents.Commands.DeleteDocument;
-using SoftPMS.Application.Features.Documents.Commands.UpdateDocumentAvailability;
 using SoftPMS.Application.Features.Documents.Commands.UpdateDocument;
 using SoftPMS.Application.Features.Documents.Commands.CheckDocumentsIntegrity;
+using SoftPMS.Application.Features.Documents.Commands.DownloadDocument;
 using SoftPMS.Application.Features.Documents.Queries;
 using SoftPMS.Domain.Enums;
 using SoftPMS.WebApi.Authorization;
@@ -20,12 +19,10 @@ namespace SoftPMS.WebApi.Controllers;
 [Authorize]
 public sealed class DocumentsController : ApiControllerBase
 {
-    private readonly IStorageService _storageService;
     private readonly FileExtensionContentTypeProvider _contentTypeProvider;
 
-    public DocumentsController(IStorageService storageService)
+    public DocumentsController()
     {
-        _storageService = storageService;
         _contentTypeProvider = new FileExtensionContentTypeProvider();
     }
 
@@ -37,9 +34,7 @@ public sealed class DocumentsController : ApiControllerBase
         [FromQuery] GetDocumentsQuery query,
         CancellationToken ct = default)
     {
-        var result = await Sender.Send(query, ct);
-
-        return Ok(result);
+        return Ok(await Sender.Send(query, ct));
     }
 
     /// <summary>Upload a new document to the vault.</summary>
@@ -144,25 +139,19 @@ public sealed class DocumentsController : ApiControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DownloadDocument(Guid id, CancellationToken ct)
     {
-        var document = await Sender.Send(new GetDocumentByIdQuery { Id = id }, ct);
+        var result = await Sender.Send(new DownloadDocumentCommand(id), ct);
 
-        var exists = await _storageService.FileExistsAsync(document.FilePath, ct);
-        
-        await Sender.Send(new UpdateDocumentAvailabilityCommand { Id = id, IsAvailable = exists }, ct);
-
-        if (!exists)
+        if (result == null)
         {
             return NotFound(new { message = "File is not available on disk." });
         }
 
-        var stream = await _storageService.DownloadAsync(document.FilePath, ct);
-
-        if (!_contentTypeProvider.TryGetContentType(document.FileName, out var contentType))
+        if (!_contentTypeProvider.TryGetContentType(result.FileName, out var contentType))
         {
             contentType = "application/octet-stream";
         }
 
-        return File(stream, contentType, document.FileName);
+        return File(result.Stream, contentType, result.FileName);
     }
     
     /// <summary>Get document metadata.</summary>
@@ -172,8 +161,7 @@ public sealed class DocumentsController : ApiControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<DocumentDto>> GetDocument(Guid id, CancellationToken ct)
     {
-        var document = await Sender.Send(new GetDocumentByIdQuery { Id = id }, ct);
-        return Ok(document);
+        return Ok(await Sender.Send(new GetDocumentByIdQuery { Id = id }, ct));
     }
     
     /// <summary>Update document metadata.</summary>
@@ -197,7 +185,6 @@ public sealed class DocumentsController : ApiControllerBase
     [ProducesResponseType(typeof(IntegrityCheckResultDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> CheckIntegrity(CancellationToken ct)
     {
-        var result = await Sender.Send(new CheckDocumentsIntegrityCommand(), ct);
-        return Ok(result);
+        return Ok(await Sender.Send(new CheckDocumentsIntegrityCommand(), ct));
     }
 }

@@ -6,6 +6,6 @@ public class CloseYearAndRolloverLeavesCommandValidator : AbstractValidator<Clos
 {
     public CloseYearAndRolloverLeavesCommandValidator()
     {
-        // Add rules here
+        RuleFor(v => v.YearToClose).GreaterThan(2000);
     }
 }

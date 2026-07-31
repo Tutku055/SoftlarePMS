@@ -6,6 +6,7 @@ public class GenerateMonthlyTimesheetCommandValidator : AbstractValidator<Genera
 {
     public GenerateMonthlyTimesheetCommandValidator()
     {
-        // Add rules here
+        RuleFor(v => v.Year).GreaterThan(2000);
+        RuleFor(v => v.Month).InclusiveBetween(1, 12);
     }
 }

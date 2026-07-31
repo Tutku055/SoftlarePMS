@@ -6,6 +6,7 @@ public class UpdateEmployeeCompensationCommandValidator : AbstractValidator<Upda
 {
     public UpdateEmployeeCompensationCommandValidator()
     {
-        // Add rules here
+        RuleFor(v => v.EmployeeId).NotEmpty();
+        RuleFor(v => v.BaseSalary).GreaterThanOrEqualTo(0);
     }
 }

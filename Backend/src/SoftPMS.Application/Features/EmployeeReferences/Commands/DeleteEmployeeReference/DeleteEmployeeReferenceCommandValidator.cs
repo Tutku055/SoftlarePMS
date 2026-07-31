@@ -6,6 +6,6 @@ public class DeleteEmployeeReferenceCommandValidator : AbstractValidator<DeleteE
 {
     public DeleteEmployeeReferenceCommandValidator()
     {
-        // Add rules here
+        RuleFor(v => v.ReferenceId).NotEmpty();
     }
 }

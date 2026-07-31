@@ -1,8 +1,5 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Domain.Enums;
-using SoftPMS.Application.Common.Exceptions;
 
 namespace SoftPMS.Application.Features.EmployeeCompensations.Commands.EditEmployeeCompensation;
 
@@ -14,51 +11,4 @@ public class EditEmployeeCompensationCommand : IRequest<Unit>
     public SalaryType SalaryType { get; set; }
     public Currency Currency { get; set; }
     public DateTime EffectiveDate { get; set; }
-}
-
-public class EditEmployeeCompensationCommandHandler : IRequestHandler<EditEmployeeCompensationCommand, Unit>
-{
-    private readonly IApplicationDbContext _context;
-
-    public EditEmployeeCompensationCommandHandler(IApplicationDbContext context)
-    {
-        _context = context;
-    }
-
-    public async Task<Unit> Handle(EditEmployeeCompensationCommand request, CancellationToken cancellationToken)
-    {
-        var compensation = await _context.EmployeeCompensations
-            .FirstOrDefaultAsync(c => c.Id == request.Id && c.EmployeeId == request.EmployeeId, cancellationToken);
-
-        if (compensation == null)
-            throw new Exception("Compensation record not found");
-
-        var currentUtc = DateTime.UtcNow;
-        var endOfCompensationMonth = new DateTime(compensation.EffectiveDate.Year, compensation.EffectiveDate.Month, 
-            DateTime.DaysInMonth(compensation.EffectiveDate.Year, compensation.EffectiveDate.Month)).AddDays(1).AddTicks(-1);
-
-        if (currentUtc > endOfCompensationMonth)
-        {
-            throw new BusinessRuleException("Cannot edit a compensation from a past month. Past compensations are immutable.");
-        }
-
-        var activeCompensation = await _context.EmployeeCompensations
-            .Where(c => c.EmployeeId == request.EmployeeId && c.EndDate == null && c.Id != request.Id)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (activeCompensation != null && activeCompensation.EffectiveDate.Date >= request.EffectiveDate.Date)
-        {
-            throw new BusinessRuleException("Edited compensation's effective date cannot be earlier than or equal to the current active compensation's effective date unless editing the active one.");
-        }
-
-        compensation.BaseSalary = request.BaseSalary;
-        compensation.SalaryType = request.SalaryType;
-        compensation.Currency = request.Currency;
-        compensation.EffectiveDate = request.EffectiveDate;
-
-        _context.EmployeeCompensations.Update(compensation);
-        await _context.SaveChangesAsync(cancellationToken);
-
-        return Unit.Value;
-    }
 }

@@ -6,6 +6,7 @@ public class AssignRoleToUserCommandValidator : AbstractValidator<AssignRoleToUs
 {
     public AssignRoleToUserCommandValidator()
     {
-        // Add rules here
+        RuleFor(v => v.UserId).NotEmpty();
+        RuleFor(v => v.RoleId).NotEmpty();
     }
 }

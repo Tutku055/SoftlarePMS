@@ -6,6 +6,7 @@ public class CreateEmployeeReferenceCommandValidator : AbstractValidator<CreateE
 {
     public CreateEmployeeReferenceCommandValidator()
     {
-        // Add rules here
+        RuleFor(v => v.EmployeeId).NotEmpty();
+        RuleFor(v => v.Dto).NotNull();
     }
 }

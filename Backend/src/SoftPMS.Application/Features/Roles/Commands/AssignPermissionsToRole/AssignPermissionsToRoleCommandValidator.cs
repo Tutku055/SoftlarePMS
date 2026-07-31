@@ -6,6 +6,7 @@ public class AssignPermissionsToRoleCommandValidator : AbstractValidator<AssignP
 {
     public AssignPermissionsToRoleCommandValidator()
     {
-        // Add rules here
+        RuleFor(v => v.RoleId).NotEmpty();
+        RuleFor(v => v.PermissionIds).NotNull();
     }
 }

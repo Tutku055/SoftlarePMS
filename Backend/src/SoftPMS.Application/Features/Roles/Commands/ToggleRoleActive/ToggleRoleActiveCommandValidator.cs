@@ -6,6 +6,6 @@ public class ToggleRoleActiveCommandValidator : AbstractValidator<ToggleRoleActi
 {
     public ToggleRoleActiveCommandValidator()
     {
-        // Add rules here
+        RuleFor(v => v.Id).NotEmpty();
     }
 }

@@ -6,6 +6,6 @@ public class DeletePermissionCommandValidator : AbstractValidator<DeletePermissi
 {
     public DeletePermissionCommandValidator()
     {
-        // Add rules here
+        RuleFor(v => v.Id).NotEmpty();
     }
 }

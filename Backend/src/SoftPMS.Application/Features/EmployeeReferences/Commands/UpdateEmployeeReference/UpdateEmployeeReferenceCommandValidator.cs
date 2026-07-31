@@ -6,6 +6,7 @@ public class UpdateEmployeeReferenceCommandValidator : AbstractValidator<UpdateE
 {
     public UpdateEmployeeReferenceCommandValidator()
     {
-        // Add rules here
+        RuleFor(v => v.ReferenceId).NotEmpty();
+        RuleFor(v => v.Dto).NotNull();
     }
 }

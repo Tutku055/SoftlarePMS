@@ -6,6 +6,7 @@ public class CreateEmployeeNoteCommandValidator : AbstractValidator<CreateEmploy
 {
     public CreateEmployeeNoteCommandValidator()
     {
-        // Add rules here
+        RuleFor(v => v.EmployeeId).NotEmpty();
+        RuleFor(v => v.Dto).NotNull();
     }
 }

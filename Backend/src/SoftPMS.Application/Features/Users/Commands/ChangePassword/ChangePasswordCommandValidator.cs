@@ -6,6 +6,7 @@ public class ChangePasswordCommandValidator : AbstractValidator<ChangePasswordCo
 {
     public ChangePasswordCommandValidator()
     {
-        // Add rules here
+        RuleFor(v => v.OldPassword).NotEmpty();
+        RuleFor(v => v.NewPassword).NotEmpty();
     }
 }
