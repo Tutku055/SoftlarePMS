@@ -1,5 +1,5 @@
 import { apiClient } from '../../../config/apiClient';
-import type { MonthlyTimesheet, PayrollSlip, UpdateTimesheetEntryCommand, CalculateMonthlyPayrollCommand, GenerateMonthlyTimesheetCommand } from '../types';
+import type { MonthlyTimesheet, PayrollSlip, UpdateTimesheetEntryCommand, CalculateMonthlyPayrollCommand, GenerateMonthlyTimesheetCommand, BulkOperationResultDto, BulkTimesheetOperationRequest } from '../types';
 
 export const financeApi = {
   getMonthlyTimesheet: async (employeeId: string, year: number, month: number) => {
@@ -16,6 +16,10 @@ export const financeApi = {
   },
   toggleTimesheetLock: async (employeeId: string, year: number, month: number, lock: boolean) => {
     const { data } = await apiClient.put<boolean>(`/employees/${employeeId}/timesheets/${year}/${month}/lock`, { lock });
+    return data;
+  },
+  bulkTimesheetOperation: async (request: BulkTimesheetOperationRequest) => {
+    const { data } = await apiClient.post<BulkOperationResultDto>('/timesheets/bulk', request);
     return data;
   },
   getPayrollSlips: async (employeeId: string) => {

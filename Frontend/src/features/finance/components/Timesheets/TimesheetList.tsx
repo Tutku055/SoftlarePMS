@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -29,7 +30,9 @@ import { useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../../components/DataTable/DataTable';
 import type { CustomFilterValue, DataTableColumnDef } from '../../../../components/DataTable/DataTable';
 import { useEmployees } from '../../../employees/hooks/useEmployees';
+import { BulkOperationsPanel } from './BulkOperationsPanel';
 import ExcelJS from 'exceljs';
+import { BulkTimesheetScope } from '../../types';
 
 const COLUMN_NAMES: Record<string, string> = {
   employeeNo: 'Employee No',
@@ -58,6 +61,18 @@ export const TimesheetList = () => {
   const handleClearColumnFilters = useCallback(() => {
     setColumnFilters({});
   }, []);
+
+  const [bulkPanelOpen, setBulkPanelOpen] = useState(false);
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
+  const [scope, setScope] = useState<BulkTimesheetScope>(BulkTimesheetScope.AllActive);
+  const [departmentId, setDepartmentId] = useState<string>('');
+  const location = useLocation();
+
+  // Reset selection on unmount or route change
+  useEffect(() => {
+    setSelectedRowIds(new Set());
+    setBulkPanelOpen(false);
+  }, [location.pathname]);
 
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
@@ -137,6 +152,59 @@ export const TimesheetList = () => {
     filters: apiFilters,
   });
 
+  const currentVisibleIds = data?.items?.map((item: any) => String(item.id)) || [];
+  const effectivelySelectedIds = new Set(selectedRowIds);
+
+  if (bulkPanelOpen) {
+    if (scope === BulkTimesheetScope.AllActive) {
+      currentVisibleIds.forEach(id => effectivelySelectedIds.add(id));
+    } else if (scope === BulkTimesheetScope.Department && departmentId) {
+      data?.items?.forEach((item: any) => {
+        if (item.department?.id === departmentId) {
+          effectivelySelectedIds.add(String(item.id));
+        }
+      });
+    }
+  }
+
+  const handleSelectionChange = useCallback((newSelection: Set<string>) => {
+    if (scope === BulkTimesheetScope.AllActive || (scope === BulkTimesheetScope.Department && departmentId)) {
+      setScope(BulkTimesheetScope.Selected);
+      
+      const prevEffectiveIds = new Set(selectedRowIds);
+      if (scope === BulkTimesheetScope.AllActive) {
+        currentVisibleIds.forEach(id => prevEffectiveIds.add(id));
+      } else if (scope === BulkTimesheetScope.Department && departmentId) {
+        data?.items?.forEach((item: any) => {
+          if (item.department?.id === departmentId) {
+            prevEffectiveIds.add(String(item.id));
+          }
+        });
+      }
+
+      const nextSelection = new Set(prevEffectiveIds);
+      currentVisibleIds.forEach(id => {
+        if (newSelection.has(id)) {
+          nextSelection.add(id);
+        } else {
+          nextSelection.delete(id);
+        }
+      });
+      
+      setSelectedRowIds(nextSelection);
+    } else {
+      const nextSelection = new Set<string>();
+      selectedRowIds.forEach(id => {
+        if (!currentVisibleIds.includes(id)) {
+          nextSelection.add(id);
+        }
+      });
+      
+      newSelection.forEach(id => nextSelection.add(id));
+      setSelectedRowIds(nextSelection);
+    }
+  }, [scope, departmentId, currentVisibleIds, data, selectedRowIds]);
+
   const navigate = useNavigate();
 
   const handleExport = async () => {
@@ -199,7 +267,7 @@ export const TimesheetList = () => {
 
   const activeColumnFilterCount = Object.values(columnFilters).filter(f => !!f.value).length;
 
-  const columns: DataTableColumnDef[] = [
+  const columns: DataTableColumnDef[] = useMemo(() => [
     {
       field: 'employeeNo',
       headerName: 'Employee No',
@@ -262,7 +330,7 @@ export const TimesheetList = () => {
         </Typography>
       )
     }
-  ];
+  ], []);
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1536, margin: '0 auto' }}>
@@ -288,6 +356,24 @@ export const TimesheetList = () => {
         </Box>
 
         <Stack direction="row" spacing={1.5}>
+          <Tooltip title="Bulk Operations" arrow>
+            <Button
+              variant={bulkPanelOpen ? 'contained' : 'outlined'}
+              color="primary"
+              startIcon={<AutoAwesomeRounded />}
+              onClick={() => setBulkPanelOpen(!bulkPanelOpen)}
+              sx={{
+                borderRadius: '10px',
+                fontWeight: 600,
+                textTransform: 'none',
+                transition: 'all 0.2s ease',
+                boxShadow: bulkPanelOpen ? '0 4px 12px rgba(25,118,210,0.2)' : 'none',
+              }}
+            >
+              Bulk Ops
+            </Button>
+          </Tooltip>
+
           <Tooltip title="Manage Columns" arrow>
             <Button
               variant="outlined"
@@ -478,6 +564,18 @@ export const TimesheetList = () => {
         </Stack>
       </Box>
 
+      <BulkOperationsPanel 
+        open={bulkPanelOpen} 
+        onClose={() => setBulkPanelOpen(false)}
+        selectedRowIds={selectedRowIds}
+        onClearSelection={() => setSelectedRowIds(new Set())}
+        scope={scope}
+        setScope={setScope}
+        departmentId={departmentId}
+        setDepartmentId={setDepartmentId}
+        totalCount={data?.totalCount || 0}
+      />
+
       <Box 
         sx={{
           borderRadius: 4,
@@ -499,6 +597,9 @@ export const TimesheetList = () => {
           onColumnVisibilityModelChange={setColumnVisibility}
           customFilters={columnFilters}
           onCustomFilterChange={handleCustomFilterChange}
+          checkboxSelection={bulkPanelOpen}
+          selectedRowIds={effectivelySelectedIds}
+          onSelectionChange={handleSelectionChange}
           onRowClick={(id) => navigate(`/finance/timesheets/${id}`)}
         />
       </Box>

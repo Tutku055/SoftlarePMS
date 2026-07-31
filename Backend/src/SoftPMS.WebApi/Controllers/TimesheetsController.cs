@@ -3,11 +3,28 @@ using Microsoft.AspNetCore.Mvc;
 using SoftPMS.Application.Features.Timesheets.DTOs;
 using SoftPMS.Application.Features.Timesheets.Commands.GenerateMonthlyTimesheet;
 using SoftPMS.Application.Features.Timesheets.Commands.UpdateTimesheetEntry;
+using SoftPMS.Application.Features.Timesheets.Commands.BulkTimesheetOperation;
 using SoftPMS.Application.Features.Timesheets.Queries.GetMonthlyTimesheet;
 using SoftPMS.Domain.Enums;
 using SoftPMS.WebApi.Authorization;
 
 namespace SoftPMS.WebApi.Controllers;
+
+/// <summary>Request body for bulk timesheet operations.</summary>
+public class BulkTimesheetOperationRequest
+{
+    public BulkTimesheetAction Action { get; set; }
+    public BulkTimesheetScope Scope { get; set; }
+    public BulkTimesheetPeriodType PeriodType { get; set; }
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public int? Day { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+    public Guid? DepartmentId { get; set; }
+    public List<Guid>? EmployeeIds { get; set; }
+    public TimesheetStatus? Status { get; set; }
+}
 
 // Route params are excluded from body records to avoid .NET 10 OpenAPI null-metadata crash.
 
@@ -76,6 +93,26 @@ public class TimesheetsController : ApiControllerBase
     public async Task<ActionResult<bool>> ToggleTimesheetLock(Guid employeeId, int year, int month, [FromBody] ToggleLockRequest request)
     {
         var result = await Sender.Send(new SoftPMS.Application.Features.Timesheets.Commands.ToggleTimesheetLock.ToggleTimesheetLockCommand(employeeId, year, month, request.Lock));
+        return Ok(result);
+    }
+
+    /// <summary>Executes a bulk operation on timesheets across multiple employees.</summary>
+    [HttpPost("/api/timesheets/bulk")]
+    [HasPermission("Timesheets.Manage")]
+    public async Task<ActionResult<BulkOperationResultDto>> BulkOperation([FromBody] BulkTimesheetOperationRequest request)
+    {
+        var result = await Sender.Send(new BulkTimesheetOperationCommand(
+            request.Action,
+            request.Scope,
+            request.PeriodType,
+            request.Year,
+            request.Month,
+            request.Day,
+            request.StartDate,
+            request.EndDate,
+            request.DepartmentId,
+            request.EmployeeIds,
+            request.Status));
         return Ok(result);
     }
 }

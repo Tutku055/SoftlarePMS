@@ -90,3 +90,48 @@ export interface PaginatedList<T> {
   hasPreviousPage: boolean;
   hasNextPage: boolean;
 }
+
+export const BulkTimesheetAction = {
+  GenerateTimesheet: 1,
+  ApplyStatus: 2,
+  Lock: 3,
+  Unlock: 4,
+} as const;
+
+export type BulkTimesheetAction = typeof BulkTimesheetAction[keyof typeof BulkTimesheetAction];
+
+export const BulkTimesheetScope = {
+  AllActive: 1,
+  Department: 2,
+  Selected: 3,
+} as const;
+
+export type BulkTimesheetScope = typeof BulkTimesheetScope[keyof typeof BulkTimesheetScope];
+
+export const BulkTimesheetPeriodType = {
+  Day: 1,
+  Month: 2,
+  DayInterval: 3,
+} as const;
+
+export type BulkTimesheetPeriodType = typeof BulkTimesheetPeriodType[keyof typeof BulkTimesheetPeriodType];
+
+export interface BulkTimesheetOperationRequest {
+  action: BulkTimesheetAction;
+  scope: BulkTimesheetScope;
+  periodType: BulkTimesheetPeriodType;
+  year: number;
+  month: number;
+  day?: number;
+  startDate?: string;
+  endDate?: string;
+  departmentId?: string;
+  employeeIds?: string[];
+  status?: number;
+}
+
+export interface BulkOperationResultDto {
+  processed: number;
+  skipped: number;
+  skippedReasons: Record<string, string[]>;
+}

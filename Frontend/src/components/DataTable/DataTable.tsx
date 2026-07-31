@@ -6,6 +6,7 @@ import type {
   GridPaginationModel,
   GridColumnVisibilityModel,
   GridColumnHeaderParams,
+  GridRowSelectionModel,
 } from '@mui/x-data-grid';
 import { Box, Stack, TextField, MenuItem, Typography } from '@mui/material';
 
@@ -30,6 +31,9 @@ interface DataTableProps {
   customFilters: Record<string, CustomFilterValue>;
   onCustomFilterChange: (field: string, value: string, operator: string) => void;
   onRowClick?: (id: string) => void;
+  checkboxSelection?: boolean;
+  selectedRowIds?: Set<string>;
+  onSelectionChange?: (ids: Set<string>) => void;
 }
 
 const STRING_OPERATORS = [
@@ -73,7 +77,7 @@ const MULTI_SELECT_OPERATORS = [
 ];
 
 // Premium Input Stilleri
-export const premiumInputSx = {
+const premiumInputSx = {
   '& .MuiOutlinedInput-root': {
     fontSize: '0.75rem',
     borderRadius: '6px',
@@ -109,179 +113,190 @@ export const premiumInputSx = {
   }
 };
 
-const renderHeaderWithFilter = (
-  field: string,
-  headerName: string,
-  filterType: FilterType,
-  customFilters: Record<string, CustomFilterValue>,
-  onCustomFilterChange: (field: string, value: string, operator: string) => void,
-  options?: { value: string; label: string }[]
-) => {
-  return (_params: GridColumnHeaderParams) => {
-    const filterState = customFilters[field] || { value: '', operator: (filterType === 'text' || filterType === 'fullName') ? 'contains' : filterType === 'multi-select' ? 'in' : (filterType === 'fileSize' ? 'biggerthan' : 'is') };
-    const { value, operator } = filterState;
+import React from 'react';
 
-    const getOpList = () => {
-      if (filterType === 'date') return DATE_OPERATORS;
-      if (filterType === 'select') return SELECT_OPERATORS;
-      if (filterType === 'multi-select') return MULTI_SELECT_OPERATORS;
-      if (filterType === 'number') return NUMBER_OPERATORS;
-      if (filterType === 'fullName') return FULLNAME_OPERATORS;
-      if (filterType === 'fileSize') return FILESIZE_OPERATORS;
-      return STRING_OPERATORS;
-    };
-    const opList = getOpList();
+// ... (imports remain)
 
-    return (
-      <Stack spacing={0.5} sx={{ width: '100%', pt: 1, pb: 0.5, height: '100%', justifyContent: 'flex-end' }}>
-        <Typography 
-          variant="subtitle2" 
-          sx={{ 
-            fontWeight: 600, 
-            lineHeight: 1,
-            color: value ? 'primary.main' : 'text.primary',
-            letterSpacing: '-0.01em',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            transition: 'color 0.2s ease',
+interface FilterHeaderProps {
+  field: string;
+  headerName: string;
+  filterType: FilterType;
+  customFilters: Record<string, CustomFilterValue>;
+  onCustomFilterChange: (field: string, value: string, operator: string) => void;
+  options?: { value: string; label: string }[];
+}
+
+const FilterHeader: React.FC<FilterHeaderProps> = ({
+  field,
+  headerName,
+  filterType,
+  customFilters,
+  onCustomFilterChange,
+  options
+}) => {
+  const filterState = customFilters[field] || { value: '', operator: (filterType === 'text' || filterType === 'fullName') ? 'contains' : filterType === 'multi-select' ? 'in' : (filterType === 'fileSize' ? 'biggerthan' : 'is') };
+  const { value, operator } = filterState;
+
+  const getOpList = () => {
+    if (filterType === 'date') return DATE_OPERATORS;
+    if (filterType === 'select') return SELECT_OPERATORS;
+    if (filterType === 'multi-select') return MULTI_SELECT_OPERATORS;
+    if (filterType === 'number') return NUMBER_OPERATORS;
+    if (filterType === 'fullName') return FULLNAME_OPERATORS;
+    if (filterType === 'fileSize') return FILESIZE_OPERATORS;
+    return STRING_OPERATORS;
+  };
+  const opList = getOpList();
+
+  return (
+    <Stack spacing={0.5} sx={{ width: '100%', pt: 1, pb: 0.5, height: '100%', justifyContent: 'flex-end' }}>
+      <Typography 
+        variant="subtitle2" 
+        sx={{ 
+          fontWeight: 600, 
+          lineHeight: 1,
+          color: value ? 'primary.main' : 'text.primary',
+          letterSpacing: '-0.01em',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          transition: 'color 0.2s ease',
+        }}
+      >
+        {headerName}
+      </Typography>
+      
+      <Box sx={{ display: 'flex', gap: 0.5 }}>
+        {/* Operator Selector */}
+        <TextField
+          select
+          size="small"
+          value={operator}
+          onChange={(e) => onCustomFilterChange(field, value, e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+          sx={{
+            width: '92px',
+            flexShrink: 0,
+            ...premiumInputSx,
+            '& .MuiSelect-select': { py: 0.5, display: 'flex', alignItems: 'center' }
           }}
         >
-          {headerName}
-        </Typography>
-        
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
-          {/* Operator Selector (Genişlik 92px'e çıkarıldı, oklar gizlendi) */}
+          {opList.map((opt) => (
+            <MenuItem key={opt.value} value={opt.value} sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
+              {opt.label}
+            </MenuItem>
+          ))}
+        </TextField>
+
+        {/* Value Input */}
+        {(filterType === 'select' || filterType === 'fileSize') && options ? (
           <TextField
             select
             size="small"
-            value={operator}
-            onChange={(e) => onCustomFilterChange(field, value, e.target.value)}
+            value={value}
+            onChange={(e) => onCustomFilterChange(field, e.target.value, operator)}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
             sx={{
-              width: '92px',
-              flexShrink: 0,
+              flex: 1,
               ...premiumInputSx,
               '& .MuiSelect-select': { py: 0.5, display: 'flex', alignItems: 'center' }
             }}
           >
-            {opList.map((opt) => (
+            <MenuItem value="" sx={{ fontSize: '0.75rem', fontWeight: 500 }}>All</MenuItem>
+            {options.map((opt) => (
               <MenuItem key={opt.value} value={opt.value} sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
                 {opt.label}
               </MenuItem>
             ))}
           </TextField>
-
-          {/* Value Input */}
-          {(filterType === 'select' || filterType === 'fileSize') && options ? (
-            <TextField
-              select
-              size="small"
-              value={value}
-              onChange={(e) => onCustomFilterChange(field, e.target.value, operator)}
-              onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => e.stopPropagation()}
-              sx={{
-                flex: 1,
-                ...premiumInputSx,
-                '& .MuiSelect-select': { py: 0.5, display: 'flex', alignItems: 'center' }
-              }}
-            >
-              <MenuItem value="" sx={{ fontSize: '0.75rem', fontWeight: 500 }}>All</MenuItem>
-              {options.map((opt) => (
-                <MenuItem key={opt.value} value={opt.value} sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
-                  {opt.label}
-                </MenuItem>
-              ))}
-            </TextField>
-          ) : filterType === 'multi-select' && options ? (
-            <TextField
-              select
-              size="small"
-              value={value ? value.split(',') : []}
-              onChange={(e) => {
-                const val = e.target.value as unknown as string[];
-                if (val.includes('') || val.length === 0) {
-                  onCustomFilterChange(field, '', operator);
-                } else {
-                  onCustomFilterChange(field, val.join(','), operator);
+        ) : filterType === 'multi-select' && options ? (
+          <TextField
+            select
+            size="small"
+            value={value ? value.split(',') : []}
+            onChange={(e) => {
+              const val = e.target.value as unknown as string[];
+              if (val.includes('') || val.length === 0) {
+                onCustomFilterChange(field, '', operator);
+              } else {
+                onCustomFilterChange(field, val.join(','), operator);
+              }
+            }}
+            slotProps={{
+              select: {
+                multiple: true,
+                renderValue: (selected: any) => {
+                  const arr = selected as string[];
+                  if (arr.length === 0 || (arr.length === 1 && arr[0] === '')) return 'All';
+                  if (arr.length === 1) return options.find(o => o.value === arr[0])?.label || arr[0];
+                  return `${arr.length} selected`;
                 }
-              }}
-              slotProps={{
-                select: {
-                  multiple: true,
-                  renderValue: (selected: any) => {
-                    const arr = selected as string[];
-                    if (arr.length === 0 || (arr.length === 1 && arr[0] === '')) return 'All';
-                    if (arr.length === 1) return options.find(o => o.value === arr[0])?.label || arr[0];
-                    return `${arr.length} selected`;
-                  }
-                }
-              }}
-              onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => e.stopPropagation()}
-              sx={{
-                flex: 1,
-                ...premiumInputSx,
-                '& .MuiSelect-select': { py: 0.5, display: 'flex', alignItems: 'center' }
-              }}
-            >
-              <MenuItem value="" sx={{ fontSize: '0.75rem', fontWeight: 500 }}>All</MenuItem>
-              {options.map((opt) => (
-                <MenuItem key={opt.value} value={opt.value} sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
-                  {opt.label}
-                </MenuItem>
-              ))}
-            </TextField>
-          ) : filterType === 'date' ? (
-            <TextField
-              type="date"
-              size="small"
-              value={value}
-              onChange={(e) => onCustomFilterChange(field, e.target.value, operator)}
-              onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => e.stopPropagation()}
-              sx={{
-                flex: 1,
-                ...premiumInputSx,
-                '& input': { py: 0.5, px: 1, fontSize: '0.75rem' }
-              }}
-            />
-          ) : (filterType === 'number' || filterType === 'fileSize') ? (
-            <TextField
-              type="number"
-              size="small"
-              placeholder={filterType === 'fileSize' ? `Value (MB)...` : `Value...`}
-              value={value}
-              onChange={(e) => onCustomFilterChange(field, e.target.value, operator)}
-              onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => e.stopPropagation()}
-              sx={{
-                flex: 1,
-                ...premiumInputSx,
-                '& input': { py: 0.5, px: 1, fontSize: '0.75rem' }
-              }}
-            />
-          ) : (
-            <TextField
-              size="small"
-              placeholder={`Value...`}
-              value={value}
-              onChange={(e) => onCustomFilterChange(field, e.target.value, operator)}
-              onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => e.stopPropagation()}
-              sx={{
-                flex: 1,
-                ...premiumInputSx,
-                '& input': { py: 0.5, px: 1, fontSize: '0.75rem', '&::placeholder': { opacity: 0.5 } }
-              }}
-            />
-          )}
-        </Box>
-      </Stack>
-    );
-  };
+              }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            sx={{
+              flex: 1,
+              ...premiumInputSx,
+              '& .MuiSelect-select': { py: 0.5, display: 'flex', alignItems: 'center' }
+            }}
+          >
+            <MenuItem value="" sx={{ fontSize: '0.75rem', fontWeight: 500 }}>All</MenuItem>
+            {options.map((opt) => (
+              <MenuItem key={opt.value} value={opt.value} sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
+                {opt.label}
+              </MenuItem>
+            ))}
+          </TextField>
+        ) : filterType === 'date' ? (
+          <TextField
+            type="date"
+            size="small"
+            value={value}
+            onChange={(e) => onCustomFilterChange(field, e.target.value, operator)}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            sx={{
+              flex: 1,
+              ...premiumInputSx,
+              '& input': { py: 0.5, px: 1, fontSize: '0.75rem' }
+            }}
+          />
+        ) : (filterType === 'number' || filterType === 'fileSize') ? (
+          <TextField
+            type="number"
+            size="small"
+            placeholder={filterType === 'fileSize' ? `Value (MB)...` : `Value...`}
+            value={value}
+            onChange={(e) => onCustomFilterChange(field, e.target.value, operator)}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            sx={{
+              flex: 1,
+              ...premiumInputSx,
+              '& input': { py: 0.5, px: 1, fontSize: '0.75rem' }
+            }}
+          />
+        ) : (
+          <TextField
+            size="small"
+            placeholder={`Value...`}
+            value={value}
+            onChange={(e) => onCustomFilterChange(field, e.target.value, operator)}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            sx={{
+              flex: 1,
+              ...premiumInputSx,
+              '& input': { py: 0.5, px: 1, fontSize: '0.75rem', '&::placeholder': { opacity: 0.5 } }
+            }}
+          />
+        )}
+      </Box>
+    </Stack>
+  );
 };
 
 export const DataTable = ({
@@ -296,23 +311,28 @@ export const DataTable = ({
   customFilters,
   onCustomFilterChange,
   onRowClick,
+  checkboxSelection = false,
+  selectedRowIds,
+  onSelectionChange,
 }: DataTableProps) => {
 
-  const mappedColumns: GridColDef[] = columns.map((col) => {
+  const mappedColumns: GridColDef[] = React.useMemo(() => columns.map((col) => {
     const gridCol: GridColDef = { ...col } as GridColDef;
     
     if (col.filterType && !col.disableFilter) {
-      gridCol.renderHeader = renderHeaderWithFilter(
-        col.field,
-        col.headerName || col.field,
-        col.filterType,
-        customFilters,
-        onCustomFilterChange,
-        col.filterOptions
+      gridCol.renderHeader = (_params: GridColumnHeaderParams) => (
+        <FilterHeader
+          field={col.field}
+          headerName={col.headerName || col.field}
+          filterType={col.filterType!}
+          customFilters={customFilters}
+          onCustomFilterChange={onCustomFilterChange}
+          options={col.filterOptions}
+        />
       );
     }
     return gridCol;
-  });
+  }), [columns, customFilters, onCustomFilterChange]);
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -330,8 +350,20 @@ export const DataTable = ({
         columnHeaderHeight={84}
         columnVisibilityModel={columnVisibilityModel}
         onColumnVisibilityModelChange={onColumnVisibilityModelChange}
+        checkboxSelection={checkboxSelection}
+        keepNonExistentRowsSelected={true}
+        rowSelectionModel={
+          checkboxSelection && selectedRowIds 
+            ? { type: 'include', ids: new Set(selectedRowIds) }
+            : undefined
+        }
+        onRowSelectionModelChange={checkboxSelection && onSelectionChange ? (model: GridRowSelectionModel) => {
+          const newSet = new Set<string>();
+          model.ids.forEach((id) => newSet.add(String(id)));
+          onSelectionChange(newSet);
+        } : undefined}
         disableRowSelectionOnClick
-        disableMultipleRowSelection
+        disableMultipleRowSelection={!checkboxSelection}
         disableColumnMenu
         onRowClick={onRowClick ? (params) => onRowClick(params.row.id) : undefined}
         sx={{
