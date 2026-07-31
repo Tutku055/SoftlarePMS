@@ -172,10 +172,11 @@ export const PayrollDetail = () => {
 
   const slipRef = useRef<HTMLDivElement>(null);
 
-  // Parse backend-formatted strings like "1500.00 EUR" → { amount, currencyCode }
+  // Parse backend-formatted strings like "1500.00 EUR" or "1500,00 EUR" → { amount, currencyCode }
   const parseSlipAmount = (raw: string): { amount: number; currencyCode: string } => {
     const parts = (raw || '').trim().split(' ');
-    return { amount: parseFloat(parts[0]) || 0, currencyCode: parts[1] || '' };
+    const numberString = parts[0]?.replace(',', '.') || '0';
+    return { amount: parseFloat(numberString) || 0, currencyCode: parts[1] || '' };
   };
 
   // Format with TR locale: 15.000,38 EUR  (ASCII code, no special symbol → no jsPDF encoding bug)
