@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SoftPMS.Persistence.Context;
 
@@ -11,9 +12,11 @@ using SoftPMS.Persistence.Context;
 namespace SoftPMS.Persistence.Migrations
 {
     [DbContext(typeof(SoftPMSDbContext))]
-    partial class SoftPMSDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260802163410_UpdateAuditLogSchema")]
+    partial class UpdateAuditLogSchema
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -38,12 +41,12 @@ namespace SoftPMS.Persistence.Migrations
                     b.Property<DateTime>("ChangedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("ChangedByEmail")
-                        .IsRequired()
+                    b.Property<string>("ChangedByUserId")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("ChangedByUserId")
+                    b.Property<string>("ChangedByUsername")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -71,11 +74,11 @@ namespace SoftPMS.Persistence.Migrations
                     b.HasIndex("ChangedAt")
                         .HasDatabaseName("IX_AuditLogs_ChangedAt");
 
-                    b.HasIndex("ChangedByEmail")
-                        .HasDatabaseName("IX_AuditLogs_ChangedByEmail");
-
                     b.HasIndex("ChangedByUserId")
                         .HasDatabaseName("IX_AuditLogs_ChangedByUserId");
+
+                    b.HasIndex("ChangedByUsername")
+                        .HasDatabaseName("IX_AuditLogs_ChangedByUsername");
 
                     b.HasIndex("CorrelationId")
                         .HasDatabaseName("IX_AuditLogs_CorrelationId");

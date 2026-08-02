@@ -12,6 +12,9 @@ public interface ICurrentUserService
     /// <summary>The authenticated user's username. Returns empty string when unauthenticated.</summary>
     string Username { get; }
 
+    /// <summary>The authenticated user's email address. Returns empty string when unauthenticated.</summary>
+    string UserEmail { get; }
+
     /// <summary>True when a valid authenticated session is present.</summary>
     bool IsAuthenticated { get; }
     IEnumerable<string> Permissions { get; }

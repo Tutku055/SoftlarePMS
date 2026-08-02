@@ -54,7 +54,7 @@ export const useAuthStore = create<AuthState>()(
           }
 
           const userEmail = userData?.email || decoded.email || decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || '';
-          const userName = userData?.username || decoded.username || decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || '';
+          const userName = userData?.username || decoded.username || decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || (userEmail ? userEmail.split('@')[0] : '') || 'User';
 
           const isPasswordChangeForced = userData?.requiresPasswordChange ?? (parsedPermissions.includes('Users.ChangePassword') && !parsedPermissions.includes('Dashboard.Read'));
 

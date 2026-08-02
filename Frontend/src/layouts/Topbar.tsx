@@ -24,7 +24,7 @@ export const Topbar: React.FC = () => {
 
   const currentUser = useAuthStore((state) => state.currentUser);
   const permissions = useAuthStore((state) => state.permissions);
-  const displayName = currentUser?.username || 'User';
+  const displayName = currentUser?.username?.trim() || (currentUser?.email ? currentUser.email.split('@')[0] : '') || 'User';
   
   const isPasswordChangeRequired = currentUser?.requiresPasswordChange || 
     (permissions.includes('Users.ChangePassword') && !permissions.includes('Dashboard.Read'));

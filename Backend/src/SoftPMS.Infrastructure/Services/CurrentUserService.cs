@@ -21,13 +21,21 @@ public sealed class CurrentUserService(IHttpContextAccessor httpContextAccessor)
     }
 
     /// <summary>
-    /// Returns the username. The token stores the email under the standard 'email' claim
-    /// (JwtRegisteredClaimNames.Email → ClaimTypes.Email). Fall back to sub if absent.
+    /// Returns the authentic username. Extracts from the custom "username" claim or ClaimTypes.Name,
+    /// explicitly avoiding email fallback to ensure strict semantic separation.
     /// </summary>
     public string Username =>
+        Principal?.FindFirstValue("username")
+        ?? Principal?.FindFirstValue(ClaimTypes.Name)
+        ?? string.Empty;
+
+    /// <summary>
+    /// Returns the authenticated user's email address from JWT token claims.
+    /// </summary>
+    public string UserEmail =>
         Principal?.FindFirstValue(ClaimTypes.Email)
         ?? Principal?.FindFirstValue(JwtRegisteredClaimNames.Email)
-        ?? Principal?.FindFirstValue(ClaimTypes.NameIdentifier)
+        ?? Principal?.FindFirstValue("email")
         ?? string.Empty;
 
     public bool IsAuthenticated => Principal?.Identity?.IsAuthenticated ?? false;
