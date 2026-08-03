@@ -22,6 +22,7 @@ import { PayrollList } from '../features/finance/components/Payrolls/PayrollList
 import { PayrollDetail } from '../features/finance/components/Payrolls/PayrollDetail';
 import { OvertimeTypeList } from '../features/finance/components/OvertimeTypes/OvertimeTypeList';
 import { ProfessionList } from '../features/professions/components/ProfessionList';
+import { SystemLogsPage } from '../features/settings/components/SystemLogs/SystemLogsPage';
 
 import { useLocation } from 'react-router-dom';
 
@@ -253,6 +254,22 @@ export const router = createBrowserRouter([
             element: (
               <ProtectedRoute permission="SystemSettings.YearEndOperations">
                 <YearEndOperations />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'settings/system-logs',
+            element: (
+              <ProtectedRoute permission="AuditLogs.Read">
+                <SystemLogsPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'settings/audit-logs',
+            element: (
+              <ProtectedRoute permission="AuditLogs.Read">
+                <SystemLogsPage />
               </ProtectedRoute>
             ),
           }

@@ -30,47 +30,60 @@ public sealed class AssignPermissionsToRoleCommandHandler(IApplicationDbContext 
         }
 
         var existingPermissionIds = role.RolePermissions.Select(rp => rp.PermissionId).ToList();
-        
-        var addedPermissionIds = distinctPermissionIds.Except(existingPermissionIds).ToList();
-        var removedPermissionIds = existingPermissionIds.Except(distinctPermissionIds).ToList();
-        var changedPermissionIds = addedPermissionIds.Concat(removedPermissionIds).ToList();
 
-        if (changedPermissionIds.Count > 0)
+        var toAdd = distinctPermissionIds.Except(existingPermissionIds).ToList();
+        var toDelete = existingPermissionIds.Except(distinctPermissionIds).ToList();
+        var changedPermissionIds = toAdd.Concat(toDelete).ToList();
+
+        // If no changes were made, short-circuit immediately without touching the database
+        if (changedPermissionIds.Count == 0)
         {
-            var userRoleId = await context.Users
-                .Where(u => u.Id == currentUserService.UserId)
-                .Select(u => u.RoleId)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            var userPermissionNames = await context.RolePermissions
-                .Where(rp => rp.RoleId == userRoleId)
-                .Select(rp => rp.Permission.Name)
-                .ToListAsync(cancellationToken);
-
-            var userPermissions = userPermissionNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            var changedPermissions = await context.Permissions
-                .Where(p => changedPermissionIds.Contains(p.Id))
-                .ToListAsync(cancellationToken);
-
-            var unauthorizedPermissions = changedPermissions.Where(p => !userPermissions.Contains(p.Name)).ToList();
-
-            if (unauthorizedPermissions.Any())
-            {
-                var unauthorizedNames = string.Join(", ", unauthorizedPermissions.Select(p => p.Name));
-                throw new UnauthorizedException($"Privilege Escalation Detected: You can only assign or revoke permissions that you currently possess. You are missing: {unauthorizedNames}");
-            }
+            return Unit.Value;
         }
 
+        var userRoleId = await context.Users
+            .Where(u => u.Id == currentUserService.UserId)
+            .Select(u => u.RoleId)
+            .FirstOrDefaultAsync(cancellationToken);
 
+        var userPermissionNames = await context.RolePermissions
+            .Where(rp => rp.RoleId == userRoleId)
+            .Select(rp => rp.Permission.Name)
+            .ToListAsync(cancellationToken);
 
-        // Replace the full set (idempotent)
-        context.RolePermissions.RemoveRange(role.RolePermissions);
+        var userPermissions = userPermissionNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        var newLinks = distinctPermissionIds
-            .Select(pid => new RolePermission { RoleId = role.Id, PermissionId = pid });
+        var changedPermissions = await context.Permissions
+            .Where(p => changedPermissionIds.Contains(p.Id))
+            .ToListAsync(cancellationToken);
 
-        await context.RolePermissions.AddRangeAsync(newLinks, cancellationToken);
+        var unauthorizedPermissions = changedPermissions.Where(p => !userPermissions.Contains(p.Name)).ToList();
+
+        if (unauthorizedPermissions.Any())
+        {
+            var unauthorizedNames = string.Join(", ", unauthorizedPermissions.Select(p => p.Name));
+            throw new UnauthorizedException($"Privilege Escalation Detected: You can only assign or revoke permissions that you currently possess. You are missing: {unauthorizedNames}");
+        }
+
+        // Delta-based mutation: only delete removed links and add newly requested links
+        if (toDelete.Count > 0)
+        {
+            var entitiesToDelete = role.RolePermissions
+                .Where(rp => toDelete.Contains(rp.PermissionId))
+                .ToList();
+
+            context.RolePermissions.RemoveRange(entitiesToDelete);
+        }
+
+        if (toAdd.Count > 0)
+        {
+            var entitiesToAdd = toAdd
+                .Select(pid => new RolePermission { RoleId = role.Id, PermissionId = pid })
+                .ToList();
+
+            await context.RolePermissions.AddRangeAsync(entitiesToAdd, cancellationToken);
+        }
+
         await context.SaveChangesAsync(cancellationToken);
 
         return Unit.Value;

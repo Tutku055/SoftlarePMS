@@ -47,7 +47,6 @@ public static class DatabaseSeeder
         ("Compensations.Manage", "Manage employee compensations"),
         ("Documents.Read",   "View documents"),
         ("Documents.Create", "Upload documents"),
-
         ("Documents.Update", "Edit documents"),
         ("Documents.Delete", "Delete documents"),
         ("Roles.Read",       "View roles"),
@@ -66,6 +65,7 @@ public static class DatabaseSeeder
         ("OvertimeTypes.Create", "Create new overtime types"),
         ("OvertimeTypes.Update", "Edit overtime types"),
         ("OvertimeTypes.Delete", "Delete overtime types"),
+        ("AuditLogs.Read",   "View system audit logs"),
     ];
 
 

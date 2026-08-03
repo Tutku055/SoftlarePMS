@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -28,7 +28,7 @@ import {
   LockRounded,
   LockOpenRounded
 } from '@mui/icons-material';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useTimesheetDetail } from '../../hooks/useTimesheetDetail';
@@ -43,7 +43,7 @@ import type { TimesheetEntry } from '../../types';
 import { useAuthStore } from '../../../../store/useAuthStore';
 
 // Status values match backend TimesheetStatus enum (1-based)
-const STATUS_CONFIG: Record<number, { label: string, color: string, bgDark: string, bgLight: string }> = {
+const STATUS_CONFIG: Record<number, { label: string; color: string; bgDark: string; bgLight: string }> = {
   1: { label: 'Worked',       color: '#388e3c', bgDark: 'rgba(56, 142, 60, 0.15)',   bgLight: 'rgba(56, 142, 60, 0.1)' },
   2: { label: 'Weekend',      color: '#f57c00', bgDark: 'rgba(245, 124, 0, 0.15)',  bgLight: 'rgba(245, 124, 0, 0.1)' },
   3: { label: 'Paid Leave',   color: '#1976d2', bgDark: 'rgba(25, 118, 210, 0.15)', bgLight: 'rgba(25, 118, 210, 0.1)' },
@@ -55,13 +55,30 @@ const STATUS_CONFIG: Record<number, { label: string, color: string, bgDark: stri
 
 export const TimesheetDetailMatrix = () => {
   const { employeeId } = useParams<{ employeeId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const hasPermission = useAuthStore((state) => state.hasPermission);
 
+  const queryYear = searchParams.get('year');
+  const queryMonth = searchParams.get('month');
+
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
-  const [year, setYear] = useState(currentYear);
-  const [month, setMonth] = useState(currentMonth);
+
+  const initialYear = queryYear && !isNaN(Number(queryYear)) ? Number(queryYear) : currentYear;
+  const initialMonth = queryMonth && !isNaN(Number(queryMonth)) ? Number(queryMonth) : currentMonth;
+
+  const [year, setYear] = useState(initialYear);
+  const [month, setMonth] = useState(initialMonth);
+
+  useEffect(() => {
+    if (queryYear && !isNaN(Number(queryYear))) {
+      setYear(Number(queryYear));
+    }
+    if (queryMonth && !isNaN(Number(queryMonth))) {
+      setMonth(Number(queryMonth));
+    }
+  }, [queryYear, queryMonth]);
 
   const { data: employee, isLoading: isLoadingEmp } = useEmployeeDetail(employeeId);
   const { data: timesheet, isLoading: isLoadingTs, isError: isErrorTs } = useTimesheetDetail(employeeId || '', year, month);
@@ -468,7 +485,6 @@ export const TimesheetDetailMatrix = () => {
                 if (!day) return <Box key={`empty-${idx}`} sx={{ p: 1, bgcolor: 'transparent', minHeight: 100 }} />;
                 
                 const isWeekend = new Date(year, month - 1, day).getDay() === 0 || new Date(year, month - 1, day).getDay() === 6;
-                const currentDate = new Date(year, month - 1, day);
                 const dayStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 const entry = timesheet.entries.find((e: any) => e.date.startsWith(dayStr));
                 
@@ -572,6 +588,8 @@ export const TimesheetDetailMatrix = () => {
               }}>
                 {Object.entries(STATUS_CONFIG).map(([val, config]) => {
                   const numVal = Number(val);
+                  // Hide Not Employed (7) - only assigned automatically by system
+                  if (numVal === 7) return null;
                   // Hide Paid Leave if ANY Hourly entry exists in the month
                   if (numVal === 3 && hasHourlyEntries) return null;
                   

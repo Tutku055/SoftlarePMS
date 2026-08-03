@@ -58,6 +58,18 @@ public sealed class AuditSaveChangesInterceptor(ICurrentUserService currentUser)
         "ConcurrencyStamp"
     };
 
+    /// <summary>
+    /// Entities whose initial creation (EntityState.Added) should be skipped from audit logging
+    /// to avoid massive initial bulk payload noise (e.g. 30 daily entries per monthly timesheet),
+    /// while strictly auditing all subsequent modifications (Modified) and deletions (Deleted).
+    /// </summary>
+    private static readonly HashSet<string> SkipCreationAuditTableAndEntityNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        nameof(TimesheetEntry),
+        "TimesheetEntry",
+        "TimesheetEntries"
+    };
+
     // Staging collection for Added entities with temporary / store-generated primary keys
     private readonly List<AuditEntry> _pendingTemporaryAuditEntries = [];
 
@@ -341,6 +353,16 @@ public sealed class AuditSaveChangesInterceptor(ICurrentUserService currentUser)
 
         if (IgnoredTableAndEntityNames.Contains(clrType.Name))
             return true;
+
+        // 3. Skip initial creation logging for entities configured to only audit updates/deletions (e.g. TimesheetEntry)
+        if (entry.State == EntityState.Added)
+        {
+            if (!string.IsNullOrEmpty(tableName) && SkipCreationAuditTableAndEntityNames.Contains(tableName))
+                return true;
+
+            if (SkipCreationAuditTableAndEntityNames.Contains(clrType.Name))
+                return true;
+        }
 
         return false;
     }

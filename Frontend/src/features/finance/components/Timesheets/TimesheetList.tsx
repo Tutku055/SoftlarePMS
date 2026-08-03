@@ -273,9 +273,7 @@ export const TimesheetList = () => {
       row.height = 22;
       const isEven = index % 2 === 0;
 
-      row.eachCell((cell, colNumber) => {
-        const colId = visibleColumns[colNumber - 1].id;
-
+      row.eachCell((cell) => {
         cell.font = { name: 'Segoe UI', size: 10, color: { argb: '333333' } };
         cell.alignment = { vertical: 'middle', horizontal: 'left' };
         cell.border = {
