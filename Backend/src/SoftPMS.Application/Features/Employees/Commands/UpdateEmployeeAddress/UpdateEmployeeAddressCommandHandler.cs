@@ -23,8 +23,12 @@ public sealed class UpdateEmployeeAddressCommandHandler(
         if (!employeeExists)
             throw new NotFoundException(nameof(Employee), request.EmployeeId);
 
-        // Find the employee's existing address (we assume there's only one or we just update the first one)
+        // Find the employee's existing address (latest primary/active or latest added)
+        var today = dateTime.UtcNow.Date;
         var address = await context.EmployeeAddresses
+            .OrderByDescending(a => a.EndDate == null || a.EndDate >= today)
+            .ThenByDescending(a => a.IsPrimary)
+            .ThenByDescending(a => a.StartDate)
             .FirstOrDefaultAsync(
                 a => a.EmployeeId == request.EmployeeId,
                 cancellationToken);

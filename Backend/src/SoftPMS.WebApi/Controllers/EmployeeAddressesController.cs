@@ -16,7 +16,7 @@ namespace SoftPMS.WebApi.Controllers;
 public sealed class EmployeeAddressesController : ApiControllerBase
 {
     /// <summary>Get all historical addresses for an employee.</summary>
-    [HttpGet("api/employees/{employeeId:guid}/addresses")]
+    [HttpGet("/api/employees/{employeeId:guid}/addresses")]
     [HasPermission("EmployeeAddresses.Read")]
     [ProducesResponseType(typeof(List<EmployeeAddressDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByEmployeeId(
@@ -29,7 +29,7 @@ public sealed class EmployeeAddressesController : ApiControllerBase
     }
 
     /// <summary>Get a single employee address by ID.</summary>
-    [HttpGet("api/employees/{employeeId:guid}/addresses/{id:guid}")]
+    [HttpGet("/api/employees/{employeeId:guid}/addresses/{id:guid}")]
     [HasPermission("EmployeeAddresses.Read")]
     [ProducesResponseType(typeof(EmployeeAddressDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -43,7 +43,7 @@ public sealed class EmployeeAddressesController : ApiControllerBase
     }
 
     /// <summary>Create a new historical address for an employee.</summary>
-    [HttpPost("api/employees/{employeeId:guid}/addresses")]
+    [HttpPost("/api/employees/{employeeId:guid}/addresses")]
     [HasPermission("EmployeeAddresses.Create")]
     [ProducesResponseType(typeof(EmployeeAddressDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -57,7 +57,7 @@ public sealed class EmployeeAddressesController : ApiControllerBase
     }
 
     /// <summary>Update an existing historical employee address.</summary>
-    [HttpPut("api/employees/{employeeId:guid}/addresses/{id:guid}")]
+    [HttpPut("/api/employees/{employeeId:guid}/addresses/{id:guid}")]
     [HasPermission("EmployeeAddresses.Update")]
     [ProducesResponseType(typeof(EmployeeAddressDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -73,7 +73,7 @@ public sealed class EmployeeAddressesController : ApiControllerBase
     }
 
     /// <summary>Delete an employee address record.</summary>
-    [HttpDelete("api/employees/{employeeId:guid}/addresses/{id:guid}")]
+    [HttpDelete("/api/employees/{employeeId:guid}/addresses/{id:guid}")]
     [HasPermission("EmployeeAddresses.Delete")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -87,7 +87,7 @@ public sealed class EmployeeAddressesController : ApiControllerBase
     }
 
     /// <summary>Get a paginated, filtered list of addresses for a specific employee (DataTable support).</summary>
-    [HttpPost("api/employees/{employeeId:guid}/addresses/search")]
+    [HttpPost("/api/employees/{employeeId:guid}/addresses/search")]
     [HasPermission("EmployeeAddresses.Read")]
     [ProducesResponseType(typeof(PaginatedList<EmployeeAddressDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> SearchByEmployee(
@@ -101,7 +101,7 @@ public sealed class EmployeeAddressesController : ApiControllerBase
     }
 
     /// <summary>Get a paginated, filtered list of all employee addresses (Global DataTable support).</summary>
-    [HttpPost("api/employee-addresses/search")]
+    [HttpPost("/api/employee-addresses/search")]
     [HasPermission("EmployeeAddresses.Read")]
     [ProducesResponseType(typeof(PaginatedList<EmployeeAddressDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> SearchAll(

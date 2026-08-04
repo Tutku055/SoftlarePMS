@@ -7,6 +7,8 @@ import { ResetPassword } from '../features/auth/components/ResetPassword/ResetPa
 import { Roster } from '../features/employees/Roster';
 import { EmployeeDetail } from '../features/employees/EmployeeDetail';
 import { EmployeeCreation } from '../features/employees/EmployeeCreation';
+import { AddressList } from '../features/employees/AddressList';
+import { EmployeeAddressDetail } from '../features/employees/EmployeeAddressDetail';
 import { DepartmentList } from '../features/departments/components/DepartmentList/DepartmentList';
 import { DepartmentDetail } from '../features/departments/components/DepartmentDetail/DepartmentDetail';
 import { YearEndOperations } from '../features/settings/components/YearEndOperations/YearEndOperations';
@@ -89,6 +91,30 @@ export const router = createBrowserRouter([
             element: (
               <ProtectedRoute permission="Employees.Read">
                 <Roster />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'employees/addresses',
+            element: (
+              <ProtectedRoute permission="EmployeeAddresses.Read">
+                <AddressList />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'employees/addresses/:id',
+            element: (
+              <ProtectedRoute permission="EmployeeAddresses.Read">
+                <EmployeeAddressDetail />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'employees/:id/addresses',
+            element: (
+              <ProtectedRoute permission="EmployeeAddresses.Read">
+                <EmployeeAddressDetail />
               </ProtectedRoute>
             ),
           },

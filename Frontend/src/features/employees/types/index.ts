@@ -154,14 +154,39 @@ export interface GetEmployeesParams {
 
 export interface EmployeeAddressDto {
   id: string;
+  employeeId?: string;
   addressLine: string;
   country: string;
   city: string;
-  state: string;
-  postalCode: string;
+  state?: string;
+  postalCode?: string;
   isPrimary: boolean;
-  startDate?: string;
-  endDate?: string;
+  startDate: string;
+  endDate?: string | null;
+  isCurrent?: boolean;
+  createdAt?: string;
+}
+
+export interface CreateEmployeeAddressDto {
+  addressLine: string;
+  city: string;
+  state?: string;
+  country: string;
+  postalCode?: string;
+  isPrimary: boolean;
+  startDate: string;
+  endDate?: string | null;
+}
+
+export interface UpdateEmployeeAddressDto {
+  addressLine: string;
+  city: string;
+  state?: string;
+  country: string;
+  postalCode?: string;
+  isPrimary: boolean;
+  startDate: string;
+  endDate?: string | null;
 }
 
 export interface EmployeeCompensationDto {

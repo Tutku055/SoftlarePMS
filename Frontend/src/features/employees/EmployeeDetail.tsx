@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEmployeeDetail } from './hooks/useEmployeeDetail';
 import { useUpdateEmployee } from './hooks/useUpdateEmployee';
-import { useUpdateEmployeeAddress } from './hooks/useUpdateEmployeeAddress';
+import { useUpdateEmployeeAddressMutation } from './hooks/useEmployeeAddresses';
 import { useDepartments } from './hooks/useDepartments';
 import { useProfessionsLookup } from '../professions/hooks/useProfessionsLookup';
 import { useDocuments } from '../documents/hooks/useDocuments';
@@ -53,7 +53,11 @@ import {
   ContactsRounded,
   UploadFileRounded,
   WarningRounded,
-  CheckCircleRounded
+  CheckCircleRounded,
+  LocationOnRounded,
+  LocationOffRounded,
+  HomeRounded,
+  ContactMailRounded,
 } from '@mui/icons-material';
 import styles from './EmployeeDetail.module.css';
 
@@ -137,7 +141,7 @@ export const EmployeeDetail = () => {
 
   const { data: employee, isLoading, isError } = useEmployeeDetail(id);
   const { mutate: updateEmployee, isPending: isUpdatingEmployee } = useUpdateEmployee();
-  const { mutate: updateAddress, isPending: isUpdatingAddress } = useUpdateEmployeeAddress();
+  const { mutate: updateAddressMutation, isPending: isUpdatingAddress } = useUpdateEmployeeAddressMutation();
   const { data: deptData } = useDepartments();
   const departmentOptions = deptData?.items.map((d: any) => ({ value: d.id, label: d.name })) || [];
   const { data: professions } = useProfessionsLookup();
@@ -158,13 +162,43 @@ export const EmployeeDetail = () => {
     departmentId: '',
   });
 
-  const [addressState, setAddressState] = useState({
+  const [primaryAddressState, setPrimaryAddressState] = useState({
     addressLine: '',
     city: '',
     state: '',
     postalCode: '',
     country: '',
   });
+
+  const [secondaryAddressState, setSecondaryAddressState] = useState({
+    addressLine: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: '',
+  });
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const activePrimary = employee?.addresses?.find(
+    (a) => a.isPrimary && (!a.endDate || new Date(a.endDate) >= today)
+  );
+  const activeSecondary = employee?.addresses?.find(
+    (a) => !a.isPrimary && (!a.endDate || new Date(a.endDate) >= today)
+  );
+  const hasAnyActiveAddress = Boolean(activePrimary || activeSecondary);
+
+  const formatAddressDate = (dateStr: string | null | undefined): string => {
+    if (!dateStr || dateStr.startsWith('0001')) {
+      return formatDateDisplay(new Date());
+    }
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime()) || d.getFullYear() < 1970) {
+      return formatDateDisplay(new Date());
+    }
+    return formatDateDisplay(d);
+  };
 
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: 10 });
   const [customFilters, setCustomFilters] = useState<Record<string, CustomFilterValue>>({});
@@ -255,15 +289,48 @@ export const EmployeeDetail = () => {
         departmentId: employee.department?.id || '',
       });
 
-      const primaryAddress = employee.addresses?.find(a => a.isPrimary) 
-        || employee.addresses?.[employee.addresses.length - 1];
-      if (primaryAddress) {
-        setAddressState({
-          addressLine: primaryAddress.addressLine || '',
-          city: primaryAddress.city || '',
-          state: primaryAddress.state || '',
-          postalCode: primaryAddress.postalCode || '',
-          country: primaryAddress.country || '',
+      const todayDate = new Date();
+      todayDate.setHours(0, 0, 0, 0);
+
+      const curPrimary = employee.addresses?.find(
+        (a) => a.isPrimary && (!a.endDate || new Date(a.endDate) >= todayDate)
+      );
+      if (curPrimary) {
+        setPrimaryAddressState({
+          addressLine: curPrimary.addressLine || '',
+          city: curPrimary.city || '',
+          state: curPrimary.state || '',
+          postalCode: curPrimary.postalCode || '',
+          country: curPrimary.country || '',
+        });
+      } else {
+        setPrimaryAddressState({
+          addressLine: '',
+          city: '',
+          state: '',
+          postalCode: '',
+          country: '',
+        });
+      }
+
+      const curSecondary = employee.addresses?.find(
+        (a) => !a.isPrimary && (!a.endDate || new Date(a.endDate) >= todayDate)
+      );
+      if (curSecondary) {
+        setSecondaryAddressState({
+          addressLine: curSecondary.addressLine || '',
+          city: curSecondary.city || '',
+          state: curSecondary.state || '',
+          postalCode: curSecondary.postalCode || '',
+          country: curSecondary.country || '',
+        });
+      } else {
+        setSecondaryAddressState({
+          addressLine: '',
+          city: '',
+          state: '',
+          postalCode: '',
+          country: '',
         });
       }
     }
@@ -273,8 +340,12 @@ export const EmployeeDetail = () => {
     setFormState({ ...formState, [e.target.name]: e.target.value });
   };
   
-  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAddressState({ ...addressState, [e.target.name]: e.target.value });
+  const handlePrimaryAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPrimaryAddressState({ ...primaryAddressState, [e.target.name]: e.target.value });
+  };
+
+  const handleSecondaryAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSecondaryAddressState({ ...secondaryAddressState, [e.target.name]: e.target.value });
   };
 
   const handleSave = () => {
@@ -289,11 +360,38 @@ export const EmployeeDetail = () => {
       annualVacationDays: Number(restFormState.annualVacationDays),
       carriedOverLeaves: Number(restFormState.carriedOverLeaves),
     });
-    if (addressState.addressLine) {
-      updateAddress({
+
+    if (activePrimary && primaryAddressState.addressLine) {
+      updateAddressMutation({
         employeeId: id,
-        ...addressState,
-        isPrimary: true,
+        id: activePrimary.id,
+        dto: {
+          addressLine: primaryAddressState.addressLine,
+          city: primaryAddressState.city,
+          state: primaryAddressState.state,
+          postalCode: primaryAddressState.postalCode,
+          country: primaryAddressState.country,
+          startDate: activePrimary.startDate,
+          endDate: activePrimary.endDate,
+          isPrimary: true,
+        },
+      });
+    }
+
+    if (activeSecondary && secondaryAddressState.addressLine) {
+      updateAddressMutation({
+        employeeId: id,
+        id: activeSecondary.id,
+        dto: {
+          addressLine: secondaryAddressState.addressLine,
+          city: secondaryAddressState.city,
+          state: secondaryAddressState.state,
+          postalCode: secondaryAddressState.postalCode,
+          country: secondaryAddressState.country,
+          startDate: activeSecondary.startDate,
+          endDate: activeSecondary.endDate,
+          isPrimary: false,
+        },
       });
     }
   };
@@ -509,21 +607,197 @@ export const EmployeeDetail = () => {
           </Box>
         </Box>
 
-        {/* Action Card for Address Entity */}
+        {/* Active Addresses Section */}
         <Box sx={{ mt: 3 }}>
-          <Typography variant="h6" className={styles.sectionTitle}>
-            Primary Address
-          </Typography>
-          <Divider sx={{ mb: 3, opacity: 0.5 }} />
-          <Box sx={glassPanelSx}>
-            <Box className={styles.formGrid}>
-              <TextField label="Address Line" name="addressLine" value={addressState.addressLine} onChange={handleAddressChange} size="small" fullWidth sx={{ ...premiumInputSx, gridColumn: '1 / -1' }} />
-              <TextField label="City" name="city" value={addressState.city} onChange={handleAddressChange} size="small" fullWidth sx={premiumInputSx} />
-              <TextField label="State/Province" name="state" value={addressState.state} onChange={handleAddressChange} size="small" fullWidth sx={premiumInputSx} />
-              <TextField label="Postal Code" name="postalCode" value={addressState.postalCode} onChange={handleAddressChange} size="small" fullWidth sx={premiumInputSx} />
-              <TextField label="Country" name="country" value={addressState.country} onChange={handleAddressChange} size="small" fullWidth sx={premiumInputSx} />
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <LocationOnRounded color="primary" />
+              <Typography variant="h6" className={styles.sectionTitle}>
+                Active Addresses
+              </Typography>
             </Box>
+            {hasPermission('EmployeeAddresses.Read') && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<LocationOnRounded />}
+                onClick={() => navigate(`/employees/addresses/${employee.id}`)}
+                sx={{
+                  borderRadius: '8px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.8125rem',
+                }}
+              >
+                Manage & History
+              </Button>
+            )}
           </Box>
+          <Divider sx={{ mb: 3, opacity: 0.5 }} />
+
+          {!hasAnyActiveAddress ? (
+            <Box
+              sx={{
+                ...glassPanelSx,
+                p: 4,
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 1.5,
+              }}
+            >
+              <LocationOffRounded sx={{ fontSize: 44, color: 'text.secondary', opacity: 0.6 }} />
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                No Active Address Registered
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 460 }}>
+                This employee does not have any active primary or secondary address assigned. Historical records can be managed and reactivated in the Addresses tab.
+              </Typography>
+              {hasPermission('EmployeeAddresses.Read') && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => navigate(`/employees/addresses/${employee.id}`)}
+                  sx={{ mt: 1, borderRadius: '8px', textTransform: 'none', fontWeight: 600 }}
+                >
+                  Manage Addresses
+                </Button>
+              )}
+            </Box>
+          ) : (
+            <Stack spacing={3}>
+              {/* Active Primary Address */}
+              {activePrimary && (
+                <Box sx={glassPanelSx}>
+                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
+                    <Chip
+                      icon={<HomeRounded style={{ fontSize: 16 }} />}
+                      label="Active Primary Address"
+                      size="small"
+                      color="primary"
+                      sx={{ fontWeight: 600 }}
+                    />
+                    <Typography variant="caption" color="text.secondary">
+                      Active since: {formatAddressDate(activePrimary.startDate)}
+                    </Typography>
+                  </Stack>
+                  <Box className={styles.formGrid}>
+                    <TextField
+                      label="Address Line"
+                      name="addressLine"
+                      value={primaryAddressState.addressLine}
+                      onChange={handlePrimaryAddressChange}
+                      size="small"
+                      fullWidth
+                      sx={{ ...premiumInputSx, gridColumn: '1 / -1' }}
+                    />
+                    <TextField
+                      label="City"
+                      name="city"
+                      value={primaryAddressState.city}
+                      onChange={handlePrimaryAddressChange}
+                      size="small"
+                      fullWidth
+                      sx={premiumInputSx}
+                    />
+                    <TextField
+                      label="State / Province"
+                      name="state"
+                      value={primaryAddressState.state}
+                      onChange={handlePrimaryAddressChange}
+                      size="small"
+                      fullWidth
+                      sx={premiumInputSx}
+                    />
+                    <TextField
+                      label="Postal Code"
+                      name="postalCode"
+                      value={primaryAddressState.postalCode}
+                      onChange={handlePrimaryAddressChange}
+                      size="small"
+                      fullWidth
+                      sx={premiumInputSx}
+                    />
+                    <TextField
+                      label="Country"
+                      name="country"
+                      value={primaryAddressState.country}
+                      onChange={handlePrimaryAddressChange}
+                      size="small"
+                      fullWidth
+                      sx={premiumInputSx}
+                    />
+                  </Box>
+                </Box>
+              )}
+
+              {/* Active Secondary Address */}
+              {activeSecondary && (
+                <Box sx={glassPanelSx}>
+                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
+                    <Chip
+                      icon={<ContactMailRounded style={{ fontSize: 16 }} />}
+                      label="Active Secondary Address"
+                      size="small"
+                      color="info"
+                      sx={{ fontWeight: 600 }}
+                    />
+                    <Typography variant="caption" color="text.secondary">
+                      Active since: {formatAddressDate(activeSecondary.startDate)}
+                    </Typography>
+                  </Stack>
+                  <Box className={styles.formGrid}>
+                    <TextField
+                      label="Address Line"
+                      name="addressLine"
+                      value={secondaryAddressState.addressLine}
+                      onChange={handleSecondaryAddressChange}
+                      size="small"
+                      fullWidth
+                      sx={{ ...premiumInputSx, gridColumn: '1 / -1' }}
+                    />
+                    <TextField
+                      label="City"
+                      name="city"
+                      value={secondaryAddressState.city}
+                      onChange={handleSecondaryAddressChange}
+                      size="small"
+                      fullWidth
+                      sx={premiumInputSx}
+                    />
+                    <TextField
+                      label="State / Province"
+                      name="state"
+                      value={secondaryAddressState.state}
+                      onChange={handleSecondaryAddressChange}
+                      size="small"
+                      fullWidth
+                      sx={premiumInputSx}
+                    />
+                    <TextField
+                      label="Postal Code"
+                      name="postalCode"
+                      value={secondaryAddressState.postalCode}
+                      onChange={handleSecondaryAddressChange}
+                      size="small"
+                      fullWidth
+                      sx={premiumInputSx}
+                    />
+                    <TextField
+                      label="Country"
+                      name="country"
+                      value={secondaryAddressState.country}
+                      onChange={handleSecondaryAddressChange}
+                      size="small"
+                      fullWidth
+                      sx={premiumInputSx}
+                    />
+                  </Box>
+                </Box>
+              )}
+            </Stack>
+          )}
         </Box>
       </TabPanel>
 

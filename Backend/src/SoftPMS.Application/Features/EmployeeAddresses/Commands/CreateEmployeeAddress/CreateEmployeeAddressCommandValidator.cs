@@ -32,10 +32,5 @@ public sealed class CreateEmployeeAddressCommandValidator : AbstractValidator<Cr
 
         RuleFor(x => x.Dto.StartDate)
             .NotEmpty().WithMessage("Start date is required.");
-
-        RuleFor(x => x.Dto)
-            .Must(dto => !dto.EndDate.HasValue || dto.EndDate.Value.Date >= dto.StartDate.Date)
-            .WithMessage("End date must be greater than or equal to start date.")
-            .When(x => x.Dto != null && x.Dto.EndDate.HasValue);
     }
 }

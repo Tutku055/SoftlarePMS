@@ -33,7 +33,8 @@ public sealed class GetEmployeeAddressesQueryHandler(
         }
 
         return await query
-            .OrderByDescending(a => a.IsPrimary)
+            .OrderByDescending(a => a.EndDate == null || a.EndDate >= today)
+            .ThenByDescending(a => a.IsPrimary)
             .ThenByDescending(a => a.StartDate)
             .ProjectTo<EmployeeAddressDto>(mapper.ConfigurationProvider)
             .ToListAsync(cancellationToken);

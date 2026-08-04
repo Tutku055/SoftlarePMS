@@ -33,8 +33,10 @@ public class ApplicationMappingProfile : Profile
 
         // Employee address mappings
         CreateMap<EmployeeAddress, SoftPMS.Application.Features.EmployeeAddresses.DTOs.EmployeeAddressDto>()
+            .ForMember(d => d.StartDate, o => o.MapFrom(s => s.StartDate <= new DateTime(1970, 1, 1) ? (s.CreatedAt != default ? s.CreatedAt : DateTime.UtcNow) : s.StartDate))
             .ForMember(d => d.IsCurrent, o => o.MapFrom(s => s.EndDate == null || s.EndDate >= DateTime.UtcNow.Date));
         CreateMap<EmployeeAddress, SoftPMS.Application.Features.Employees.DTOs.EmployeeAddressDto>()
+            .ForMember(d => d.StartDate, o => o.MapFrom(s => s.StartDate <= new DateTime(1970, 1, 1) ? (s.CreatedAt != default ? s.CreatedAt : DateTime.UtcNow) : s.StartDate))
             .ForMember(d => d.IsCurrent, o => o.MapFrom(s => s.EndDate == null || s.EndDate >= DateTime.UtcNow.Date));
         CreateMap<SoftPMS.Application.Features.EmployeeAddresses.DTOs.CreateEmployeeAddressDto, EmployeeAddress>()
             .ForMember(d => d.Id, o => o.Ignore())

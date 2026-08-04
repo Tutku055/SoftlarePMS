@@ -25,29 +25,62 @@ public sealed class CreateEmployeeAddressCommandHandler(
         var hasAnyAddress = await context.EmployeeAddresses
             .AnyAsync(a => a.EmployeeId == request.EmployeeId, cancellationToken);
 
-        var isPrimary = request.Dto.IsPrimary || !hasAnyAddress;
+        var today = dateTime.UtcNow.Date;
+        var effectiveStartDate = request.Dto.StartDate <= new DateTime(1970, 1, 1) ? today : request.Dto.StartDate.Date;
+        var isNewAddressActive = request.Dto.EndDate == null || request.Dto.EndDate.Value.Date >= today;
 
-        if (isPrimary)
+        if (isNewAddressActive)
         {
-            var activePrimaryAddresses = await context.EmployeeAddresses
-                .Where(a => a.EmployeeId == request.EmployeeId && a.IsPrimary && a.EndDate == null)
-                .ToListAsync(cancellationToken);
+            var targetEndDate = effectiveStartDate <= today ? today.AddDays(-1) : effectiveStartDate.AddDays(-1);
 
-            foreach (var activePrimary in activePrimaryAddresses)
+            if (request.Dto.IsPrimary)
             {
-                if (activePrimary.StartDate.Date < request.Dto.StartDate.Date)
+                // Auto-close any existing active Primary address
+                var activePrimaryAddresses = await context.EmployeeAddresses
+                    .Where(a => a.EmployeeId == request.EmployeeId && a.IsPrimary && (a.EndDate == null || a.EndDate >= today))
+                    .ToListAsync(cancellationToken);
+
+                foreach (var activePrimary in activePrimaryAddresses)
                 {
-                    activePrimary.EndDate = request.Dto.StartDate.Date.AddDays(-1);
+                    activePrimary.EndDate = targetEndDate;
+                    if (activePrimary.StartDate.Date > targetEndDate)
+                    {
+                        activePrimary.StartDate = targetEndDate;
+                    }
+
+                    context.EmployeeAddresses.Update(activePrimary);
                 }
-                activePrimary.IsPrimary = false;
-                context.EmployeeAddresses.Update(activePrimary);
+            }
+            else
+            {
+                // Auto-close any existing active Secondary address
+                var activeSecondaryAddresses = await context.EmployeeAddresses
+                    .Where(a => a.EmployeeId == request.EmployeeId && !a.IsPrimary && (a.EndDate == null || a.EndDate >= today))
+                    .ToListAsync(cancellationToken);
+
+                foreach (var activeSecondary in activeSecondaryAddresses)
+                {
+                    activeSecondary.EndDate = targetEndDate;
+                    if (activeSecondary.StartDate.Date > targetEndDate)
+                    {
+                        activeSecondary.StartDate = targetEndDate;
+                    }
+
+                    context.EmployeeAddresses.Update(activeSecondary);
+                }
             }
         }
 
         var address = mapper.Map<EmployeeAddress>(request.Dto);
         address.EmployeeId = request.EmployeeId;
-        address.IsPrimary = isPrimary;
+        address.IsPrimary = request.Dto.IsPrimary;
+        address.StartDate = effectiveStartDate;
         address.CreatedAt = dateTime.UtcNow;
+
+        if (address.EndDate.HasValue && address.StartDate.Date > address.EndDate.Value.Date)
+        {
+            address.StartDate = address.EndDate.Value;
+        }
 
         await context.EmployeeAddresses.AddAsync(address, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);

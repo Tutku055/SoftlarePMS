@@ -46,6 +46,7 @@ const menuConfig: MenuItem[] = [
     children: [
       { title: 'Roster', path: '/employees/roster', permission: 'Employees.Read' },
       { title: 'Create Employee', path: '/employees/create', permission: 'Employees.Create' },
+      { title: 'Addresses', path: '/employees/addresses', permission: 'EmployeeAddresses.Read' },
       { title: 'Time & Attendance', path: '/employees/time-tracking', permission: 'Employees.Read' },
     ]
   },

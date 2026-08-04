@@ -28,8 +28,10 @@ public sealed class GetEmployeeAddressesWithPaginationQueryHandler(
 
         query = query.ApplyDynamicFilters(request.Filters);
 
+        var today = DateTime.UtcNow.Date;
         query = query
-            .OrderByDescending(a => a.IsPrimary)
+            .OrderByDescending(a => a.EndDate == null || a.EndDate >= today)
+            .ThenByDescending(a => a.IsPrimary)
             .ThenByDescending(a => a.StartDate);
 
         var projectedQuery = query.ProjectTo<EmployeeAddressDto>(mapper.ConfigurationProvider);

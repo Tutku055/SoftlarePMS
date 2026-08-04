@@ -10,7 +10,8 @@ namespace SoftPMS.Application.Features.EmployeeAddresses.Commands.UpdateEmployee
 
 public sealed class UpdateEmployeeAddressCommandHandler(
     IApplicationDbContext context,
-    IMapper mapper)
+    IMapper mapper,
+    IDateTime dateTime)
     : IRequestHandler<UpdateEmployeeAddressCommand, EmployeeAddressDto>
 {
     public async Task<EmployeeAddressDto> Handle(UpdateEmployeeAddressCommand request, CancellationToken cancellationToken)
@@ -21,20 +22,47 @@ public sealed class UpdateEmployeeAddressCommandHandler(
         if (address is null)
             throw new NotFoundException(nameof(EmployeeAddress), request.Id);
 
-        if (request.Dto.IsPrimary && !address.IsPrimary)
-        {
-            var otherActivePrimaryAddresses = await context.EmployeeAddresses
-                .Where(a => a.EmployeeId == request.EmployeeId && a.Id != request.Id && a.IsPrimary && a.EndDate == null)
-                .ToListAsync(cancellationToken);
+        var today = dateTime.UtcNow.Date;
+        var effectiveStartDate = request.Dto.StartDate <= new DateTime(1970, 1, 1) ? today : request.Dto.StartDate.Date;
+        var isUpdatedAddressActive = request.Dto.EndDate == null || request.Dto.EndDate.Value.Date >= today;
 
-            foreach (var other in otherActivePrimaryAddresses)
+        if (isUpdatedAddressActive)
+        {
+            var targetEndDate = effectiveStartDate <= today ? today.AddDays(-1) : effectiveStartDate.AddDays(-1);
+
+            if (request.Dto.IsPrimary)
             {
-                if (other.StartDate.Date < request.Dto.StartDate.Date)
+                var otherActivePrimaryAddresses = await context.EmployeeAddresses
+                    .Where(a => a.EmployeeId == request.EmployeeId && a.Id != request.Id && a.IsPrimary && (a.EndDate == null || a.EndDate >= today))
+                    .ToListAsync(cancellationToken);
+
+                foreach (var other in otherActivePrimaryAddresses)
                 {
-                    other.EndDate = request.Dto.StartDate.Date.AddDays(-1);
+                    other.EndDate = targetEndDate;
+                    if (other.StartDate.Date > targetEndDate)
+                    {
+                        other.StartDate = targetEndDate;
+                    }
+
+                    context.EmployeeAddresses.Update(other);
                 }
-                other.IsPrimary = false;
-                context.EmployeeAddresses.Update(other);
+            }
+            else
+            {
+                var otherActiveSecondaryAddresses = await context.EmployeeAddresses
+                    .Where(a => a.EmployeeId == request.EmployeeId && a.Id != request.Id && !a.IsPrimary && (a.EndDate == null || a.EndDate >= today))
+                    .ToListAsync(cancellationToken);
+
+                foreach (var other in otherActiveSecondaryAddresses)
+                {
+                    other.EndDate = targetEndDate;
+                    if (other.StartDate.Date > targetEndDate)
+                    {
+                        other.StartDate = targetEndDate;
+                    }
+
+                    context.EmployeeAddresses.Update(other);
+                }
             }
         }
 
@@ -44,8 +72,13 @@ public sealed class UpdateEmployeeAddressCommandHandler(
         address.Country     = request.Dto.Country;
         address.PostalCode  = request.Dto.PostalCode;
         address.IsPrimary   = request.Dto.IsPrimary;
-        address.StartDate   = request.Dto.StartDate;
+        address.StartDate   = effectiveStartDate;
         address.EndDate     = request.Dto.EndDate;
+
+        if (address.EndDate.HasValue && address.StartDate.Date > address.EndDate.Value.Date)
+        {
+            address.StartDate = address.EndDate.Value;
+        }
 
         context.EmployeeAddresses.Update(address);
         await context.SaveChangesAsync(cancellationToken);
