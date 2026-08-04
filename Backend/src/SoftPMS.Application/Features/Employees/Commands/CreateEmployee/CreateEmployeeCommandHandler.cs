@@ -69,7 +69,7 @@ public sealed class CreateEmployeeCommandHandler(
         {
             Employee      = employee,
             BaseSalary    = 0,
-            Currency      = Currency.EUR,
+            Currency      = Currency.TRY,
             SalaryType    = request.SalaryType,
             EffectiveDate = request.HireDate,
             CreatedAt     = now,

@@ -35,6 +35,7 @@ import { useEmployees } from './hooks/useEmployees';
 import { useDepartments } from './hooks/useDepartments';
 import { useProfessionsLookup } from '../professions/hooks/useProfessionsLookup';
 import ExcelJS from 'exceljs';
+import { formatDateDisplay } from '../finance/constants/currencyConstants';
 
 const COLUMN_NAMES: Record<string, string> = {
   employeeNo: 'Employee No',
@@ -236,7 +237,7 @@ export const Roster = () => {
           return 'Unknown';
         }
       },
-      { id: 'hireDate', label: 'Hire Date', getValue: (emp: any) => new Date(emp.hireDate).toLocaleDateString() },
+      { id: 'hireDate', label: 'Hire Date', getValue: (emp: any) => formatDateDisplay(emp.hireDate) },
     ];
 
     // 2. Sadece görünür olan kolonları filtrele (columnVisibility state'ine göre)
@@ -463,7 +464,7 @@ export const Roster = () => {
       },
       valueFormatter: (value: Date | null | undefined) => {
         if (!value) return '';
-        return new Date(value).toLocaleDateString();
+        return formatDateDisplay(value);
       },
     },
   ];

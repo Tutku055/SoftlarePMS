@@ -32,6 +32,7 @@ import { useEmployees } from '../../../employees/hooks/useEmployees';
 import { useDepartments } from '../../../employees/hooks/useDepartments';
 import { useProfessionsLookup } from '../../../professions/hooks/useProfessionsLookup';
 import ExcelJS from 'exceljs';
+import { formatDateDisplay } from '../../constants/currencyConstants';
 
 const COLUMN_NAMES: Record<string, string> = {
   employeeNo: 'Employee No',
@@ -200,7 +201,7 @@ export const PayrollList = () => {
       { id: 'fullName', label: 'Full Name', getValue: (emp: any) => `${emp.firstName} ${emp.lastName}` },
       { id: 'departmentId', label: 'Department', getValue: (emp: any) => emp.department?.name || '' },
       { id: 'profession', label: 'Profession', getValue: (emp: any) => emp.professionName || '-' },
-      { id: 'hireDate', label: 'Hire Date', getValue: (emp: any) => new Date(emp.hireDate).toLocaleDateString() },
+      { id: 'hireDate', label: 'Hire Date', getValue: (emp: any) => formatDateDisplay(emp.hireDate) },
     ];
 
     const visibleColumns = allColumns.filter(col => columnVisibility[col.id] !== false);
@@ -301,7 +302,7 @@ export const PayrollList = () => {
       },
       valueFormatter: (value: Date | null | undefined) => {
         if (!value) return '';
-        return new Date(value).toLocaleDateString();
+        return formatDateDisplay(value);
       },
     },
   ];

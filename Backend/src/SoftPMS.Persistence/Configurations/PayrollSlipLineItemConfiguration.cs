@@ -19,6 +19,10 @@ public class PayrollSlipLineItemConfiguration : IEntityTypeConfiguration<Payroll
         builder.Property(p => p.Amount)
             .HasColumnType("decimal(18,2)");
 
+        builder.Property(p => p.Currency)
+            .HasConversion<string>()
+            .IsRequired();
+
         builder.HasOne(p => p.PayrollSlip)
             .WithMany(s => s.LineItems)
             .HasForeignKey(p => p.PayrollSlipId)

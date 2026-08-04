@@ -41,6 +41,7 @@ import { useToggleTimesheetLock } from '../../hooks/useToggleTimesheetLock';
 import { PopupDialog } from '../../../../components/PopupDialog/PopupDialog';
 import type { TimesheetEntry } from '../../types';
 import { useAuthStore } from '../../../../store/useAuthStore';
+import { sanitizeForPdf, formatPeriodForPdf, formatMonthName, formatDateDisplay } from '../../constants/currencyConstants';
 
 // Status values match backend TimesheetStatus enum (1-based)
 const STATUS_CONFIG: Record<number, { label: string; color: string; bgDark: string; bgLight: string }> = {
@@ -138,8 +139,11 @@ export const TimesheetDetailMatrix = () => {
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`Employee: ${employee.firstName} ${employee.lastName} (${employee.professionName || '-'})`, 14, 25);
-    doc.text(`Period: ${new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}`, 14, 31);
+    const empName = sanitizeForPdf(`${employee.firstName || ''} ${employee.lastName || ''}`);
+    const profName = sanitizeForPdf(employee.professionName || '-');
+    const periodText = formatPeriodForPdf(year, month);
+    doc.text(`Employee: ${empName} (${profName})`, 14, 25);
+    doc.text(`Period: ${periodText}`, 14, 31);
 
     // Build Table Data
     const headRow = ["Employee"];
@@ -147,7 +151,7 @@ export const TimesheetDetailMatrix = () => {
       headRow.push(d.toString());
     }
 
-    const bodyRow = [`${employee.firstName} ${employee.lastName}`];
+    const bodyRow = [empName];
     for (let d = 1; d <= daysInMonth; d++) {
       const dayStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const entry = timesheet.entries.find((e: any) => e.date.startsWith(dayStr));
@@ -363,7 +367,7 @@ export const TimesheetDetailMatrix = () => {
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <Select value={month} onChange={(e: any) => setMonth(Number(e.target.value))}>
               {Array.from({length: 12}, (_, i) => i + 1).map(m => (
-                <MenuItem key={m} value={m}>{new Date(2000, m - 1).toLocaleString('default', { month: 'long' })}</MenuItem>
+                <MenuItem key={m} value={m}>{formatMonthName(m)}</MenuItem>
               ))}
             </Select>
           </FormControl>
@@ -571,7 +575,7 @@ export const TimesheetDetailMatrix = () => {
         <DialogContent sx={{ pt: 3 }}>
           <Stack spacing={3} sx={{ mt: 1 }}>
             <Typography variant="body2" color="text.secondary">
-              Date: <strong>{editEntry?.date ? new Date(editEntry.date).toLocaleDateString() : ''}</strong>
+              Date: <strong>{editEntry?.date ? formatDateDisplay(editEntry.date) : ''}</strong>
             </Typography>
             
             <FormControl fullWidth size="small">

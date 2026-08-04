@@ -164,6 +164,16 @@ export interface EmployeeAddressDto {
   endDate?: string;
 }
 
+export interface EmployeeCompensationDto {
+  id: string;
+  baseSalary: number;
+  salaryType: number;
+  effectiveDate: string;
+  currency: number;
+  endDate?: string | null;
+  isActive?: boolean;
+}
+
 export interface EmployeeDetailDto {
   id: string;
   employeeNo: string;
@@ -185,8 +195,8 @@ export interface EmployeeDetailDto {
   department?: DepartmentDto;
   
   addresses: EmployeeAddressDto[];
-  compensation?: any;
-  compensations?: any[];
+  compensation?: EmployeeCompensationDto | null;
+  compensations?: EmployeeCompensationDto[];
   documents: any[];
   notes: EmployeeNoteDto[];
   references: EmployeeReferenceDto[];

@@ -9,6 +9,7 @@ import { useDocuments, useUploadDocument } from '../../../documents/hooks/useDoc
 import { DataTable } from '../../../../components/DataTable/DataTable';
 import type { DataTableColumnDef } from '../../../../components/DataTable/DataTable';
 import { parseDocumentFilters } from '../../../documents/utils/filterUtils';
+import { formatDateDisplay } from '../../../finance/constants/currencyConstants';
 import {
   Box,
   Typography,
@@ -495,7 +496,7 @@ export const DepartmentDetail = () => {
                   minWidth: 150,
                   filterType: 'date',
                   valueGetter: (value: string | null | undefined) => value ? new Date(value) : null,
-                  valueFormatter: (value: Date | null | undefined) => value ? new Date(value).toLocaleDateString() : '',
+                  valueFormatter: (value: Date | null | undefined) => value ? formatDateDisplay(value) : '',
                 },
                 {
                   field: 'expiryDate',
@@ -504,7 +505,7 @@ export const DepartmentDetail = () => {
                   minWidth: 150,
                   filterType: 'date',
                   valueGetter: (_, row: any) => row.expiryDate ? new Date(row.expiryDate) : null,
-                  valueFormatter: (value: Date | null | undefined) => value ? new Date(value).toLocaleDateString() : '-',
+                  valueFormatter: (value: Date | null | undefined) => value ? formatDateDisplay(value) : '-',
                 },
                 {
                   field: 'isAvailable',

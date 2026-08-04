@@ -1,9 +1,12 @@
+using SoftPMS.Domain.Enums;
+
 namespace SoftPMS.Application.Features.Payrolls.DTOs;
 
 public record PayrollSlipLineItemDto(
     Guid Id,
-    int ItemType,
+    SlipItemType ItemType,
     string Description,
     decimal Amount,
-    int Currency
+    Currency Currency
 );
+

@@ -31,6 +31,7 @@ export const ProfessionModal = ({ open, onClose, profession }: ProfessionModalPr
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   const [actionDialogOpen, setActionDialogOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { mutate: createProfession, isPending: isCreating } = useCreateProfession();
   const { mutate: updateProfession, isPending: isUpdating } = useUpdateProfession();
@@ -49,8 +50,18 @@ export const ProfessionModal = ({ open, onClose, profession }: ProfessionModalPr
       }
       setErrors({});
       setActionDialogOpen(false);
+      setErrorMessage(null);
     }
   }, [open, profession]);
+
+  const extractApiError = (error: unknown): string => {
+    if (error && typeof error === 'object' && 'response' in error) {
+      const resp = (error as any).response;
+      const msg = resp?.data?.errors?.message || resp?.data?.message || resp?.data?.title;
+      if (msg) return msg;
+    }
+    return 'An unexpected error occurred. Please try again.';
+  };
 
   const handleSave = () => {
     const validation = schema.safeParse({ name, description });
@@ -82,18 +93,30 @@ export const ProfessionModal = ({ open, onClose, profession }: ProfessionModalPr
     if (!profession) return;
     
     if (isActive) {
-      deleteProfession({ id: profession.id, hardDelete: false }, { onSuccess: () => {
-        setActionDialogOpen(false);
-        onClose();
-      }});
+      deleteProfession({ id: profession.id, hardDelete: false }, {
+        onSuccess: () => {
+          setActionDialogOpen(false);
+          onClose();
+        },
+        onError: (error) => {
+          setActionDialogOpen(false);
+          setErrorMessage(extractApiError(error));
+        },
+      });
     } else {
       updateProfession({
         id: profession.id,
         command: { id: profession.id, name: profession.name, description: profession.description, isActive: true }
-      }, { onSuccess: () => {
-        setActionDialogOpen(false);
-        onClose();
-      }});
+      }, {
+        onSuccess: () => {
+          setActionDialogOpen(false);
+          onClose();
+        },
+        onError: (error) => {
+          setActionDialogOpen(false);
+          setErrorMessage(extractApiError(error));
+        },
+      });
     }
   };
 
@@ -173,6 +196,21 @@ export const ProfessionModal = ({ open, onClose, profession }: ProfessionModalPr
         confirmColor={isActive ? "error" : "success"}
         onConfirm={handleStatusToggle}
         isProcessing={isPending}
+      />
+
+      <PopupDialog
+        open={!!errorMessage}
+        onClose={() => setErrorMessage(null)}
+        title="Action Not Allowed"
+        content={
+          <Typography>{errorMessage}</Typography>
+        }
+        icon={<DeleteRounded fontSize="medium" />}
+        confirmColor="error"
+        confirmText="OK"
+        onConfirm={() => setErrorMessage(null)}
+        hideCancel
+        maxWidth="xs"
       />
     </>
   );

@@ -41,7 +41,17 @@ import {
 } from '@mui/icons-material';
 import * as z from 'zod';
 import styles from './PayrollDetail.module.css';
-import { CURRENCY_CONFIGS, getCurrencySymbol, getCurrencyCode, formatCompensationAmount } from '../../constants/currencyConstants';
+import { 
+  CURRENCY_CONFIGS, 
+  DEFAULT_CURRENCY_ID, 
+  formatCompensationAmount,
+  formatSlipAmount,
+  sanitizeForPdf,
+  formatPeriodForPdf,
+  formatPeriodDisplay,
+  formatMonthName,
+  formatDateDisplay
+} from '../../constants/currencyConstants';
 
 const glassPanelSx = {
   background: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(24, 24, 24, 0.85)' : 'rgba(255, 255, 255, 0.85)',
@@ -140,7 +150,7 @@ const extractErrorMessage = (error: any): string => {
 
 const compensationSchema = z.object({
   baseSalary: z.number().positive("Base Salary must be greater than 0"),
-  currency: z.number().int().min(1),
+  currency: z.number().int().positive("Valid Currency is required"),
   salaryType: z.number().int().min(1).max(2),
   effectiveDate: z.string().regex(/^\d{4}-\d{2}$/, "Invalid month format")
 });
@@ -172,19 +182,6 @@ export const PayrollDetail = () => {
 
   const slipRef = useRef<HTMLDivElement>(null);
 
-  // Parse backend-formatted strings like "1500.00 EUR" or "1500,00 EUR" → { amount, currencyCode }
-  const parseSlipAmount = (raw: string): { amount: number; currencyCode: string } => {
-    const parts = (raw || '').trim().split(' ');
-    const numberString = parts[0]?.replace(',', '.') || '0';
-    return { amount: parseFloat(numberString) || 0, currencyCode: parts[1] || '' };
-  };
-
-  // Format with TR locale: 15.000,38 EUR  (ASCII code, no special symbol → no jsPDF encoding bug)
-  const formatPdfAmount = (amount: number, currencyCode: string, negative = false): string => {
-    const formatted = new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(amount));
-    return `${negative ? '-' : ''}${formatted} ${currencyCode}`;
-  };
-
   const generatePdfDoc = () => {
     if (!selectedSlip) return null;
 
@@ -198,20 +195,24 @@ export const PayrollDetail = () => {
 
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
-    doc.text(`Employee: ${employee?.firstName} ${employee?.lastName}`, 14, 35);
-    doc.text(`Period: ${new Date(selectedSlip.year, selectedSlip.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}`, 14, 42);
-    doc.text(`Issue Date: ${new Date(selectedSlip.issueDate).toLocaleDateString()}`, 14, 49);
-    doc.text(`Calculation Type: ${selectedSlip.salaryTypes}`, 14, 56);
+
+    const empName = sanitizeForPdf(`${employee?.firstName || ''} ${employee?.lastName || ''}`);
+    const periodText = formatPeriodForPdf(selectedSlip.year, selectedSlip.month);
+    const issueDateText = formatDateDisplay(selectedSlip.issueDate);
+    const calcType = sanitizeForPdf(selectedSlip.salaryTypes || '');
+
+    doc.text(`Employee: ${empName}`, 14, 35);
+    doc.text(`Period: ${periodText}`, 14, 42);
+    doc.text(`Issue Date: ${issueDateText}`, 14, 49);
+    doc.text(`Calculation Type: ${calcType}`, 14, 56);
 
     // --- Earnings Table ---
-    // Line items have numeric amount + currency enum; use getCurrencyCode for ASCII-safe string
     const earnings = selectedSlip.lineItems?.filter((li: any) => li.itemType === 1) || [];
     const earningsData = earnings.map((li: any) => [
-      li.description,
-      formatPdfAmount(Number(li.amount), getCurrencyCode(li.currency))
+      sanitizeForPdf(li.description),
+      formatSlipAmount(li.amount, li.currency)
     ]);
-    const totEarnings = parseSlipAmount(selectedSlip.totalEarnings);
-    earningsData.push(["Total Earnings", formatPdfAmount(totEarnings.amount, totEarnings.currencyCode)]);
+    earningsData.push(["Total Earnings", formatSlipAmount(selectedSlip.totalEarnings)]);
 
     autoTable(doc, {
       startY: 65,
@@ -228,14 +229,13 @@ export const PayrollDetail = () => {
       }
     });
 
-    // Deductions Table
+    // --- Deductions Table ---
     const deductions = selectedSlip.lineItems?.filter((li: any) => li.itemType === 2) || [];
     const deductionsData = deductions.map((li: any) => [
-      li.description,
-      formatPdfAmount(Number(li.amount), getCurrencyCode(li.currency), true)
+      sanitizeForPdf(li.description),
+      formatSlipAmount(li.amount, li.currency, true)
     ]);
-    const totDeductions = parseSlipAmount(selectedSlip.totalDeductions);
-    deductionsData.push(["Total Deductions", formatPdfAmount(totDeductions.amount, totDeductions.currencyCode, true)]);
+    deductionsData.push(["Total Deductions", formatSlipAmount(selectedSlip.totalDeductions, undefined, true)]);
 
     autoTable(doc, {
       startY: (doc as any).lastAutoTable.finalY + 10,
@@ -252,10 +252,9 @@ export const PayrollDetail = () => {
       }
     });
 
-    // Net Salary
+    // --- Net Salary ---
     const finalY = (doc as any).lastAutoTable.finalY + 15;
-    const netParsed = parseSlipAmount(selectedSlip.netSalary);
-    const netText = formatPdfAmount(netParsed.amount, netParsed.currencyCode);
+    const netText = formatSlipAmount(selectedSlip.netSalary);
 
     // Draw Net Salary Box — taller to prevent overflow
     doc.setFillColor(245, 245, 245);
@@ -319,7 +318,7 @@ export const PayrollDetail = () => {
   // Compensation Form State
   const [editingCompId, setEditingCompId] = useState<string | null>(null);
   const [baseSalary, setBaseSalary] = useState(0);
-  const [currency, setCurrency] = useState(1);
+  const [currency, setCurrency] = useState(DEFAULT_CURRENCY_ID);
   const [salaryType, setSalaryType] = useState(2);
   const [effectiveDate, setEffectiveDate] = useState(new Date().toISOString().substring(0, 7));
   const [compErrors, setCompErrors] = useState<Record<string, string>>({});
@@ -328,7 +327,7 @@ export const PayrollDetail = () => {
   useEffect(() => {
     if (compensation) {
       setBaseSalary(compensation.baseSalary || 0);
-      setCurrency(compensation.currency || 1);
+      setCurrency(compensation.currency || DEFAULT_CURRENCY_ID);
       setSalaryType(compensation.salaryType || 2);
       if (compensation.effectiveDate) {
         setEffectiveDate(compensation.effectiveDate.substring(0, 7));
@@ -415,7 +414,7 @@ export const PayrollDetail = () => {
             // Optionally reset to current active compensation
             if (compensation) {
               setBaseSalary(compensation.baseSalary || 0);
-              setCurrency(compensation.currency || 1);
+              setCurrency(compensation.currency || DEFAULT_CURRENCY_ID);
               setSalaryType(compensation.salaryType || 2);
               if (compensation.effectiveDate) {
                 setEffectiveDate(compensation.effectiveDate.substring(0, 7));
@@ -455,7 +454,7 @@ export const PayrollDetail = () => {
     setCompErrors({});
     if (compensation) {
       setBaseSalary(compensation.baseSalary || 0);
-      setCurrency(compensation.currency || 1);
+      setCurrency(compensation.currency || DEFAULT_CURRENCY_ID);
       setSalaryType(compensation.salaryType || 2);
       if (compensation.effectiveDate) {
         setEffectiveDate(compensation.effectiveDate.substring(0, 7));
@@ -525,7 +524,7 @@ export const PayrollDetail = () => {
             <Stack direction="row" spacing={3} sx={{ mt: 1.5, alignItems: 'center' }}>
               <Typography variant="caption" color="text.secondary">
                 <strong>Base Salary:</strong> {compensation 
-                  ? `${compensation.baseSalary}${getCurrencySymbol(compensation.currency)}` 
+                  ? formatCompensationAmount(compensation.baseSalary, compensation.currency, compensation.salaryType) 
                   : 'Not Set'}
               </Typography>
               <Typography variant="caption" color="text.secondary">
@@ -569,7 +568,7 @@ export const PayrollDetail = () => {
               <InputLabel>Month</InputLabel>
               <Select value={calcMonth} label="Month" onChange={(e: any) => setCalcMonth(Number(e.target.value))}>
                 {Array.from({length: 12}, (_, i) => i + 1).map(m => (
-                  <MenuItem key={m} value={m}>{new Date(2000, m - 1).toLocaleString('default', { month: 'long' })}</MenuItem>
+                  <MenuItem key={m} value={m}>{formatMonthName(m)}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -604,16 +603,16 @@ export const PayrollDetail = () => {
                 <Box key={slip.id} sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box>
                     <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                      {new Date(slip.year, slip.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}
+                      {formatPeriodDisplay(slip.year, slip.month)}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Issued: {new Date(slip.issueDate).toLocaleDateString()}
+                      Issued: {formatDateDisplay(slip.issueDate)}
                     </Typography>
                   </Box>
                   <Box sx={{ textAlign: 'right', mr: 4 }}>
                     <Typography variant="caption" color="text.secondary">Net Salary</Typography>
                     <Typography variant="h6" sx={{ fontWeight: 800, color: 'success.main' }}>
-                      {slip.netSalary}
+                      {formatSlipAmount(slip.netSalary)}
                     </Typography>
                   </Box>
                   <Button 
@@ -741,8 +740,8 @@ export const PayrollDetail = () => {
                       <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)' }}>
                         {formatCompensationAmount(comp.baseSalary, comp.currency, comp.salaryType)}
                       </td>
-                      <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)' }}>{new Date(comp.effectiveDate).toLocaleDateString()}</td>
-                      <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)' }}>{comp.endDate ? new Date(comp.endDate).toLocaleDateString() : 'Active'}</td>
+                      <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)' }}>{formatDateDisplay(comp.effectiveDate)}</td>
+                      <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)' }}>{comp.endDate ? formatDateDisplay(comp.endDate) : 'Active'}</td>
                       <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)', textAlign: 'right' }}>
                         {canEdit && (
                           <Button 
@@ -813,7 +812,7 @@ export const PayrollDetail = () => {
         <PopupDialog
           open={!!selectedSlip}
           onClose={() => setSelectedSlip(null)}
-          title={`Payroll Slip - ${new Date(selectedSlip.year, selectedSlip.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}`}
+          title={`Payroll Slip - ${formatPeriodDisplay(selectedSlip.year, selectedSlip.month)}`}
           headerActions={
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Tooltip title="Print">
@@ -843,7 +842,7 @@ export const PayrollDetail = () => {
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography variant="body1" sx={{ color: '#555', fontWeight: 500 }}>Issue Date:</Typography>
-                    <Typography variant="body1" sx={{ color: '#000', fontWeight: 700 }}>{new Date(selectedSlip.issueDate).toLocaleDateString()}</Typography>
+                    <Typography variant="body1" sx={{ color: '#000', fontWeight: 700 }}>{formatDateDisplay(selectedSlip.issueDate)}</Typography>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Typography variant="body1" sx={{ color: '#555', fontWeight: 500 }}>Calculation Type:</Typography>
@@ -857,7 +856,7 @@ export const PayrollDetail = () => {
                   {selectedSlip.lineItems?.filter((li: any) => li.itemType === 1).map((li: any) => (
                     <tr key={li.id}>
                       <td style={{ padding: '4px 0' }}>{li.description}</td>
-                      <td style={{ padding: '4px 0', textAlign: 'right', fontWeight: 600 }}>{li.amount.toFixed(2)} {getCurrencySymbol(li.currency)}</td>
+                      <td style={{ padding: '4px 0', textAlign: 'right', fontWeight: 600 }}>{formatSlipAmount(li.amount, li.currency)}</td>
                     </tr>
                   ))}
                   {(!selectedSlip.lineItems || selectedSlip.lineItems.filter((li: any) => li.itemType === 1).length === 0) && (
@@ -865,7 +864,7 @@ export const PayrollDetail = () => {
                   )}
                   <tr>
                     <td style={{ padding: '8px 0', borderTop: '1px solid var(--mui-palette-divider)' }}><strong>Total Earnings</strong></td>
-                    <td style={{ padding: '8px 0', textAlign: 'right', borderTop: '1px solid var(--mui-palette-divider)', fontWeight: 700, color: 'success.main' }}>{selectedSlip.totalEarnings}</td>
+                    <td style={{ padding: '8px 0', textAlign: 'right', borderTop: '1px solid var(--mui-palette-divider)', fontWeight: 700, color: 'success.main' }}>{formatSlipAmount(selectedSlip.totalEarnings)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -876,7 +875,7 @@ export const PayrollDetail = () => {
                   {selectedSlip.lineItems?.filter((li: any) => li.itemType === 2).map((li: any) => (
                     <tr key={li.id}>
                       <td style={{ padding: '4px 0' }}>{li.description}</td>
-                      <td style={{ padding: '4px 0', textAlign: 'right', fontWeight: 600, color: 'error.main' }}>-{li.amount.toFixed(2)} {getCurrencySymbol(li.currency)}</td>
+                      <td style={{ padding: '4px 0', textAlign: 'right', fontWeight: 600, color: 'error.main' }}>{formatSlipAmount(li.amount, li.currency, true)}</td>
                     </tr>
                   ))}
                   {(!selectedSlip.lineItems || selectedSlip.lineItems.filter((li: any) => li.itemType === 2).length === 0) && (
@@ -884,14 +883,14 @@ export const PayrollDetail = () => {
                   )}
                   <tr>
                     <td style={{ padding: '8px 0', borderTop: '1px solid var(--mui-palette-divider)' }}><strong>Total Deductions</strong></td>
-                    <td style={{ padding: '8px 0', textAlign: 'right', borderTop: '1px solid var(--mui-palette-divider)', fontWeight: 700, color: 'error.main' }}>{selectedSlip.totalDeductions}</td>
+                    <td style={{ padding: '8px 0', textAlign: 'right', borderTop: '1px solid var(--mui-palette-divider)', fontWeight: 700, color: 'error.main' }}>{formatSlipAmount(selectedSlip.totalDeductions, undefined, true)}</td>
                   </tr>
                 </tbody>
               </table>
 
               <Box sx={{ mt: 3, p: 2, bgcolor: '#f5f5f5', borderRadius: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="h6" sx={{ fontWeight: 700, color: '#000' }}>NET SALARY</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 800, color: '#1976d2' }}>{selectedSlip.netSalary}</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 800, color: '#1976d2' }}>{formatSlipAmount(selectedSlip.netSalary)}</Typography>
               </Box>
             </div>
             </Box>

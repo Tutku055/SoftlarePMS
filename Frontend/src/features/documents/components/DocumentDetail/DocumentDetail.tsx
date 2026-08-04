@@ -5,6 +5,7 @@ import { useUpdateDocument } from '../../hooks/useUpdateDocument';
 import { useDeleteDocument } from '../../hooks/useDocuments';
 import { documentsApi } from '../../api/documentsApi';
 import { useAuthStore } from '../../../../store/useAuthStore';
+import { formatDateDisplay } from '../../../finance/constants/currencyConstants';
 
 import {
   Box,
@@ -324,7 +325,7 @@ export const DocumentDetail = () => {
             </Typography>
             <Stack direction="row" spacing={3} sx={{ mt: 1.5 }}>
               <Typography variant="caption" color="text.secondary">
-                <strong>Uploaded On:</strong> {parseDateUTC(document.createdAt)?.toLocaleDateString() || ''}
+                <strong>Uploaded On:</strong> {formatDateDisplay(parseDateUTC(document.createdAt))}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 <strong>Reference ID:</strong> {document.referenceId}
@@ -409,7 +410,7 @@ export const DocumentDetail = () => {
               <Box>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Last Checked</Typography>
                 <TextField 
-                  value={document.lastCheckedAt ? parseDateUTC(document.lastCheckedAt)?.toLocaleString() : 'Not Checked'} 
+                  value={document.lastCheckedAt ? formatDateDisplay(parseDateUTC(document.lastCheckedAt)) : 'Not Checked'} 
                   fullWidth 
                   size="small"
                   slotProps={{

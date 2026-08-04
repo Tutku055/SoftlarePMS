@@ -15,11 +15,12 @@ import {
 } from '@mui/material';
 import { SaveRounded } from '@mui/icons-material';
 import { useUpdateCompensation } from '../../../finance/hooks/useUpdateCompensation';
+import { CURRENCY_CONFIGS, DEFAULT_CURRENCY_ID } from '../../../finance/constants/currencyConstants';
 import * as z from 'zod';
 
 const compensationSchema = z.object({
   baseSalary: z.number().positive("Base Salary must be greater than 0"),
-  currency: z.number().int().min(1).max(4),
+  currency: z.number().int().positive("Valid Currency is required"),
   salaryType: z.number().int().min(1).max(2),
   effectiveDate: z.string().regex(/^\d{4}-\d{2}$/, "Invalid month format")
 });
@@ -42,7 +43,7 @@ export const CompensationModal = ({
   currentSalaryType 
 }: CompensationModalProps) => {
   const [baseSalary, setBaseSalary] = useState(currentBaseSalary || 0);
-  const [currency, setCurrency] = useState(currentCurrency || 1);
+  const [currency, setCurrency] = useState(currentCurrency || DEFAULT_CURRENCY_ID);
   const [salaryType, setSalaryType] = useState(currentSalaryType || 2);
   const [effectiveDate, setEffectiveDate] = useState(new Date().toISOString().substring(0, 7)); // YYYY-MM
 
@@ -53,7 +54,7 @@ export const CompensationModal = ({
   useEffect(() => {
     if (open) {
       setBaseSalary(currentBaseSalary || 0);
-      setCurrency(currentCurrency || 1);
+      setCurrency(currentCurrency || DEFAULT_CURRENCY_ID);
       setSalaryType(currentSalaryType || 2);
       setEffectiveDate(new Date().toISOString().substring(0, 7));
       setErrors({});
@@ -132,10 +133,11 @@ export const CompensationModal = ({
           <FormControl fullWidth size="small" error={!!errors.currency}>
             <InputLabel>Currency</InputLabel>
             <Select value={currency} label="Currency" onChange={(e: any) => setCurrency(Number(e.target.value))}>
-              <MenuItem value={1}>TRY - Turkish Lira</MenuItem>
-              <MenuItem value={2}>USD - US Dollar</MenuItem>
-              <MenuItem value={3}>EUR - Euro</MenuItem>
-              <MenuItem value={4}>GBP - British Pound</MenuItem>
+              {Object.values(CURRENCY_CONFIGS).map((curr) => (
+                <MenuItem key={curr.id} value={curr.id}>
+                  {curr.label}
+                </MenuItem>
+              ))}
             </Select>
             {errors.currency && <FormHelperText>{errors.currency}</FormHelperText>}
           </FormControl>

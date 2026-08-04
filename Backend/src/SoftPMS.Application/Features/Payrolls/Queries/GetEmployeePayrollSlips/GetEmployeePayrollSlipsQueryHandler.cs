@@ -26,7 +26,7 @@ public sealed class GetEmployeePayrollSlipsQueryHandler(
                 p.NetSalary,
                 p.SalaryTypes,
                 p.IssueDate,
-                p.LineItems.Select(li => new PayrollSlipLineItemDto(li.Id, (int)li.ItemType, li.Description, li.Amount, (int)li.Currency)).ToList()))
+                p.LineItems.Select(li => new PayrollSlipLineItemDto(li.Id, li.ItemType, li.Description, li.Amount, li.Currency)).ToList()))
             .ToListAsync(cancellationToken);
     }
 }

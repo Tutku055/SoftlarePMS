@@ -8,5 +8,7 @@ public class UpdateEmployeeCompensationCommandValidator : AbstractValidator<Upda
     {
         RuleFor(v => v.EmployeeId).NotEmpty();
         RuleFor(v => v.BaseSalary).GreaterThanOrEqualTo(0);
+        RuleFor(v => v.SalaryType).IsInEnum().WithMessage("Valid Salary Type is required.");
+        RuleFor(v => v.Currency).IsInEnum().WithMessage("Valid Currency is required.");
     }
 }

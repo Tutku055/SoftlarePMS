@@ -281,9 +281,9 @@ export const YearEndOperations = () => {
                 <Typography color="success.main" sx={{ fontWeight: 700 }}>
                   {currentYear} Already Closed on{' '}
                   {stats?.closedAt
-                    ? new Date(stats.closedAt).toLocaleDateString('tr-TR', {
+                    ? new Date(stats.closedAt).toLocaleDateString('en-US', {
                         day: '2-digit',
-                        month: '2-digit',
+                        month: 'short',
                         year: 'numeric',
                       })
                     : '—'}

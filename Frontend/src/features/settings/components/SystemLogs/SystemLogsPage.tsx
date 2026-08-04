@@ -1125,7 +1125,7 @@ export const SystemLogsPage: React.FC = () => {
           <Box sx={{ display: 'flex', flexDirection: 'column' }}>
             {groupedLogs.map((group, index) => {
               const isExpanded = expandedGroupIds.has(group.correlationId);
-              const formattedDate = new Date(group.changedAt).toLocaleString(undefined, {
+              const formattedDate = new Date(group.changedAt).toLocaleString('en-US', {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',

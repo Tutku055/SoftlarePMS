@@ -43,6 +43,7 @@ import type { CustomFilterValue, DataTableColumnDef } from '../../../../componen
 import { useDocuments } from '../../hooks/useDocuments';
 import { useAuthStore } from '../../../../store/useAuthStore';
 import { parseDocumentFilters } from '../../utils/filterUtils';
+import { formatDateDisplay } from '../../../finance/constants/currencyConstants';
 import { documentsApi } from '../../api/documentsApi';
 
 const COLUMN_NAMES: Record<string, string> = {
@@ -294,7 +295,7 @@ export const DocumentArchive = () => {
       minWidth: 150,
       filterType: 'date',
       valueGetter: (value: string | null | undefined) => value ? new Date(value) : null,
-      valueFormatter: (value: Date | null | undefined) => value ? new Date(value).toLocaleDateString() : '',
+      valueFormatter: (value: Date | null | undefined) => value ? formatDateDisplay(value) : '',
     },
     {
       field: 'expiryDate',
@@ -303,7 +304,7 @@ export const DocumentArchive = () => {
       minWidth: 150,
       filterType: 'date',
       valueGetter: (_, row: any) => row.expiryDate ? new Date(row.expiryDate) : null,
-      valueFormatter: (value: Date | null | undefined) => value ? new Date(value).toLocaleDateString() : '-',
+      valueFormatter: (value: Date | null | undefined) => value ? formatDateDisplay(value) : '-',
     },
     {
       field: 'isAvailable',

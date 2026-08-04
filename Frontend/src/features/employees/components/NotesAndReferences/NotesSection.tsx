@@ -13,6 +13,7 @@ import {
 } from '../../api/notesApi';
 import type { EmployeeNoteDto } from '../../types';
 import { NoteCategory } from '../../types';
+import { formatDateDisplay } from '../../../finance/constants/currencyConstants';
 
 interface NotesSectionProps {
   employeeId: string;
@@ -285,7 +286,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({ employeeId }) => {
                         variant="outlined"
                       />
                       <Typography variant="caption" color="text.secondary">
-                        {new Date(note.createdAt).toLocaleDateString()}
+                        {formatDateDisplay(note.createdAt)}
                       </Typography>
                     </Box>
                   </CardContent>

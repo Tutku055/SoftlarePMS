@@ -16,6 +16,7 @@ import { parseDocumentFilters } from '../documents/utils/filterUtils';
 import { PopupDialog } from '../../components/PopupDialog/PopupDialog';
 import { NotesAndReferences } from './components/NotesAndReferences/NotesAndReferences';
 import { CompensationModal } from './components/Compensation/CompensationModal';
+import { getCurrencyCode, formatDateDisplay } from '../finance/constants/currencyConstants';
 
 import {
   Box,
@@ -437,10 +438,10 @@ export const EmployeeDetail = () => {
             </Typography>
             <Stack direction="row" spacing={3} sx={{ mt: 1.5 }}>
               <Typography variant="caption" color="text.secondary">
-                <strong>Hire Date:</strong> {new Date(employee.hireDate).toLocaleDateString()}
+                <strong>Hire Date:</strong> {formatDateDisplay(employee.hireDate)}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                <strong>Probation Ends:</strong> {employee.probationEndDate ? new Date(employee.probationEndDate).toLocaleDateString() : 'N/A'}
+                <strong>Probation Ends:</strong> {employee.probationEndDate ? formatDateDisplay(employee.probationEndDate) : 'N/A'}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 <strong>Nationality:</strong> {employee.nationality}
@@ -540,11 +541,7 @@ export const EmployeeDetail = () => {
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>Current Base Salary</Typography>
                 <Typography variant="h5" sx={{ fontWeight: 700, color: 'success.main' }}>
                   {employee.compensation 
-                    ? (() => {
-                        const comp = employee.compensation;
-                        const currencyMap: Record<number, string> = { 1: 'TRY', 2: 'USD', 3: 'EUR', 4: 'GBP' };
-                        return `${comp.baseSalary} ${currencyMap[comp.currency] || ''}`;
-                      })()
+                    ? `${employee.compensation.baseSalary} ${getCurrencyCode(employee.compensation.currency)}`
                     : 'Not Set'}
                 </Typography>
               </Box>
@@ -685,7 +682,7 @@ export const EmployeeDetail = () => {
                   minWidth: 150,
                   filterType: 'date',
                   valueGetter: (value: string | null | undefined) => value ? new Date(value) : null,
-                  valueFormatter: (value: Date | null | undefined) => value ? new Date(value).toLocaleDateString() : '',
+                  valueFormatter: (value: Date | null | undefined) => value ? formatDateDisplay(value) : '',
                 },
                 {
                   field: 'expiryDate',
@@ -694,7 +691,7 @@ export const EmployeeDetail = () => {
                   minWidth: 150,
                   filterType: 'date',
                   valueGetter: (_, row: any) => row.expiryDate ? new Date(row.expiryDate) : null,
-                  valueFormatter: (value: Date | null | undefined) => value ? new Date(value).toLocaleDateString() : '-',
+                  valueFormatter: (value: Date | null | undefined) => value ? formatDateDisplay(value) : '-',
                 },
                 {
                   field: 'isAvailable',
