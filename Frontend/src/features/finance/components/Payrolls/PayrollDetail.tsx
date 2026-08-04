@@ -724,7 +724,6 @@ export const PayrollDetail = () => {
                 <thead style={{ backgroundColor: 'rgba(128, 128, 128, 0.05)' }}>
                   <tr>
                     <th style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.2)' }}>Base Salary</th>
-                    <th style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.2)' }}>Pay Grade</th>
                     <th style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.2)' }}>Effective Date</th>
                     <th style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.2)' }}>End Date</th>
                     <th style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.2)', textAlign: 'right' }}>Actions</th>
@@ -742,7 +741,6 @@ export const PayrollDetail = () => {
                       <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)' }}>
                         {formatCompensationAmount(comp.baseSalary, comp.currency, comp.salaryType)}
                       </td>
-                      <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)' }}>{comp.payGrade}</td>
                       <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)' }}>{new Date(comp.effectiveDate).toLocaleDateString()}</td>
                       <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)' }}>{comp.endDate ? new Date(comp.endDate).toLocaleDateString() : 'Active'}</td>
                       <td style={{ padding: '12px', borderBottom: '1px solid rgba(128, 128, 128, 0.1)', textAlign: 'right' }}>

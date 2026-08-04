@@ -12,6 +12,5 @@ public sealed record UpdateEmployeeRateCommand(
     Guid EmployeeId,
     decimal BaseSalary,
     SalaryType SalaryType,
-    string PayGrade,
     DateTime NewEffectiveDate
 ) : IRequest<Unit>;

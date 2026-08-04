@@ -127,7 +127,6 @@ public class ApplicationDbContextInitialiser
             var compensationFaker = new Faker<EmployeeCompensation>()
                 .RuleFor(c => c.Id, f => Guid.NewGuid()) //[cite: 2]
                 .RuleFor(c => c.CreatedAt, f => f.Date.Past(1)) //[cite: 2]
-                .RuleFor(c => c.PayGrade, f => f.Random.String2(1, "ABCDE") + f.Random.Number(1, 5)) //[cite: 1, 6]
                 .RuleFor(c => c.BaseSalary, f => f.Finance.Amount(3000m, 12000m)) //[cite: 1, 6]
                 .RuleFor(c => c.SalaryType, f => f.PickRandom<SalaryType>()) //[cite: 1, 6]
                 .RuleFor(c => c.EffectiveDate, f => f.Date.Past(2))

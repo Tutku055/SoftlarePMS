@@ -13,9 +13,6 @@ public sealed class UpdateEmployeeRateCommandValidator : AbstractValidator<Updat
         RuleFor(x => x.BaseSalary)
             .GreaterThan(0).WithMessage("Base salary (Stundenlohn) must be greater than 0.");
 
-        RuleFor(x => x.PayGrade)
-            .MaximumLength(50).WithMessage("Pay grade must not exceed 50 characters.");
-
         RuleFor(x => x.NewEffectiveDate)
             .NotEmpty().WithMessage("New effective date is required.");
     }

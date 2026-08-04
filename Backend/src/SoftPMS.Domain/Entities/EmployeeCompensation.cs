@@ -6,8 +6,6 @@ public class EmployeeCompensation: BaseEntity
 {
     public Guid EmployeeId { get; set; }
 
-    public string PayGrade { get; set; } = string.Empty;
-
     public decimal BaseSalary { get; set; }
 
     public SalaryType SalaryType { get; set; } = SalaryType.Monthly;

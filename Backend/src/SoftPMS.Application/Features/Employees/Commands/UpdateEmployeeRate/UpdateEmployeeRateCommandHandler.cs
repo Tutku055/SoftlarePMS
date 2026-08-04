@@ -35,7 +35,6 @@ public sealed class UpdateEmployeeRateCommandHandler(
         {
             activeCompensation.BaseSalary = request.BaseSalary;
             activeCompensation.SalaryType = request.SalaryType;
-            activeCompensation.PayGrade = request.PayGrade;
             activeCompensation.EffectiveDate = request.NewEffectiveDate.Date;
             context.EmployeeCompensations.Update(activeCompensation);
         }
@@ -46,7 +45,6 @@ public sealed class UpdateEmployeeRateCommandHandler(
                 EmployeeId      = request.EmployeeId,
                 BaseSalary      = request.BaseSalary,
                 SalaryType      = request.SalaryType,
-                PayGrade        = request.PayGrade,
                 EffectiveDate   = request.NewEffectiveDate.Date,
                 CreatedByUserId = currentUser.UserId,
                 CreatedAt       = dateTime.UtcNow

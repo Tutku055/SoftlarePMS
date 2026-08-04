@@ -24,9 +24,6 @@ public class EmployeeCompensationConfiguration : IEntityTypeConfiguration<Employ
             .IsRequired();
 
 
-        builder.Property(c => c.PayGrade)
-            .HasMaxLength(50);
-
         builder.Property(c => c.EffectiveDate)
             .IsRequired();
 
