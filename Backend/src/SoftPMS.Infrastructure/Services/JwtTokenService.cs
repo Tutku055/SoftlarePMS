@@ -78,6 +78,6 @@ public sealed class JwtTokenService(IOptions<JwtSettings> options) : IJwtTokenSe
         issuedAt.AddMinutes(_settings.AccessTokenExpirationInMinutes);
 
     /// <inheritdoc/>
-    public DateTime GetRefreshTokenExpiry(DateTime issuedAt) =>
-        issuedAt.AddDays(_settings.RefreshTokenExpirationInDays);
+    public DateTime GetRefreshTokenExpiry(DateTime issuedAt, bool rememberMe = false) =>
+        rememberMe ? issuedAt.AddDays(30) : issuedAt.AddDays(1);
 }

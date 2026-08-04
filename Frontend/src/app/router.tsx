@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { Login } from '../features/auth/components/Login/Login';
+import { ResetPassword } from '../features/auth/components/ResetPassword/ResetPassword';
 
 import { Roster } from '../features/employees/Roster';
 import { EmployeeDetail } from '../features/employees/EmployeeDetail';
@@ -63,6 +64,10 @@ export const router = createBrowserRouter([
   {
     path: '/login',
     element: <Login />,
+  },
+  {
+    path: '/reset-password',
+    element: <ResetPassword />,
   },
   {
     element: <PrivateRoute />,

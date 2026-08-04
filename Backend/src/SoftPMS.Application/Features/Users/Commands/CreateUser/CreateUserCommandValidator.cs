@@ -1,4 +1,5 @@
 using FluentValidation;
+using SoftPMS.Application.Common.Extensions;
 
 namespace SoftPMS.Application.Features.Users.Commands.CreateUser;
 
@@ -16,7 +17,7 @@ public class CreateUserCommandValidator : AbstractValidator<CreateUserCommand>
             .MaximumLength(150).WithMessage("Email must not exceed 150 characters.");
 
         RuleFor(v => v.Dto.Password)
-            .NotEmpty().WithMessage("Password is required.")
-            .MinimumLength(6).WithMessage("Password must be at least 6 characters.");
+            .ApplyPasswordRules();
     }
 }
+

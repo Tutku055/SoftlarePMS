@@ -29,6 +29,13 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.PasswordHash)
             .IsRequired();
 
+        builder.Property(u => u.PasswordResetToken)
+            .IsRequired(false)
+            .HasMaxLength(256);
+
+        builder.Property(u => u.PasswordResetTokenExpiryTime)
+            .IsRequired(false);
+
         // EmployeeId is an optional FK linking the user to an employee record
         builder.Property(u => u.EmployeeId)
             .IsRequired(false);

@@ -47,7 +47,7 @@ public sealed class LoginCommandHandler(
 
         // Persist the refresh token — tracked entity, no explicit Update() call needed
         user.RefreshToken = refreshToken;
-        user.RefreshTokenExpiryTime = jwtTokenService.GetRefreshTokenExpiry(dateTime.UtcNow);
+        user.RefreshTokenExpiryTime = jwtTokenService.GetRefreshTokenExpiry(dateTime.UtcNow, request.RememberMe);
 
         await context.SaveChangesAsync(cancellationToken);
 

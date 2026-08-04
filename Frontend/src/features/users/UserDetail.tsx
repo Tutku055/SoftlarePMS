@@ -32,6 +32,7 @@ import {
   InputLabel,
   Select,
   IconButton,
+  InputAdornment,
   useTheme,
 } from '@mui/material';
 import {
@@ -44,7 +45,11 @@ import {
   CheckCircleRounded,
   CancelRounded,
   VpnKeyRounded,
+  VisibilityOutlined,
+  VisibilityOffOutlined,
 } from '@mui/icons-material';
+import { validatePassword } from '../../utils/passwordValidation';
+import { PasswordCriteriaChecklist } from '../../components/common/PasswordCriteriaChecklist';
 import styles from './UserDetail.module.css';
 
 // ─── PREMIUM THEME STYLES (Matching EmployeeDetail.tsx) ───────────────────
@@ -153,6 +158,9 @@ export const UserDetail = () => {
     newPassword: '',
     newPasswordConfirm: '',
   });
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showNewPasswordConfirm, setShowNewPasswordConfirm] = useState(false);
   const [passwordError, setPasswordError] = useState('');
   const { mutate: changePassword, isPending: isChangingPassword } = useChangePassword();
 
@@ -261,8 +269,9 @@ export const UserDetail = () => {
       setPasswordError('New passwords do not match.');
       return;
     }
-    if (passwordForm.newPassword.length < 6) {
-      setPasswordError('Password must be at least 6 characters.');
+    const { isValid, errorMessage } = validatePassword(passwordForm.newPassword);
+    if (!isValid) {
+      setPasswordError(errorMessage || 'Password does not meet all complexity requirements.');
       return;
     }
     setPasswordError('');
@@ -563,7 +572,7 @@ export const UserDetail = () => {
           <Divider sx={{ mb: 3, opacity: 0.5 }} />
 
           <form onSubmit={(e) => { e.preventDefault(); handleChangePassword(); }}>
-            <Stack spacing={3} sx={{ maxWidth: 480 }}>
+            <Stack spacing={2.5} sx={{ maxWidth: 480 }}>
               {passwordError && (
                 <Typography variant="body2" color="error" sx={{ fontWeight: 600 }}>
                   {passwordError}
@@ -572,36 +581,93 @@ export const UserDetail = () => {
               {currentUser?.id === id && (
                 <TextField
                   label="Old Password"
-                  type="password"
+                  type={showOldPassword ? 'text' : 'password'}
                   autoComplete="off"
                   value={passwordForm.oldPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, oldPassword: e.target.value })}
                   fullWidth
                   size="small"
                   sx={premiumInputSx}
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => setShowOldPassword(!showOldPassword)}
+                            edge="end"
+                            size="small"
+                          >
+                            {showOldPassword ? <VisibilityOffOutlined fontSize="small" /> : <VisibilityOutlined fontSize="small" />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
                 />
               )}
-              <TextField
-                label="New Password"
-                type="password"
-                autoComplete="off"
-                value={passwordForm.newPassword}
-                onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                fullWidth
-                size="small"
-                sx={premiumInputSx}
-              />
+              <Box>
+                <TextField
+                  label="New Password"
+                  type={showNewPassword ? 'text' : 'password'}
+                  autoComplete="off"
+                  value={passwordForm.newPassword}
+                  onChange={(e) => {
+                    setPasswordForm({ ...passwordForm, newPassword: e.target.value });
+                    if (passwordError) setPasswordError('');
+                  }}
+                  fullWidth
+                  size="small"
+                  sx={premiumInputSx}
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            edge="end"
+                            size="small"
+                          >
+                            {showNewPassword ? <VisibilityOffOutlined fontSize="small" /> : <VisibilityOutlined fontSize="small" />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+                <PasswordCriteriaChecklist 
+                  password={passwordForm.newPassword} 
+                  isDark={useTheme().palette.mode === 'dark'} 
+                />
+              </Box>
               <TextField
                 label="Confirm New Password"
-                type="password"
+                type={showNewPasswordConfirm ? 'text' : 'password'}
                 autoComplete="off"
                 value={passwordForm.newPasswordConfirm}
-                onChange={(e) => setPasswordForm({ ...passwordForm, newPasswordConfirm: e.target.value })}
+                onChange={(e) => {
+                  setPasswordForm({ ...passwordForm, newPasswordConfirm: e.target.value });
+                  if (passwordError) setPasswordError('');
+                }}
                 fullWidth
                 size="small"
                 sx={premiumInputSx}
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowNewPasswordConfirm(!showNewPasswordConfirm)}
+                          edge="end"
+                          size="small"
+                        >
+                          {showNewPasswordConfirm ? <VisibilityOffOutlined fontSize="small" /> : <VisibilityOutlined fontSize="small" />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
               />
-              <Box>
+              <Box sx={{ pt: 1 }}>
                 {(hasPermission('Users.ChangePassword') || currentUser?.id === id) && (
                   <Button 
                     type="submit"

@@ -25,7 +25,11 @@ import {
   SearchRounded,
   CloseRounded,
   PersonAddRounded,
+  VisibilityOutlined,
+  VisibilityOffOutlined,
 } from '@mui/icons-material';
+import { validatePassword } from '../../utils/passwordValidation';
+import { PasswordCriteriaChecklist } from '../../components/common/PasswordCriteriaChecklist';
 import type {
   GridPaginationModel,
   GridColumnVisibilityModel,
@@ -115,6 +119,7 @@ export const UsersPage = () => {
 
   // ─── CREATE USER DIALOG ───────────────────────────────────────────────────
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
   const [createForm, setCreateForm] = useState({
     username: '',
     email: '',
@@ -128,9 +133,9 @@ export const UsersPage = () => {
   const handleCreateUserChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.name;
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-    setCreateForm(prev => ({ ...prev, [name]: value }));
+    setCreateForm((prev) => ({ ...prev, [name]: value }));
     if (createFormErrors[name]) {
-      setCreateFormErrors(prev => ({ ...prev, [name]: '' }));
+      setCreateFormErrors((prev) => ({ ...prev, [name]: '' }));
     }
   };
 
@@ -139,8 +144,16 @@ export const UsersPage = () => {
     if (!createForm.username.trim()) errors.username = 'Username is required';
     if (!createForm.email.trim()) errors.email = 'Email is required';
     else if (!/^\S+@\S+\.\S+$/.test(createForm.email)) errors.email = 'Invalid email address';
-    if (!createForm.password) errors.password = 'Password is required';
-    else if (createForm.password.length < 6) errors.password = 'Password must be at least 6 characters';
+    
+    if (!createForm.password) {
+      errors.password = 'Password is required';
+    } else {
+      const { isValid, errorMessage } = validatePassword(createForm.password);
+      if (!isValid) {
+        errors.password = errorMessage || 'Password does not meet complexity requirements';
+      }
+    }
+
     if (!createForm.roleId) errors.roleId = 'Role is required';
     setCreateFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -807,17 +820,35 @@ export const UsersPage = () => {
               fullWidth
               variant="outlined"
             />
-            <TextField
-              label="Temporary Password"
-              name="password"
-              type="password"
-              value={createForm.password}
-              onChange={handleCreateUserChange}
-              error={!!createFormErrors.password}
-              helperText={createFormErrors.password}
-              fullWidth
-              variant="outlined"
-            />
+            <Box>
+              <TextField
+                label="Temporary Password"
+                name="password"
+                type={showCreatePassword ? 'text' : 'password'}
+                value={createForm.password}
+                onChange={handleCreateUserChange}
+                error={!!createFormErrors.password}
+                helperText={createFormErrors.password}
+                fullWidth
+                variant="outlined"
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowCreatePassword(!showCreatePassword)}
+                          edge="end"
+                          size="small"
+                        >
+                          {showCreatePassword ? <VisibilityOffOutlined fontSize="small" /> : <VisibilityOutlined fontSize="small" />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+              <PasswordCriteriaChecklist password={createForm.password} isDark={isDark} />
+            </Box>
             <FormControl fullWidth error={!!createFormErrors.roleId}>
               <InputLabel id="role-select-label">Assign Role</InputLabel>
               <Select

@@ -29,6 +29,7 @@ public interface IJwtTokenService
 
     /// <summary>
     /// Returns the absolute expiry date-time for a refresh token issued at <paramref name="issuedAt"/>.
+    /// When <paramref name="rememberMe"/> is true, a longer retention period (e.g. 30 days) is applied.
     /// </summary>
-    DateTime GetRefreshTokenExpiry(DateTime issuedAt);
+    DateTime GetRefreshTokenExpiry(DateTime issuedAt, bool rememberMe = false);
 }
