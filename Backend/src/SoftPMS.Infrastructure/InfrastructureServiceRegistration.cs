@@ -19,11 +19,19 @@ public static class InfrastructureServiceRegistration
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        // Bind and eagerly validate EmailSettings at startup via DataAnnotations
+        services
+            .AddOptions<EmailSettings>()
+            .Bind(configuration.GetSection(nameof(EmailSettings)))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         services.AddHttpContextAccessor();
 
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IStorageService, LocalFileStorageService>();
+        services.AddScoped<IEmailService, EmailService>();
         services.AddTransient<IDateTime, DateTimeService>();
 
         return services;
