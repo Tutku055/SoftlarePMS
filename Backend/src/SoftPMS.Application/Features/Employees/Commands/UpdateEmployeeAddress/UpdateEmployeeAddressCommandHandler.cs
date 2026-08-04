@@ -49,6 +49,7 @@ public sealed class UpdateEmployeeAddressCommandHandler(
                 State       = request.State,
                 Country     = request.Country,
                 IsPrimary   = request.IsPrimary,
+                StartDate   = dateTime.UtcNow.Date,
                 CreatedAt   = dateTime.UtcNow
             };
             await context.EmployeeAddresses.AddAsync(newAddress, cancellationToken);

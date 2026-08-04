@@ -61,6 +61,8 @@ public sealed class CreateEmployeeCommandHandler(
             State       = request.State,
             Country     = request.Country,
             IsPrimary   = true,
+            StartDate   = request.HireDate,
+            EndDate     = null,
             CreatedAt   = now
         };
 

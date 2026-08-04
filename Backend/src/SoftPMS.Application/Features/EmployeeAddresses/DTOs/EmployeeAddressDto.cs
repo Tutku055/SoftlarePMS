@@ -1,4 +1,4 @@
-namespace SoftPMS.Application.Features.Employees.DTOs;
+namespace SoftPMS.Application.Features.EmployeeAddresses.DTOs;
 
 public record EmployeeAddressDto
 {

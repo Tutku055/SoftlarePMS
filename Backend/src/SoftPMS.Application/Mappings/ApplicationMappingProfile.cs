@@ -1,5 +1,6 @@
 using AutoMapper;
 using SoftPMS.Application.Features.Departments.DTOs;
+using SoftPMS.Application.Features.EmployeeAddresses.DTOs;
 using SoftPMS.Application.Features.Employees.DTOs;
 using SoftPMS.Application.Features.EmployeeCompensations.DTOs;
 using SoftPMS.Application.Features.Documents.DTOs;
@@ -31,16 +32,29 @@ public class ApplicationMappingProfile : Profile
             .ForMember(d => d.CreatedAt, o => o.Ignore());
 
         // Employee address mappings
-        CreateMap<EmployeeAddress, EmployeeAddressDto>();
-        CreateMap<CreateEmployeeAddressDto, EmployeeAddress>()
-            .ForMember(d => d.EmployeeId, o => o.Ignore())
-            .ForMember(d => d.IsPrimary, o => o.Ignore())
-            .ForMember(d => d.Employee, o => o.Ignore());
-        CreateMap<UpdateEmployeeAddressDto, EmployeeAddress>()
+        CreateMap<EmployeeAddress, SoftPMS.Application.Features.EmployeeAddresses.DTOs.EmployeeAddressDto>()
+            .ForMember(d => d.IsCurrent, o => o.MapFrom(s => s.EndDate == null || s.EndDate >= DateTime.UtcNow.Date));
+        CreateMap<EmployeeAddress, SoftPMS.Application.Features.Employees.DTOs.EmployeeAddressDto>()
+            .ForMember(d => d.IsCurrent, o => o.MapFrom(s => s.EndDate == null || s.EndDate >= DateTime.UtcNow.Date));
+        CreateMap<SoftPMS.Application.Features.EmployeeAddresses.DTOs.CreateEmployeeAddressDto, EmployeeAddress>()
             .ForMember(d => d.Id, o => o.Ignore())
             .ForMember(d => d.CreatedAt, o => o.Ignore())
             .ForMember(d => d.EmployeeId, o => o.Ignore())
-            .ForMember(d => d.IsPrimary, o => o.Ignore())
+            .ForMember(d => d.Employee, o => o.Ignore());
+        CreateMap<SoftPMS.Application.Features.Employees.DTOs.CreateEmployeeAddressDto, EmployeeAddress>()
+            .ForMember(d => d.Id, o => o.Ignore())
+            .ForMember(d => d.CreatedAt, o => o.Ignore())
+            .ForMember(d => d.EmployeeId, o => o.Ignore())
+            .ForMember(d => d.Employee, o => o.Ignore());
+        CreateMap<SoftPMS.Application.Features.EmployeeAddresses.DTOs.UpdateEmployeeAddressDto, EmployeeAddress>()
+            .ForMember(d => d.Id, o => o.Ignore())
+            .ForMember(d => d.CreatedAt, o => o.Ignore())
+            .ForMember(d => d.EmployeeId, o => o.Ignore())
+            .ForMember(d => d.Employee, o => o.Ignore());
+        CreateMap<SoftPMS.Application.Features.Employees.DTOs.UpdateEmployeeAddressDto, EmployeeAddress>()
+            .ForMember(d => d.Id, o => o.Ignore())
+            .ForMember(d => d.CreatedAt, o => o.Ignore())
+            .ForMember(d => d.EmployeeId, o => o.Ignore())
             .ForMember(d => d.Employee, o => o.Ignore());
 
         // Department mappings

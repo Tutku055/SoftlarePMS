@@ -121,7 +121,9 @@ public class ApplicationDbContextInitialiser
                 .RuleFor(a => a.City, f => f.Address.City()) //[cite: 1, 5]
                 .RuleFor(a => a.State, f => f.Address.State()) //[cite: 1, 5]
                 .RuleFor(a => a.Country, f => f.PickRandom("United Kingdom", "Germany")) //[cite: 1, 5]
-                .RuleFor(a => a.IsPrimary, f => true); //[cite: 1, 5]
+                .RuleFor(a => a.IsPrimary, f => true) //[cite: 1, 5]
+                .RuleFor(a => a.StartDate, f => f.Date.Past(2))
+                .RuleFor(a => a.EndDate, f => (DateTime?)null);
 
             // 3. Compensation Faker //[cite: 1, 6]
             var compensationFaker = new Faker<EmployeeCompensation>()
@@ -138,6 +140,8 @@ public class ApplicationDbContextInitialiser
                 .RuleFor(n => n.CreatedAt, f => f.Date.Past(1)) //[cite: 2]
                 .RuleFor(n => n.Title, f => f.Lorem.Sentence(3)) //[cite: 1, 8]
                 .RuleFor(n => n.Content, f => f.Lorem.Paragraphs(2)) //[cite: 1, 8]
+                .RuleFor(n => n.Category, f => f.PickRandom<NoteCategory>()) //[cite: 1, 8]
+                .RuleFor(n => n.IsConfidential, f => f.Random.Bool(0.2f)) //[cite: 1, 8]
                 .RuleFor(n => n.CreatedByUserId, f => creatorUserId); //[cite: 1, 8]
 
             // 6. Reference Faker //[cite: 1, 9]
@@ -147,40 +151,57 @@ public class ApplicationDbContextInitialiser
                 .RuleFor(r => r.CompanyName, f => f.Company.CompanyName()) //[cite: 1, 9]
                 .RuleFor(r => r.ContactPerson, f => f.Name.FullName()) //[cite: 1, 9]
                 .RuleFor(r => r.Title, f => f.Name.JobTitle()) //[cite: 1, 9]
+                .RuleFor(r => r.Relationship, f => f.PickRandom<Domain.Enums.ReferenceRelationship>())
                 .RuleFor(r => r.Phone, f => f.Phone.PhoneNumber()) //[cite: 1, 9]
                 .RuleFor(r => r.Email, f => f.Internet.Email()) //[cite: 1, 9]
                 .RuleFor(r => r.Notes, f => f.Lorem.Sentence()); //[cite: 1, 9]
 
-            // 7. Main Employee Faker //[cite: 1, 4]
-            int employeeIdCounter = 1; //[cite: 1]
-            var employeeFaker = new Faker<Employee>() //[cite: 1]
-                .RuleFor(e => e.Id, f => Guid.NewGuid()) //[cite: 2]
-                .RuleFor(e => e.CreatedAt, f => f.Date.Past(2)) //[cite: 2]
-                .RuleFor(e => e.EmployeeNo, f => $"EMP-{employeeIdCounter++:D4}") //[cite: 1, 4]
-                .RuleFor(e => e.FirstName, f => f.Name.FirstName()) //[cite: 1, 4]
-                .RuleFor(e => e.LastName, f => f.Name.LastName()) //[cite: 1, 4]
-                .RuleFor(e => e.Gender, f => f.PickRandom<Gender>()) //[cite: 1, 4]
-                .RuleFor(e => e.DateOfBirth, f => f.Date.Past(40, DateTime.Now.AddYears(-18))) //[cite: 1, 4]
-                .RuleFor(e => e.Nationality, f => f.PickRandom("English", "German")) //[cite: 1, 4]
-                .RuleFor(e => e.ProfessionId, f => f.PickRandom(activeProfessions).Id) //[cite: 1, 4]
-                .RuleFor(e => e.EmploymentStatus, f => f.PickRandom<EmploymentStatus>()) //[cite: 1, 4]
-                .RuleFor(e => e.HireDate, f => f.Date.Past(5)) //[cite: 1, 4]
-                .RuleFor(e => e.TerminationDate, f => null) //[cite: 1, 4]
-                .RuleFor(e => e.ProbationEndDate, (f, e) => e.HireDate.AddMonths(3)) //[cite: 1, 4]
-                .RuleFor(e => e.WorkingHoursPerWeek, f => f.Random.Decimal(20m, 40m)) //[cite: 1, 4]
-                .RuleFor(e => e.AnnualVacationDays, f => f.Random.Int(14, 20))
-                .RuleFor(e => e.CarriedOverLeaves, f => f.Random.Int(0, 10))
-                .RuleFor(e => e.IsDeleted, false) //[cite: 1, 4]
-                .RuleFor(e => e.CreatedByUserId, creatorUserId) //[cite: 1, 4]
+            // 7. Master Employee Faker
+            var employeeFaker = new Faker<Employee>()
+                .RuleFor(e => e.Id, f => Guid.NewGuid())
+                .RuleFor(e => e.CreatedAt, f => f.Date.Past(1))
+                .RuleFor(e => e.CreatedByUserId, f => creatorUserId)
+                .RuleFor(e => e.EmployeeNo, f => $"EMP{f.IndexFaker + 1001:D4}")
+                .RuleFor(e => e.FirstName, f => f.Name.FirstName())
+                .RuleFor(e => e.LastName, f => f.Name.LastName())
+                .RuleFor(e => e.Gender, f => f.PickRandom<Gender>())
+                .RuleFor(e => e.DateOfBirth, f => f.Date.Past(30, DateTime.UtcNow.AddYears(-20)))
+                .RuleFor(e => e.Nationality, f => f.PickRandom("British", "German", "Turkish"))
+                .RuleFor(e => e.EmploymentStatus, f => f.PickRandom<EmploymentStatus>())
+                .RuleFor(e => e.HireDate, f => f.Date.Past(3))
+                .RuleFor(e => e.WorkingHoursPerWeek, f => 40m)
+                .RuleFor(e => e.AnnualVacationDays, f => 20)
+                .RuleFor(e => e.CarriedOverLeaves, f => 0)
+                .RuleFor(e => e.IsDeleted, f => false)
+
+                // --- Assign Profession (From active ones) ---
+                .RuleFor(e => e.ProfessionId, f => f.PickRandom(activeProfessions).Id)
 
                 // --- Assign Department (One of the 10 generated departments) --- //[cite: 3, 4]
                 .RuleFor(e => e.DepartmentId, f => f.PickRandom(fakeDepartments).Id) //[cite: 3, 4]
 
                 // --- Create Subcollections with Guid Links --- //[cite: 1]
                 .RuleFor(e => e.Addresses, (f, e) => {
-                    var addresses = addressFaker.Generate(f.Random.Int(1, 2)); //[cite: 1]
-                    addresses.ForEach(a => a.EmployeeId = e.Id); //[cite: 1, 5]
-                    return addresses; //[cite: 1]
+                    var count = f.Random.Int(1, 2);
+                    var addresses = addressFaker.Generate(count);
+                    for (int i = 0; i < addresses.Count; i++)
+                    {
+                        var a = addresses[i];
+                        a.EmployeeId = e.Id;
+                        if (i == 0)
+                        {
+                            a.IsPrimary = true;
+                            a.StartDate = e.HireDate;
+                            a.EndDate = count > 1 ? e.HireDate.AddMonths(6) : null;
+                        }
+                        else
+                        {
+                            a.IsPrimary = false;
+                            a.StartDate = e.HireDate.AddMonths(6).AddDays(1);
+                            a.EndDate = null;
+                        }
+                    }
+                    return addresses;
                 })
                 .RuleFor(e => e.Compensations, (f, e) => {
                     var comp = compensationFaker.Generate();
