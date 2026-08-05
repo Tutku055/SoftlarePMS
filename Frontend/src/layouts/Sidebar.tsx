@@ -6,7 +6,8 @@ import {
 } from '@mui/material';
 import { 
   Dashboard, PeopleAlt, FolderCopy, 
-  Settings, ExpandLess, ExpandMore, Business, MonetizationOnRounded 
+  Settings, ExpandLess, ExpandMore, Business, MonetizationOnRounded,
+  NotificationsActiveRounded
 } from '@mui/icons-material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styles from './Sidebar.module.css';
@@ -39,6 +40,12 @@ const menuConfig: MenuItem[] = [
     path: '/dashboard', 
     icon: <Dashboard />,
     permission: 'Dashboard.Read'
+  },
+  { 
+    title: 'Notifications', 
+    path: '/notifications', 
+    icon: <NotificationsActiveRounded />,
+    permission: 'Notifications.Read'
   },
   { 
     title: 'Personnel Operations', 

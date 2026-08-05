@@ -5,7 +5,9 @@ using SoftPMS.Application.Features.Notifications.Commands.AdjustNotificationThre
 using SoftPMS.Application.Features.Notifications.Commands.DeleteNotification;
 using SoftPMS.Application.Features.Notifications.Commands.MarkAllNotificationsAsRead;
 using SoftPMS.Application.Features.Notifications.Commands.MarkNotificationAsRead;
+using SoftPMS.Application.Features.Notifications.Commands.MarkNotificationAsUnread;
 using SoftPMS.Application.Features.Notifications.Commands.ToggleNotificationMute;
+using SoftPMS.Application.Features.Notifications.Commands.ToggleNotificationReadStatus;
 using SoftPMS.Application.Features.Notifications.Commands.TriggerPassiveNotificationEvaluation;
 using SoftPMS.Application.Features.Notifications.DTOs;
 using SoftPMS.Application.Features.Notifications.Queries.GetMyNotifications;
@@ -37,6 +39,16 @@ public sealed class NotificationsController : ApiControllerBase
         return Ok(await Sender.Send(new GetUnreadNotificationCountQuery(), ct));
     }
 
+    /// <summary>Toggle read/unread status for a single notification.</summary>
+    [HttpPatch("{id:guid}/toggle-read")]
+    [HasPermission("Notifications.Read")]
+    [ProducesResponseType(typeof(UserNotificationDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ToggleRead(Guid id, CancellationToken ct)
+    {
+        return Ok(await Sender.Send(new ToggleNotificationReadStatusCommand(id), ct));
+    }
+
     /// <summary>Mark a single notification as read.</summary>
     [HttpPatch("{id:guid}/read")]
     [HasPermission("Notifications.Read")]
@@ -45,6 +57,17 @@ public sealed class NotificationsController : ApiControllerBase
     public async Task<IActionResult> MarkAsRead(Guid id, CancellationToken ct)
     {
         await Sender.Send(new MarkNotificationAsReadCommand(id), ct);
+        return NoContent();
+    }
+
+    /// <summary>Mark a single notification as unread.</summary>
+    [HttpPatch("{id:guid}/unread")]
+    [HasPermission("Notifications.Read")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> MarkAsUnread(Guid id, CancellationToken ct)
+    {
+        await Sender.Send(new MarkNotificationAsUnreadCommand(id), ct);
         return NoContent();
     }
 

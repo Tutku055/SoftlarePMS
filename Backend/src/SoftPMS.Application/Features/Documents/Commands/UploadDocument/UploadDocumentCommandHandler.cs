@@ -1,6 +1,6 @@
 using MediatR;
-
 using SoftPMS.Application.Common.Interfaces;
+using SoftPMS.Application.Features.Notifications.Services;
 using SoftPMS.Domain.Entities;
 using SoftPMS.Domain.Enums;
 
@@ -9,7 +9,8 @@ namespace SoftPMS.Application.Features.Documents.Commands.UploadDocument;
 public sealed class UploadDocumentCommandHandler(
     IApplicationDbContext context,
     IStorageService storageService,
-    ICurrentUserService currentUserService) : IRequestHandler<UploadDocumentCommand, Guid>
+    ICurrentUserService currentUserService,
+    IPassiveNotificationEvaluator notificationEvaluator) : IRequestHandler<UploadDocumentCommand, Guid>
 {
     public async Task<Guid> Handle(UploadDocumentCommand request, CancellationToken cancellationToken)
     {
@@ -36,6 +37,11 @@ public sealed class UploadDocumentCommandHandler(
 
         context.Documents.Add(document);
         await context.SaveChangesAsync(cancellationToken);
+
+        if (request.ExpiryDate != null || request.ReminderDate != null)
+        {
+            await notificationEvaluator.EvaluateDocumentExpirationsAsync(cancellationToken);
+        }
 
         return document.Id;
     }

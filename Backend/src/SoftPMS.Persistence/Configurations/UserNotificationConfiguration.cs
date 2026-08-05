@@ -37,6 +37,16 @@ public class UserNotificationConfiguration : IEntityTypeConfiguration<UserNotifi
         builder.Property(n => n.PayloadJson)
             .IsRequired(false);
 
+        builder.Property(n => n.IsDeleted)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.Property(n => n.DeletedAt)
+            .IsRequired(false);
+
+        // Global query filter — soft deleted notifications are ignored across all queries
+        builder.HasQueryFilter(n => !n.IsDeleted);
+
         // Foreign key to User
         builder.HasOne(n => n.User)
             .WithMany(u => u.Notifications)

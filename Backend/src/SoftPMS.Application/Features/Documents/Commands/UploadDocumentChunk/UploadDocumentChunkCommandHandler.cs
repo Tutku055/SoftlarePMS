@@ -1,6 +1,6 @@
 using MediatR;
-
 using SoftPMS.Application.Common.Interfaces;
+using SoftPMS.Application.Features.Notifications.Services;
 using SoftPMS.Domain.Entities;
 using SoftPMS.Domain.Enums;
 
@@ -9,7 +9,8 @@ namespace SoftPMS.Application.Features.Documents.Commands.UploadDocumentChunk;
 public sealed class UploadDocumentChunkCommandHandler(
     IApplicationDbContext context,
     IStorageService storageService,
-    ICurrentUserService currentUserService) : IRequestHandler<UploadDocumentChunkCommand, Guid?>
+    ICurrentUserService currentUserService,
+    IPassiveNotificationEvaluator notificationEvaluator) : IRequestHandler<UploadDocumentChunkCommand, Guid?>
 {
     public async Task<Guid?> Handle(UploadDocumentChunkCommand request, CancellationToken cancellationToken)
     {
@@ -42,6 +43,11 @@ public sealed class UploadDocumentChunkCommandHandler(
 
             context.Documents.Add(document);
             await context.SaveChangesAsync(cancellationToken);
+
+            if (request.ExpiryDate != null || request.ReminderDate != null)
+            {
+                await notificationEvaluator.EvaluateDocumentExpirationsAsync(cancellationToken);
+            }
 
             return document.Id;
         }

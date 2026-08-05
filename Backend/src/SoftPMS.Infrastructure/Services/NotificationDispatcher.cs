@@ -13,18 +13,15 @@ namespace SoftPMS.Infrastructure.Services;
 public class NotificationDispatcher : INotificationDispatcher
 {
     private readonly IApplicationDbContext _context;
-    private readonly IEmailService _emailService;
     private readonly INotificationEmailTemplateBuilder _templateBuilder;
     private readonly ILogger<NotificationDispatcher> _logger;
 
     public NotificationDispatcher(
         IApplicationDbContext context,
-        IEmailService emailService,
         INotificationEmailTemplateBuilder templateBuilder,
         ILogger<NotificationDispatcher> logger)
     {
         _context = context;
-        _emailService = emailService;
         _templateBuilder = templateBuilder;
         _logger = logger;
     }
@@ -53,32 +50,56 @@ public class NotificationDispatcher : INotificationDispatcher
             ?? definition?.DefaultDeliveryChannel
             ?? NotificationDeliveryChannel.System;
 
-        // 3. Resolve recipient active users
+        // 3. Resolve recipient active users based on TargetAudience scope and RBAC permissions
         List<User> targetUsers;
-        if (context.Audience.Scope == AudienceScope.All)
-        {
-            targetUsers = await _context.Users
-                .Where(u => u.IsActive && !u.IsDeleted)
-                .ToListAsync(cancellationToken);
-        }
-        else
+        if (context.Audience.Scope is AudienceScope.Single or AudienceScope.Multiple)
         {
             var requestedIds = context.Audience.UserIds;
             targetUsers = await _context.Users
                 .Where(u => requestedIds.Contains(u.Id) && u.IsActive && !u.IsDeleted)
                 .ToListAsync(cancellationToken);
         }
+        else
+        {
+            // Determine required permissions from audience or registry definition
+            var requiredPerms = context.Audience.Scope == AudienceScope.Permission
+                ? context.Audience.RequiredPermissions
+                : (definition?.RequiredPermissions ?? Array.Empty<string>());
+
+            if (requiredPerms.Count > 0)
+            {
+                // Only users whose assigned active role has at least one of the required read permissions (or SuperAdmin)
+                targetUsers = await _context.Users
+                    .Include(u => u.Role)
+                        .ThenInclude(r => r.RolePermissions)
+                            .ThenInclude(rp => rp.Permission)
+                    .Where(u => u.IsActive && !u.IsDeleted && u.Role.IsActive
+                             && (u.Role.Name == "SuperAdmin" || u.Role.RolePermissions.Any(rp => requiredPerms.Contains(rp.Permission.Name))))
+                    .ToListAsync(cancellationToken);
+            }
+            else
+            {
+                targetUsers = await _context.Users
+                    .Where(u => u.IsActive && !u.IsDeleted)
+                    .ToListAsync(cancellationToken);
+            }
+        }
 
         if (targetUsers.Count == 0)
         {
-            _logger.LogWarning("Notification dispatch for {Type} found 0 matching active recipients.", context.Type);
+            _logger.LogWarning("Notification dispatch for {Type} found 0 matching authorized active recipients.", context.Type);
             return 0;
         }
 
+        var now = DateTime.UtcNow;
+
         // 4. Fan-out on write: create individual UserNotification records
         var notificationsToCreate = new List<UserNotification>(targetUsers.Count);
-        foreach (var user in targetUsers)
+        var outboxItemsToCreate = new List<NotificationOutbox>();
+
+        for (int i = 0; i < targetUsers.Count; i++)
         {
+            var user = targetUsers[i];
             var notification = new UserNotification
             {
                 UserId = user.Id,
@@ -92,52 +113,45 @@ public class NotificationDispatcher : INotificationDispatcher
                 EntityReferenceType = context.EntityReferenceType,
                 PayloadJson = context.PayloadJson,
                 IsRead = false,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = now
             };
 
             notificationsToCreate.Add(notification);
+
+            // 5. Transactional Outbox Pattern:
+            // If SystemAndMail channel is active, stage Outbox message in the SAME database transaction.
+            if (channel == NotificationDeliveryChannel.SystemAndMail && !string.IsNullOrWhiteSpace(user.Email))
+            {
+                var htmlBody = _templateBuilder.BuildNotificationEmailHtml(notification, user.Username);
+                var outboxItem = new NotificationOutbox
+                {
+                    RecipientEmail = user.Email.Trim(),
+                    RecipientName = user.Username,
+                    Subject = $"[SoftPMS] {notification.Title}",
+                    BodyHtml = htmlBody,
+                    Status = OutboxStatus.Pending,
+                    RetryCount = 0,
+                    MaxRetries = 3,
+                    NextRetryAtUtc = now,
+                    NotificationId = notification.Id,
+                    CreatedAt = now
+                };
+
+                outboxItemsToCreate.Add(outboxItem);
+            }
         }
 
+        // 6. Single Atomic Transaction commit (Guarantees zero Dual-Write discrepancy)
         _context.UserNotifications.AddRange(notificationsToCreate);
+        if (outboxItemsToCreate.Count > 0)
+        {
+            _context.NotificationOutboxes.AddRange(outboxItemsToCreate);
+        }
+
         await _context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Successfully persisted {Count} in-app notification records for {Type}.",
-            notificationsToCreate.Count, context.Type);
-
-        // 5. If SystemAndMail channel is active, send transactional emails
-        if (channel == NotificationDeliveryChannel.SystemAndMail)
-        {
-            try
-            {
-                var emailMessages = new List<EmailMessage>();
-                for (int i = 0; i < targetUsers.Count; i++)
-                {
-                    var user = targetUsers[i];
-                    var notification = notificationsToCreate[i];
-
-                    if (string.IsNullOrWhiteSpace(user.Email))
-                    {
-                        continue;
-                    }
-
-                    var htmlBody = _templateBuilder.BuildNotificationEmailHtml(notification, user.Username);
-                    var emailMsg = new EmailMessage(user.Email, $"[SoftPMS] {notification.Title}", htmlBody, true);
-                    emailMessages.Add(emailMsg);
-                }
-
-                if (emailMessages.Count > 0)
-                {
-                    await _emailService.SendEmailsAsync(emailMessages, cancellationToken);
-                    _logger.LogInformation("Dispatched {Count} transactional notification emails for {Type}.",
-                        emailMessages.Count, context.Type);
-                }
-            }
-            catch (Exception ex)
-            {
-                // Email failure does not prevent DB notification records from remaining valid
-                _logger.LogError(ex, "Failed to send notification emails for {Type}, but DB notifications were created.", context.Type);
-            }
-        }
+        _logger.LogInformation("Successfully persisted {Count} in-app notifications and {OutboxCount} transactional outbox emails for {Type}.",
+            notificationsToCreate.Count, outboxItemsToCreate.Count, context.Type);
 
         return notificationsToCreate.Count;
     }

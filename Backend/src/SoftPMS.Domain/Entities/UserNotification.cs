@@ -51,6 +51,12 @@ public class UserNotification : BaseEntity
     /// <summary>Optional JSON payload containing raw contextual metadata for frontend use.</summary>
     public string? PayloadJson { get; set; }
 
+    /// <summary>Soft delete flag.</summary>
+    public bool IsDeleted { get; set; } = false;
+
+    /// <summary>Timestamp when the notification was soft deleted.</summary>
+    public DateTime? DeletedAt { get; set; }
+
     // Navigation property
     public virtual User User { get; set; } = null!;
 }

@@ -1,26 +1,31 @@
+using AutoMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
+using SoftPMS.Application.Features.Notifications.DTOs;
 using SoftPMS.Domain.Entities;
 using SoftPMS.Domain.Exceptions;
 
-namespace SoftPMS.Application.Features.Notifications.Commands.DeleteNotification;
+namespace SoftPMS.Application.Features.Notifications.Commands.ToggleNotificationReadStatus;
 
-public class DeleteNotificationCommandHandler : IRequestHandler<DeleteNotificationCommand, bool>
+public class ToggleNotificationReadStatusCommandHandler : IRequestHandler<ToggleNotificationReadStatusCommand, UserNotificationDto>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IMapper _mapper;
 
-    public DeleteNotificationCommandHandler(
+    public ToggleNotificationReadStatusCommandHandler(
         IApplicationDbContext context,
-        ICurrentUserService currentUserService)
+        ICurrentUserService currentUserService,
+        IMapper mapper)
     {
         _context = context;
         _currentUserService = currentUserService;
+        _mapper = mapper;
     }
 
-    public async Task<bool> Handle(
-        DeleteNotificationCommand request,
+    public async Task<UserNotificationDto> Handle(
+        ToggleNotificationReadStatusCommand request,
         CancellationToken cancellationToken)
     {
         var currentUserId = _currentUserService.UserId;
@@ -33,10 +38,11 @@ public class DeleteNotificationCommandHandler : IRequestHandler<DeleteNotificati
             throw new NotFoundException(nameof(UserNotification), request.NotificationId);
         }
 
-        notification.IsDeleted = true;
-        notification.DeletedAt = DateTime.UtcNow;
+        notification.IsRead = !notification.IsRead;
+        notification.ReadAt = notification.IsRead ? DateTime.UtcNow : null;
+
         await _context.SaveChangesAsync(cancellationToken);
 
-        return true;
+        return _mapper.Map<UserNotificationDto>(notification);
     }
 }

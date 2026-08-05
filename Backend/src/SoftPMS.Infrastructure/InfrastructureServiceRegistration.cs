@@ -36,6 +36,8 @@ public static class InfrastructureServiceRegistration
         services.AddScoped<INotificationEmailTemplateBuilder, NotificationEmailTemplateBuilder>();
         services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
         services.AddScoped<IPassiveNotificationEvaluator, PassiveNotificationEvaluator>();
+        services.AddHostedService<PassiveNotificationBackgroundService>();
+        services.AddHostedService<NotificationOutboxBackgroundService>();
         services.AddTransient<IDateTime, DateTimeService>();
 
         return services;

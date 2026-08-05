@@ -6,6 +6,7 @@ using SoftPMS.Application;
 using SoftPMS.Infrastructure;
 using SoftPMS.Infrastructure.Persistence;
 using SoftPMS.Persistence;
+using SoftPMS.WebApi.Common;
 using SoftPMS.WebApi.Middleware;
 using SoftPMS.WebApi.OpenApi;
 
@@ -68,7 +69,12 @@ builder.Services.AddCors(options =>
 });
 
 // ── Controllers ───────────────────────────────────────────────────────────────
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new UtcDateTimeJsonConverter());
+        options.JsonSerializerOptions.Converters.Add(new NullableUtcDateTimeJsonConverter());
+    });
 
 // ── OpenAPI (built-in .NET 10) + Scalar ──────────────────────────────────────
 builder.Services.AddOpenApi(options =>

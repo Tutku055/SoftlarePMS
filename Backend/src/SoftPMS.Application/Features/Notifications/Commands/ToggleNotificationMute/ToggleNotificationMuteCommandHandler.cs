@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Application.Features.Notifications.Configurations;
 using SoftPMS.Application.Features.Notifications.DTOs;
+using SoftPMS.Application.Features.Notifications.Services;
 using SoftPMS.Domain.Entities;
 
 namespace SoftPMS.Application.Features.Notifications.Commands.ToggleNotificationMute;
@@ -12,13 +13,16 @@ public class ToggleNotificationMuteCommandHandler : IRequestHandler<ToggleNotifi
 {
     private readonly IApplicationDbContext _context;
     private readonly IMapper _mapper;
+    private readonly IPassiveNotificationEvaluator _evaluator;
 
     public ToggleNotificationMuteCommandHandler(
         IApplicationDbContext context,
-        IMapper mapper)
+        IMapper mapper,
+        IPassiveNotificationEvaluator evaluator)
     {
         _context = context;
         _mapper = mapper;
+        _evaluator = evaluator;
     }
 
     public async Task<NotificationTypeSettingDto> Handle(
@@ -52,10 +56,16 @@ public class ToggleNotificationMuteCommandHandler : IRequestHandler<ToggleNotifi
 
         await _context.SaveChangesAsync(cancellationToken);
 
+        if (!request.IsMuted)
+        {
+            await _evaluator.EvaluateAllAsync(cancellationToken);
+        }
+
         var dto = _mapper.Map<NotificationTypeSettingDto>(setting);
         if (definition != null)
         {
             dto.SupportedPlaceholders = definition.SupportedPlaceholders;
+            dto.RequiredPermissions = definition.RequiredPermissions;
         }
 
         return dto;

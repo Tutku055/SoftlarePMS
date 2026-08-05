@@ -20,6 +20,18 @@ public sealed class DeleteDocumentCommandHandler(
 
         await storageService.DeleteAsync(document.FilePath, cancellationToken);
 
+        // Remove obsolete notifications for the deleted document
+        var obsoleteNotifications = await context.UserNotifications
+            .Where(n => n.Type == Domain.Enums.NotificationType.DocumentExpiry
+                && !n.IsRead
+                && n.Title.Contains(document.FileName))
+            .ToListAsync(cancellationToken);
+
+        if (obsoleteNotifications.Count > 0)
+        {
+            context.UserNotifications.RemoveRange(obsoleteNotifications);
+        }
+
         context.Documents.Remove(document);
         await context.SaveChangesAsync(cancellationToken);
 

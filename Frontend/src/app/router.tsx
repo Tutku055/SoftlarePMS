@@ -26,6 +26,7 @@ import { PayrollDetail } from '../features/finance/components/Payrolls/PayrollDe
 import { OvertimeTypeList } from '../features/finance/components/OvertimeTypes/OvertimeTypeList';
 import { ProfessionList } from '../features/professions/components/ProfessionList';
 import { SystemLogsPage } from '../features/settings/components/SystemLogs/SystemLogsPage';
+import { NotificationsPage } from '../features/notifications/NotificationsPage';
 
 import { useLocation } from 'react-router-dom';
 
@@ -85,6 +86,14 @@ export const router = createBrowserRouter([
           {
             path: 'dashboard',
             element: <div>Dashboard</div>
+          },
+          {
+            path: 'notifications',
+            element: (
+              <ProtectedRoute permission="Notifications.Read">
+                <NotificationsPage />
+              </ProtectedRoute>
+            ),
           },
           {
             path: 'employees/roster',

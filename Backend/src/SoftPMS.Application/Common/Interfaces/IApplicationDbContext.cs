@@ -31,6 +31,7 @@ public interface IApplicationDbContext
     DbSet<YearlyRolloverLog> YearlyRolloverLogs { get; }
     DbSet<UserNotification> UserNotifications { get; }
     DbSet<NotificationTypeSetting> NotificationTypeSettings { get; }
+    DbSet<NotificationOutbox> NotificationOutboxes { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);

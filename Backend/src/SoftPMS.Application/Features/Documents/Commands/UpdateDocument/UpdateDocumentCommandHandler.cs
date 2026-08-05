@@ -1,13 +1,15 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
+using SoftPMS.Application.Features.Notifications.Services;
 using SoftPMS.Domain.Entities;
 using SoftPMS.Domain.Exceptions;
 
 namespace SoftPMS.Application.Features.Documents.Commands.UpdateDocument;
 
 public sealed class UpdateDocumentCommandHandler(
-    IApplicationDbContext context) : IRequestHandler<UpdateDocumentCommand>
+    IApplicationDbContext context,
+    IPassiveNotificationEvaluator notificationEvaluator) : IRequestHandler<UpdateDocumentCommand>
 {
     public async Task Handle(UpdateDocumentCommand request, CancellationToken cancellationToken)
     {
@@ -24,5 +26,8 @@ public sealed class UpdateDocumentCommandHandler(
         document.ReminderDate = request.ReminderDate;
 
         await context.SaveChangesAsync(cancellationToken);
+
+        // Immediately evaluate document expirations so notifications are fresh
+        await notificationEvaluator.EvaluateDocumentExpirationsAsync(cancellationToken);
     }
 }

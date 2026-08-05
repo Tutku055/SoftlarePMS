@@ -48,6 +48,7 @@ public class SoftPMSDbContext : DbContext, IApplicationDbContext
     #region Notifications
     public DbSet<UserNotification> UserNotifications { get; set; }
     public DbSet<NotificationTypeSetting> NotificationTypeSettings { get; set; }
+    public DbSet<NotificationOutbox> NotificationOutboxes { get; set; }
     #endregion
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

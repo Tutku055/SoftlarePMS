@@ -15,5 +15,7 @@ public record NotificationTypeDefinition(
     bool DefaultIsMuted,
     string DefaultTitleTemplate,
     string DefaultMessageTemplate,
-    string[] SupportedPlaceholders
+    string[] SupportedPlaceholders,
+    string[] RequiredPermissions
 );
+

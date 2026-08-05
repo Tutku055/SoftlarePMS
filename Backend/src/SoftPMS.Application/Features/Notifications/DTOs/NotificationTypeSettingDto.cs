@@ -13,4 +13,6 @@ public class NotificationTypeSettingDto
     public NotificationDeliveryChannel DeliveryChannel { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public IReadOnlyCollection<string> SupportedPlaceholders { get; set; } = Array.Empty<string>();
+    public IReadOnlyCollection<string> RequiredPermissions { get; set; } = Array.Empty<string>();
 }
+

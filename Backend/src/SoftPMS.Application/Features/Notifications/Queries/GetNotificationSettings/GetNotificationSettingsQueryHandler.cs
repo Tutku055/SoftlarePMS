@@ -31,13 +31,14 @@ public class GetNotificationSettingsQueryHandler : IRequestHandler<GetNotificati
 
         var dtos = _mapper.Map<List<NotificationTypeSettingDto>>(settings);
 
-        // Enrich with static registry metadata (e.g. SupportedPlaceholders)
+        // Enrich with static registry metadata (e.g. SupportedPlaceholders, RequiredPermissions)
         foreach (var dto in dtos)
         {
             var def = NotificationRegistry.GetDefinition(dto.Type);
             if (def != null)
             {
                 dto.SupportedPlaceholders = def.SupportedPlaceholders;
+                dto.RequiredPermissions = def.RequiredPermissions;
             }
         }
 

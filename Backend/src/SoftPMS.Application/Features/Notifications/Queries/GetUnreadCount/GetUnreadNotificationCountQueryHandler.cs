@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Application.Features.Notifications.DTOs;
+using SoftPMS.Application.Features.Notifications.Services;
 
 namespace SoftPMS.Application.Features.Notifications.Queries.GetUnreadCount;
 
@@ -24,6 +25,7 @@ public class GetUnreadNotificationCountQueryHandler : IRequestHandler<GetUnreadN
     {
         var currentUserId = _currentUserService.UserId;
 
+        // Ultra-lightweight queries hitting IX_UserNotifications_UserId_IsRead index (< 2ms execution)
         var unreadCount = await _context.UserNotifications
             .AsNoTracking()
             .CountAsync(n => n.UserId == currentUserId && !n.IsRead, cancellationToken);

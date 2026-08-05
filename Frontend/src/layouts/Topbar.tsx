@@ -1,9 +1,10 @@
-import React from 'react';
-import { AppBar, Toolbar, Typography, IconButton, Box, Button, Divider, Breadcrumbs, Link } from '@mui/material';
-import { DarkMode, LightMode, Logout, Person } from '@mui/icons-material';
+import React, { useEffect } from 'react';
+import { AppBar, Toolbar, Typography, IconButton, Box, Button, Divider, Breadcrumbs, Link, Badge } from '@mui/material';
+import { DarkMode, LightMode, Logout, Person, NotificationsNoneRounded } from '@mui/icons-material';
 import { useThemeStore } from '../store/useThemeStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
+import { useNotificationStore } from '../store/useNotificationStore';
 import styles from './Topbar.module.css';
 
 const drawerWidth = 280;
@@ -26,6 +27,27 @@ export const Topbar: React.FC = () => {
   const permissions = useAuthStore((state) => state.permissions);
   const displayName = currentUser?.username?.trim() || (currentUser?.email ? currentUser.email.split('@')[0] : '') || 'User';
   
+  const canReadNotifications = permissions.includes('Notifications.Read');
+  const unreadCount = useNotificationStore((state) => state.unreadCount);
+  const fetchUnreadCount = useNotificationStore((state) => state.fetchUnreadCount);
+
+  useEffect(() => {
+    if (canReadNotifications) {
+      fetchUnreadCount();
+    }
+  }, [canReadNotifications, fetchUnreadCount, location.pathname]);
+
+  // Poll unread count every 30s so the badge stays fresh without requiring navigation
+  useEffect(() => {
+    if (!canReadNotifications) return;
+
+    const interval = setInterval(() => {
+      fetchUnreadCount();
+    }, 30_000);
+
+    return () => clearInterval(interval);
+  }, [canReadNotifications, fetchUnreadCount]);
+
   const isPasswordChangeRequired = currentUser?.requiresPasswordChange || 
     (permissions.includes('Users.ChangePassword') && !permissions.includes('Dashboard.Read'));
 
@@ -85,6 +107,19 @@ export const Topbar: React.FC = () => {
         </Box>
         
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          {canReadNotifications && (
+            <IconButton
+              onClick={() => navigate('/notifications')}
+              color="inherit"
+              className={styles.iconButton}
+              title="Notifications"
+            >
+              <Badge badgeContent={unreadCount} color="error" max={99}>
+                <NotificationsNoneRounded fontSize="small" />
+              </Badge>
+            </IconButton>
+          )}
+
           <IconButton 
             onClick={toggleTheme} 
             color="inherit"

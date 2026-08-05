@@ -55,3 +55,4 @@ public class GetMyNotificationsQueryHandler : IRequestHandler<GetMyNotifications
             cancellationToken);
     }
 }
+

@@ -4,14 +4,14 @@ using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Domain.Entities;
 using SoftPMS.Domain.Exceptions;
 
-namespace SoftPMS.Application.Features.Notifications.Commands.DeleteNotification;
+namespace SoftPMS.Application.Features.Notifications.Commands.MarkNotificationAsUnread;
 
-public class DeleteNotificationCommandHandler : IRequestHandler<DeleteNotificationCommand, bool>
+public class MarkNotificationAsUnreadCommandHandler : IRequestHandler<MarkNotificationAsUnreadCommand, bool>
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUserService _currentUserService;
 
-    public DeleteNotificationCommandHandler(
+    public MarkNotificationAsUnreadCommandHandler(
         IApplicationDbContext context,
         ICurrentUserService currentUserService)
     {
@@ -20,7 +20,7 @@ public class DeleteNotificationCommandHandler : IRequestHandler<DeleteNotificati
     }
 
     public async Task<bool> Handle(
-        DeleteNotificationCommand request,
+        MarkNotificationAsUnreadCommand request,
         CancellationToken cancellationToken)
     {
         var currentUserId = _currentUserService.UserId;
@@ -33,9 +33,12 @@ public class DeleteNotificationCommandHandler : IRequestHandler<DeleteNotificati
             throw new NotFoundException(nameof(UserNotification), request.NotificationId);
         }
 
-        notification.IsDeleted = true;
-        notification.DeletedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync(cancellationToken);
+        if (notification.IsRead)
+        {
+            notification.IsRead = false;
+            notification.ReadAt = null;
+            await _context.SaveChangesAsync(cancellationToken);
+        }
 
         return true;
     }
