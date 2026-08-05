@@ -10,6 +10,7 @@ using SoftPMS.Application.Features.Permissions.DTOs;
 using SoftPMS.Application.Features.Roles.DTOs;
 using SoftPMS.Application.Features.Users.DTOs;
 using SoftPMS.Application.Features.Professions.DTOs;
+using SoftPMS.Application.Features.Notifications.DTOs;
 using SoftPMS.Domain.Entities;
 
 namespace SoftPMS.Application.Mappings;
@@ -154,5 +155,11 @@ public class ApplicationMappingProfile : Profile
         CreateMap<UpdateUserDto, User>()
             .ForMember(d => d.Id, o => o.Ignore())
             .ForMember(d => d.CreatedAt, o => o.Ignore());
+
+        // Notification mappings
+        CreateMap<UserNotification, UserNotificationDto>()
+            .ForMember(d => d.TypeName, o => o.MapFrom(s => s.Type.ToString()));
+        CreateMap<NotificationTypeSetting, NotificationTypeSettingDto>()
+            .ForMember(d => d.SupportedPlaceholders, o => o.Ignore());
     }
 }

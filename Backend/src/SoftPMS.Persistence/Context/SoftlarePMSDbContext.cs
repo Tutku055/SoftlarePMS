@@ -45,6 +45,11 @@ public class SoftPMSDbContext : DbContext, IApplicationDbContext
     public DbSet<YearlyRolloverLog> YearlyRolloverLogs { get; set; }
     #endregion
 
+    #region Notifications
+    public DbSet<UserNotification> UserNotifications { get; set; }
+    public DbSet<NotificationTypeSetting> NotificationTypeSettings { get; set; }
+    #endregion
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

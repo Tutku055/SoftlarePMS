@@ -39,6 +39,8 @@ public class User : BaseEntity
 
     public virtual ICollection<EmployeeNote> CreatedNotes { get; set; } = new HashSet<EmployeeNote>();
 
+    public virtual ICollection<UserNotification> Notifications { get; set; } = new HashSet<UserNotification>();
+
     public bool IsDeleted { get; set; } = false;
 }
 

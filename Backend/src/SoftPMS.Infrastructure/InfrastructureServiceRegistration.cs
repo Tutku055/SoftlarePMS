@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SoftPMS.Application.Common.Interfaces;
+using SoftPMS.Application.Features.Notifications.Services;
 using SoftPMS.Infrastructure.Services;
 using SoftPMS.Infrastructure.Settings;
 
@@ -32,6 +33,9 @@ public static class InfrastructureServiceRegistration
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IStorageService, LocalFileStorageService>();
         services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<INotificationEmailTemplateBuilder, NotificationEmailTemplateBuilder>();
+        services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
+        services.AddScoped<IPassiveNotificationEvaluator, PassiveNotificationEvaluator>();
         services.AddTransient<IDateTime, DateTimeService>();
 
         return services;

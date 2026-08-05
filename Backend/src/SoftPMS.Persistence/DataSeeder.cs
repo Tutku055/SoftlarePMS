@@ -70,6 +70,9 @@ public static class DatabaseSeeder
         ("OvertimeTypes.Update", "Edit overtime types"),
         ("OvertimeTypes.Delete", "Delete overtime types"),
         ("AuditLogs.Read",   "View system audit logs"),
+        ("Notifications.Read", "View and manage personal notification inbox"),
+        ("Notifications.AdjustThresholds", "Adjust reminder days and delivery channels for passive notifications"),
+        ("Notifications.Mute", "Mute or unmute passive notification types"),
     ];
 
 
@@ -101,6 +104,33 @@ public static class DatabaseSeeder
                 db.Permissions.AddRange(missing);
                 await db.SaveChangesAsync(ct);
                 logger.LogInformation("Seeded {Count} new permission(s).", missing.Count);
+            }
+
+            // ── 3. Seed default passive notification settings ────────────────
+            var existingSettingTypes = await db.NotificationTypeSettings
+                .Select(s => s.Type)
+                .ToHashSetAsync(ct);
+
+            var missingSettings = SoftPMS.Application.Features.Notifications.Configurations.NotificationRegistry
+                .GetAllDefinitions()
+                .Where(d => !existingSettingTypes.Contains(d.Type))
+                .Select(d => new NotificationTypeSetting
+                {
+                    Type = d.Type,
+                    TypeName = d.TypeName,
+                    Description = d.Description,
+                    IsMuted = d.DefaultIsMuted,
+                    ReminderDays = d.DefaultReminderDays,
+                    DeliveryChannel = d.DefaultDeliveryChannel,
+                    UpdatedAt = DateTime.UtcNow
+                })
+                .ToList();
+
+            if (missingSettings.Count > 0)
+            {
+                db.NotificationTypeSettings.AddRange(missingSettings);
+                await db.SaveChangesAsync(ct);
+                logger.LogInformation("Seeded {Count} default notification type setting(s).", missingSettings.Count);
             }
 
 
