@@ -239,6 +239,10 @@ public sealed class GetAuditLogsWithPaginationQueryHandler(
                 {
                     bulkNavigationRoute = "/finance/payrolls";
                 }
+                else if (distinctTables.All(t => t.Contains("address", StringComparison.OrdinalIgnoreCase)))
+                {
+                    bulkNavigationRoute = "/employees/addresses";
+                }
                 else if (distinctTables.All(t => t.Contains("employee", StringComparison.OrdinalIgnoreCase)))
                 {
                     bulkNavigationRoute = "/employees";

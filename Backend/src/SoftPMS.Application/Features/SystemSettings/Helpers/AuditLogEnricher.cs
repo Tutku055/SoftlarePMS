@@ -84,6 +84,7 @@ public static class AuditLogEnricher
         var payrollSlipLineItemIds = new HashSet<Guid>();
         var documentIds = new HashSet<Guid>();
         var rolloverLogIds = new HashSet<Guid>();
+        var employeeAddressIds = new HashSet<Guid>();
 
         foreach (var item in items)
         {
@@ -133,6 +134,9 @@ public static class AuditLogEnricher
                         break;
                     case "yearlyrolloverlogs" or "yearlyrolloverlog":
                         rolloverLogIds.Add(recordGuid);
+                        break;
+                    case "employeeaddresses" or "employeeaddress":
+                        employeeAddressIds.Add(recordGuid);
                         break;
                 }
             }
@@ -379,6 +383,19 @@ public static class AuditLogEnricher
                 .ToDictionaryAsync(r => r.Id, cancellationToken)
             : [];
 
+        // N. EmployeeAddresses
+        var employeeAddressMap = employeeAddressIds.Count > 0
+            ? await context.EmployeeAddresses.AsNoTracking()
+                .Where(a => employeeAddressIds.Contains(a.Id))
+                .Select(a => new
+                {
+                    a.Id,
+                    a.EmployeeId,
+                    EmployeeName = a.Employee.FirstName + " " + a.Employee.LastName
+                })
+                .ToDictionaryAsync(a => a.Id, cancellationToken)
+            : [];
+
         // ── 4. Foreign Key (FK) Name Replacement in Changes ────────────────────
         foreach (var item in items)
         {
@@ -608,6 +625,21 @@ public static class AuditLogEnricher
                     break;
 
                 case "employeeaddresses" or "employeeaddress":
+                    var eaMeta = hasRecordGuid && employeeAddressMap.TryGetValue(recordGuid, out var ea) ? ea : null;
+                    var eaEmpName = eaMeta?.EmployeeName
+                        ?? ExtractChangeValue(item, "EmployeeId", employeeMap)
+                        ?? (hasRecordGuid && employeeMap.TryGetValue(recordGuid, out var empNAddr) ? empNAddr : "Employee");
+                    item.EntityTitle = $"{eaEmpName} - Employee Address";
+
+                    var eaEmpId = eaMeta?.EmployeeId.ToString()
+                        ?? ExtractRawChangeValue(item, "EmployeeId");
+
+                    if (!string.IsNullOrEmpty(eaEmpId) && Guid.TryParse(eaEmpId, out var eaEmpGuid))
+                        item.NavigationRoute = $"/employees/addresses/{eaEmpGuid}";
+                    else
+                        item.NavigationRoute = "/employees/addresses";
+                    break;
+
                 case "employeecompensations" or "employeecompensation":
                 case "employeenotes" or "employeenote":
                 case "employeereferences" or "employeereference":
@@ -615,7 +647,6 @@ public static class AuditLogEnricher
                         ?? (hasRecordGuid && employeeMap.TryGetValue(recordGuid, out var empN) ? empN : "Employee");
                     var sectionName = table switch
                     {
-                        "employeeaddresses" or "employeeaddress" => "Employee Address",
                         "employeecompensations" or "employeecompensation" => "Employee Compensation",
                         "employeenotes" or "employeenote" => "Employee Note",
                         _ => "Employee Reference"

@@ -64,6 +64,9 @@ export const getEntityRoute = (tableName: string, recordId: string, navigationRo
   if (table.includes('payroll')) {
     return `/finance/payrolls`;
   }
+  if (table.includes('employeeaddress') || table.includes('employeeaddresses') || table.includes('employeeadress') || table.includes('address')) {
+    return cleanId ? `/employees/addresses/${cleanId}` : `/employees/addresses`;
+  }
   if (table.includes('employeenote')) {
     return `/employees`;
   }
@@ -103,6 +106,9 @@ export const getRequiredPermission = (tableName: string): string => {
   }
   if (table.includes('payroll')) {
     return 'Payrolls.Read';
+  }
+  if (table.includes('employeeaddress') || table.includes('employeeaddresses') || table.includes('employeeadress') || table.includes('address')) {
+    return 'EmployeeAddresses.Read';
   }
   if (table.includes('employeenote')) {
     return 'EmployeeNotes.Read';
