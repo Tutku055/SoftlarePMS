@@ -10,5 +10,4 @@ public class UpdateDocumentCommand : IRequest
     public DocumentType DocumentType { get; set; }
     public DateTime? IssueDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
-    public DateTime? ReminderDate { get; set; }
 }

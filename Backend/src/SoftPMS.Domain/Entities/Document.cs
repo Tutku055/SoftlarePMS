@@ -20,8 +20,6 @@ public class Document : BaseEntity
 
     public DateTime? ExpiryDate { get; set; }
 
-    public DateTime? ReminderDate { get; set; }
-
     public Guid CreatedByUserId { get; set; }
 
     public bool IsAvailable { get; set; } = true;

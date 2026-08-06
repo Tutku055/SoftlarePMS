@@ -58,11 +58,10 @@ public class PassiveNotificationEvaluator : IPassiveNotificationEvaluator
         var today = DateTime.UtcNow.Date;
         var thresholdDate = today.AddDays(reminderDays);
 
-        // Load only documents that have reached their reminder date or are within the threshold window
+        // Load only documents that are within the threshold window
         var documents = await _context.Documents
             .AsNoTracking()
-            .Where(d => (d.ExpiryDate != null && d.ExpiryDate.Value.Date <= thresholdDate)
-                     || (d.ReminderDate != null && d.ReminderDate.Value.Date <= today))
+            .Where(d => d.ExpiryDate != null && d.ExpiryDate.Value.Date <= thresholdDate)
             .ToListAsync(cancellationToken);
 
         if (documents.Count == 0)
@@ -82,6 +81,18 @@ public class PassiveNotificationEvaluator : IPassiveNotificationEvaluator
             .Where(e => employeeIds.Contains(e.Id))
             .ToDictionaryAsync(e => e.Id, cancellationToken);
 
+        // Fetch referenced departments for proper naming and navigation
+        var departmentIds = documents
+            .Where(d => d.OwnerModule == DocumentModule.Department)
+            .Select(d => d.ReferenceId)
+            .Distinct()
+            .ToList();
+
+        var departments = await _context.Departments
+            .AsNoTracking()
+            .Where(d => departmentIds.Contains(d.Id))
+            .ToDictionaryAsync(d => d.Id, cancellationToken);
+
         // Fetch only users with required Document permissions (Documents.Read) or SuperAdmin
         var docPermissions = definition?.RequiredPermissions ?? new[] { "Documents.Read" };
         var authorizedUsers = await _context.Users
@@ -99,6 +110,7 @@ public class PassiveNotificationEvaluator : IPassiveNotificationEvaluator
         // Load only relevant DocumentExpiry notifications (read, unread, AND soft-deleted) for the matched documents
         var relevantEntityIds = documents.Select(d => (Guid?)d.Id)
             .Concat(employeeIds.Select(id => (Guid?)id))
+            .Concat(departmentIds.Select(id => (Guid?)id))
             .Distinct()
             .ToList();
 
@@ -119,37 +131,33 @@ public class PassiveNotificationEvaluator : IPassiveNotificationEvaluator
 
         foreach (var doc in documents)
         {
-            DateTime targetDate;
-            int remainingDays;
-
-            if (doc.ExpiryDate.HasValue)
-            {
-                targetDate = doc.ExpiryDate.Value;
-                remainingDays = (int)Math.Floor((doc.ExpiryDate.Value.Date - today).TotalDays);
-            }
-            else if (doc.ReminderDate.HasValue)
-            {
-                targetDate = doc.ReminderDate.Value;
-                remainingDays = (int)Math.Floor((doc.ReminderDate.Value.Date - today).TotalDays);
-            }
-            else
+            if (!doc.ExpiryDate.HasValue)
             {
                 continue;
             }
 
+            var targetDate = doc.ExpiryDate.Value;
+            var remainingDays = (int)Math.Floor((doc.ExpiryDate.Value.Date - today).TotalDays);
+
             // Check if document is within reminder window or overdue
-            var isWithinThreshold = remainingDays <= reminderDays;
-            var isReminderDateReached = doc.ReminderDate.HasValue && today >= doc.ReminderDate.Value.Date;
-            var shouldNotify = isWithinThreshold || isReminderDateReached;
+            var shouldNotify = remainingDays <= reminderDays;
 
             Employee? employee = null;
+            Department? department = null;
+            string? ownerName = null;
+
             if (doc.OwnerModule == DocumentModule.Employee && employees.TryGetValue(doc.ReferenceId, out var emp))
             {
                 employee = emp;
+                ownerName = $"{emp.FirstName} {emp.LastName}".Trim();
+            }
+            else if (doc.OwnerModule == DocumentModule.Department && departments.TryGetValue(doc.ReferenceId, out var dept))
+            {
+                department = dept;
+                ownerName = dept.Name.Trim();
             }
 
-            var employeeName = employee != null ? $"{employee.FirstName} {employee.LastName}".Trim() : "Employee";
-            var entityRefId = employee?.Id ?? doc.ReferenceId;
+            var entityRefId = employee?.Id ?? department?.Id ?? doc.ReferenceId;
             var expiryDateFormatted = targetDate.ToString("MMM dd, yyyy", CultureInfo.InvariantCulture);
 
             // All records (read+unread+deleted) for this document — used to determine who was EVER notified
@@ -186,15 +194,17 @@ public class PassiveNotificationEvaluator : IPassiveNotificationEvaluator
                 continue;
             }
 
-            var title = employee != null
-                ? $"Document Expiring: {doc.FileName} ({employeeName})"
+            var title = !string.IsNullOrWhiteSpace(ownerName)
+                ? $"Document Expiring: {doc.FileName} ({ownerName})"
                 : $"Document Expiring: {doc.FileName}";
 
+            var targetSubject = !string.IsNullOrWhiteSpace(ownerName) ? $"for {ownerName}" : "in the system";
+
             var message = remainingDays > 0
-                ? $"The document '{doc.FileName}' for {employeeName} is scheduled to expire on {expiryDateFormatted} ({remainingDays} day(s) remaining)."
+                ? $"The document '{doc.FileName}' {targetSubject} is scheduled to expire on {expiryDateFormatted} ({remainingDays} day(s) remaining)."
                 : remainingDays == 0
-                ? $"The document '{doc.FileName}' for {employeeName} expires today ({expiryDateFormatted})."
-                : $"The document '{doc.FileName}' for {employeeName} expired {Math.Abs(remainingDays)} day(s) ago on {expiryDateFormatted}.";
+                ? $"The document '{doc.FileName}' {targetSubject} expires today ({expiryDateFormatted})."
+                : $"The document '{doc.FileName}' {targetSubject} expired {Math.Abs(remainingDays)} day(s) ago on {expiryDateFormatted}.";
 
             // Users who have ANY record (read or unread) — do NOT re-notify them
             var usersWithAnyRecord = allMatchingForDoc.Select(n => n.UserId).ToHashSet();

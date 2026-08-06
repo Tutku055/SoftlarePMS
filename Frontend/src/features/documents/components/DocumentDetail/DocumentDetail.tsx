@@ -113,7 +113,6 @@ export const DocumentDetail = () => {
     documentType: 0,
     issueDate: '',
     expiryDate: '',
-    reminderDate: '',
   });
 
   const hasPermission = useAuthStore((state) => state.hasPermission);
@@ -138,7 +137,6 @@ export const DocumentDetail = () => {
         documentType: document.documentType || 0,
         issueDate: document.issueDate ? document.issueDate.split('T')[0] : '',
         expiryDate: document.expiryDate ? document.expiryDate.split('T')[0] : '',
-        reminderDate: document.reminderDate ? document.reminderDate.split('T')[0] : '',
       });
     }
   }, [document]);
@@ -155,7 +153,6 @@ export const DocumentDetail = () => {
       documentType: formState.documentType,
       issueDate: formState.issueDate || null,
       expiryDate: formState.expiryDate || null,
-      reminderDate: formState.reminderDate || null,
     });
   };
 
@@ -377,7 +374,6 @@ export const DocumentDetail = () => {
             </TextField>
             <TextField label="Issue Date" name="issueDate" type="date" value={formState.issueDate} onChange={handleChange} size="small" fullWidth slotProps={{ inputLabel: { shrink: true } }} sx={premiumInputSx} />
             <TextField label="Expiry Date" name="expiryDate" type="date" value={formState.expiryDate} onChange={handleChange} size="small" fullWidth slotProps={{ inputLabel: { shrink: true } }} sx={premiumInputSx} />
-            <TextField label="Reminder Date" name="reminderDate" type="date" value={formState.reminderDate} onChange={handleChange} size="small" fullWidth slotProps={{ inputLabel: { shrink: true } }} sx={premiumInputSx} />
           </Box>
         </Box>
       </TabPanel>

@@ -9,7 +9,6 @@ export interface DocumentDto {
   fileSizeBytes: number;
   issueDate?: string;
   expiryDate?: string;
-  reminderDate?: string;
   createdByUserId: string;
   createdAt: string;
   isAvailable: boolean;

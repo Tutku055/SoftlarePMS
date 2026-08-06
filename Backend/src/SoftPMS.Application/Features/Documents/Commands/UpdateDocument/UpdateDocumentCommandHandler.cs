@@ -23,7 +23,6 @@ public sealed class UpdateDocumentCommandHandler(
         document.DocumentType = request.DocumentType;
         document.IssueDate = request.IssueDate;
         document.ExpiryDate = request.ExpiryDate;
-        document.ReminderDate = request.ReminderDate;
 
         await context.SaveChangesAsync(cancellationToken);
 

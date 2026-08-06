@@ -50,7 +50,6 @@ public sealed class DocumentsController : ApiControllerBase
         [FromForm] DocumentType documentType,
         [FromForm] DateTime? issueDate,
         [FromForm] DateTime? expiryDate,
-        [FromForm] DateTime? reminderDate,
         CancellationToken ct)
     {
         if (file == null || file.Length == 0)
@@ -65,8 +64,7 @@ public sealed class DocumentsController : ApiControllerBase
             OwnerModule = ownerModule,
             DocumentType = documentType,
             IssueDate = issueDate,
-            ExpiryDate = expiryDate,
-            ReminderDate = reminderDate
+            ExpiryDate = expiryDate
         };
         
         var documentId = await Sender.Send(command, ct);
@@ -90,7 +88,6 @@ public sealed class DocumentsController : ApiControllerBase
         [FromForm] DocumentType documentType,
         [FromForm] DateTime? issueDate,
         [FromForm] DateTime? expiryDate,
-        [FromForm] DateTime? reminderDate,
         CancellationToken ct)
     {
         if (file == null || file.Length == 0)
@@ -107,8 +104,7 @@ public sealed class DocumentsController : ApiControllerBase
             OwnerModule = ownerModule,
             DocumentType = documentType,
             IssueDate = issueDate,
-            ExpiryDate = expiryDate,
-            ReminderDate = reminderDate
+            ExpiryDate = expiryDate
         };
 
         var documentId = await Sender.Send(command, ct);

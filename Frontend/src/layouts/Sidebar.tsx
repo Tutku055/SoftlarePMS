@@ -53,8 +53,7 @@ const menuConfig: MenuItem[] = [
     children: [
       { title: 'Roster', path: '/employees/roster', permission: 'Employees.Read' },
       { title: 'Create Employee', path: '/employees/create', permission: 'Employees.Create' },
-      { title: 'Addresses', path: '/employees/addresses', permission: 'EmployeeAddresses.Read' },
-      { title: 'Time & Attendance', path: '/employees/time-tracking', permission: 'Employees.Read' },
+      { title: 'Addresses', path: '/employees/addresses', permission: 'EmployeeAddresses.Read' }
     ]
   },
   { 
@@ -70,8 +69,7 @@ const menuConfig: MenuItem[] = [
     title: 'Documents & Records', 
     icon: <FolderCopy />,
     children: [
-      { title: 'Document Archive', path: '/documents/archive', permission: 'Documents.Read' },
-      { title: 'Process Tracking', path: '/documents/tracking', permission: 'Documents.Read' }
+      { title: 'Document Archive', path: '/documents/archive', permission: 'Documents.Read' }
     ]
   },
   { 

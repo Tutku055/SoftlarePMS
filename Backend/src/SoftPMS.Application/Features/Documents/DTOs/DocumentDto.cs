@@ -13,7 +13,6 @@ public class DocumentDto
     public long FileSizeBytes { get; set; }
     public DateTime? IssueDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
-    public DateTime? ReminderDate { get; set; }
     public Guid CreatedByUserId { get; set; }
     public DateTime CreatedAt { get; set; }
     public bool IsAvailable { get; set; }

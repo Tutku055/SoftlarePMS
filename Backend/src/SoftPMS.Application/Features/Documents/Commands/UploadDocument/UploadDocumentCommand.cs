@@ -13,5 +13,4 @@ public class UploadDocumentCommand : IRequest<Guid>
     public DocumentType DocumentType { get; set; }
     public DateTime? IssueDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
-    public DateTime? ReminderDate { get; set; }
 }

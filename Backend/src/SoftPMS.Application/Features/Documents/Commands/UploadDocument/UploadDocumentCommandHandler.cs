@@ -23,7 +23,6 @@ public sealed class UploadDocumentCommandHandler(
             FileSizeBytes = request.FileLength,
             IssueDate = request.IssueDate,
             ExpiryDate = request.ExpiryDate,
-            ReminderDate = request.ReminderDate,
             CreatedByUserId = currentUserService.UserId == Guid.Empty ? throw new UnauthorizedAccessException() : currentUserService.UserId
         };
 
@@ -38,7 +37,7 @@ public sealed class UploadDocumentCommandHandler(
         context.Documents.Add(document);
         await context.SaveChangesAsync(cancellationToken);
 
-        if (request.ExpiryDate != null || request.ReminderDate != null)
+        if (request.ExpiryDate != null)
         {
             await notificationEvaluator.EvaluateDocumentExpirationsAsync(cancellationToken);
         }
