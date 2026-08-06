@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import { TuneRounded, EmailRounded, NotificationsActiveRounded, SecurityRounded } from '@mui/icons-material';
 import type { NotificationTypeSettingDto } from '../types';
-import { NotificationDeliveryChannel } from '../types';
+import { NotificationDeliveryChannel, NotificationType } from '../types';
 
 interface NotificationSettingsModalProps {
   open: boolean;
@@ -107,22 +107,33 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
           {setting.description}
         </Typography>
 
-        {/* Reminder Threshold Days */}
+        {/* Reminder Threshold Days / Anomaly Trigger Info */}
         <Box>
-          <TextField
-            fullWidth
-            type="number"
-            label="Reminder Threshold (Days Ahead)"
-            value={reminderDays}
-            onChange={(e) => {
-              const val = parseInt(e.target.value, 10);
-              setReminderDays(isNaN(val) ? 0 : val);
-            }}
-            slotProps={{
-              htmlInput: { min: 0, max: 365 },
-            }}
-            helperText="Number of days before the event or expiry date to trigger passive notifications (0 - 365)."
-          />
+          {setting.type === NotificationType.SystemAnnouncement ? (
+            <Alert severity="info" sx={{ borderRadius: 2 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                Continuous Anomaly Detection
+              </Typography>
+              <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
+                System announcements are evaluated continuously across 15-minute audit log windows. Severity (Low, Moderate, High, Critical) is calculated dynamically based on the volume and severity of detected events.
+              </Typography>
+            </Alert>
+          ) : (
+            <TextField
+              fullWidth
+              type="number"
+              label="Reminder Threshold (Days Ahead)"
+              value={reminderDays}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10);
+                setReminderDays(isNaN(val) ? 0 : val);
+              }}
+              slotProps={{
+                htmlInput: { min: 0, max: 365 },
+              }}
+              helperText="Number of days before the event or expiry date to trigger passive notifications (0 - 365)."
+            />
+          )}
         </Box>
 
         {/* Delivery Channel */}

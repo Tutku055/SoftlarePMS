@@ -16,10 +16,12 @@ export type NotificationSortOption = 'date_desc' | 'date_asc' | 'urgency' | 'rem
 export function useNotifications() {
   const [items, setItems] = useState<UserNotificationDto[]>([]);
   const unreadCount = useNotificationStore((state) => state.unreadCount);
+  const globalTotalCount = useNotificationStore((state) => state.totalCount);
   const fetchGlobalUnread = useNotificationStore((state) => state.fetchUnreadCount);
   const decrementUnread = useNotificationStore((state) => state.decrementUnreadCount);
   const incrementUnread = useNotificationStore((state) => state.incrementUnreadCount);
   const setGlobalUnread = useNotificationStore((state) => state.setUnreadCount);
+  const decrementTotal = useNotificationStore((state) => state.decrementTotalCount);
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isActionLoading, setIsActionLoading] = useState<boolean>(false);
@@ -98,7 +100,9 @@ export function useNotifications() {
       const urgency = calculateNotificationUrgency(
         item.remainingDays,
         item.targetDate,
-        thresholdDays
+        thresholdDays,
+        item.type,
+        item.payloadJson
       );
       return {
         ...item,
@@ -173,7 +177,7 @@ export function useNotifications() {
     return result;
   }, [enrichedItems, selectedStatus, searchQuery, selectedUrgency, sortBy]);
 
-  // Urgency stats for dashboard summary cards
+  // Stats for dashboard summary cards
   const stats = useMemo(() => {
     let critical = 0;
     let high = 0;
@@ -187,15 +191,22 @@ export function useNotifications() {
       else low++;
     });
 
+    // Fallback: If globalTotalCount is 0 but we are on 'all' filters, use totalCount
+    const allTimeTotal = globalTotalCount > 0 ? globalTotalCount : (selectedStatus === 'all' && selectedType === 'all' ? totalCount : totalCount);
+    const trueUnread = unreadCount;
+    const trueRead = Math.max(0, allTimeTotal - trueUnread);
+
     return {
-      total: totalCount,
-      unread: unreadCount,
+      total: allTimeTotal,
+      unread: trueUnread,
+      read: trueRead,
+      filteredTotal: totalCount,
       critical,
       high,
       moderate,
       low,
     };
-  }, [enrichedItems, totalCount, unreadCount]);
+  }, [enrichedItems, globalTotalCount, totalCount, unreadCount, selectedStatus, selectedType]);
 
   const toggleReadStatus = async (id: string) => {
     setIsActionLoading(true);
@@ -272,6 +283,7 @@ export function useNotifications() {
       if (target && !target.isRead) {
         decrementUnread(1);
       }
+      decrementTotal(1);
       setItems((prev) => prev.filter((item) => item.id !== id));
       setTotalCount((prev) => Math.max(0, prev - 1));
     } catch (err) {

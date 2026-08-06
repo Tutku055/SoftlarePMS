@@ -42,6 +42,7 @@ import {
   StorageRounded,
   LayersRounded,
   TuneRounded,
+  AccessTimeRounded,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuditLogs, useAuditLogDetails } from '../../hooks/useAuditLogs';
@@ -284,6 +285,26 @@ const BulkAuditTransactionDetails: React.FC<BulkAuditTransactionDetailsProps> = 
                       >
                         (ID: {item.recordId})
                       </Typography>
+                      {item.changedAt && (
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: 'text.secondary',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            fontSize: '0.725rem',
+                            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)',
+                            px: 0.75,
+                            py: 0.2,
+                            borderRadius: 1,
+                            border: `1px solid ${theme.palette.divider}`,
+                          }}
+                        >
+                          <AccessTimeRounded sx={{ fontSize: 12, opacity: 0.7 }} />
+                          {new Date(item.changedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        </Typography>
+                      )}
                     </Box>
 
                     <Box
@@ -1131,10 +1152,13 @@ export const SystemLogsPage: React.FC = () => {
           <Box sx={{ display: 'flex', flexDirection: 'column' }}>
             {groupedLogs.map((group, index) => {
               const isExpanded = expandedGroupIds.has(group.correlationId);
-              const formattedDate = new Date(group.changedAt).toLocaleString('en-US', {
+              const dateObj = new Date(group.changedAt);
+              const formattedDate = dateObj.toLocaleDateString([], {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric',
+              });
+              const formattedTime = dateObj.toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit',
                 second: '2-digit',
@@ -1303,12 +1327,34 @@ export const SystemLogsPage: React.FC = () => {
                           width: { xs: '100%', md: 200 },
                         }}
                       >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <CalendarTodayRounded
-                            sx={{ fontSize: 16, color: 'text.secondary', flexShrink: 0 }}
-                          />
-                          <Typography variant="body2" color="text.secondary">
-                            {formattedDate}
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                            <CalendarTodayRounded
+                              sx={{ fontSize: 14, color: 'text.secondary', opacity: 0.8 }}
+                            />
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontWeight: 600,
+                                color: 'text.primary',
+                                fontSize: '0.8125rem',
+                                letterSpacing: '-0.01em',
+                              }}
+                            >
+                              {formattedDate}
+                            </Typography>
+                          </Box>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: 'text.secondary',
+                              fontFamily: 'ui-monospace, monospace',
+                              fontSize: '0.725rem',
+                              ml: 2.75,
+                              opacity: 0.85,
+                            }}
+                          >
+                            {formattedTime}
                           </Typography>
                         </Box>
                       </Box>

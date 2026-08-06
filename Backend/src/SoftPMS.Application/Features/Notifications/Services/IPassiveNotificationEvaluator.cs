@@ -22,4 +22,11 @@ public interface IPassiveNotificationEvaluator
     /// Evaluates finance & timesheet rules and dispatches alerts for unsubmitted/missing timesheets.
     /// </summary>
     Task<int> EvaluateFinanceAlertsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Evaluates audit log anomalies, security mutations, and administrative milestones
+    /// and dispatches targeted system announcements.
+    /// </summary>
+    Task<int> EvaluateSystemAnnouncementsAsync(CancellationToken cancellationToken = default);
 }
+

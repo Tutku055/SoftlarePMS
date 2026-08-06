@@ -24,20 +24,39 @@ export function parseUtcDate(dateString: string | null | undefined): Date {
 }
 
 /**
- * Calculates dynamic urgency status according to adjusted threshold days and remaining days.
- * 
- * Rules:
- * - remainingDays <= 0 (or due today/past due) => Critical
- * - remainingDays <= 15% of threshold (or <= 2 days) => Critical
- * - remainingDays <= 40% of threshold (or <= 7 days) => High
- * - remainingDays <= 75% of threshold (or <= 15 days) => Moderate
- * - remainingDays > 75% of threshold or informational => Low
+ * Calculates dynamic urgency status:
+ * - For SystemAnnouncements / Payload-driven alerts: Directly maps the anomaly severity (Low, Moderate, High, Critical).
+ * - For Date-driven alerts (Document expiry, Finance, Events): Computes dynamic ratio from thresholdDays & remainingDays.
  */
 export function calculateNotificationUrgency(
   remainingDays?: number | null,
   targetDate?: string | null,
-  thresholdDays: number = 30
+  thresholdDays: number = 30,
+  type?: NotificationType,
+  payloadJson?: string | null
 ): NotificationUrgency {
+  // System Announcements and anomaly alerts prioritize rule-evaluated severity in payloadJson
+  if (type === NotificationType.SystemAnnouncement || payloadJson) {
+    if (payloadJson) {
+      try {
+        const payload = JSON.parse(payloadJson);
+        if (payload?.severity) {
+          const sev = String(payload.severity).trim().toLowerCase();
+          if (sev === 'critical') return 'Critical';
+          if (sev === 'high') return 'High';
+          if (sev === 'moderate' || sev === 'warning') return 'Moderate';
+          if (sev === 'low' || sev === 'info') return 'Low';
+        }
+      } catch {
+        // Fallback if payload JSON is malformed
+      }
+    }
+
+    if (type === NotificationType.SystemAnnouncement) {
+      return 'Low';
+    }
+  }
+
   let days = remainingDays;
 
   // If remainingDays is not provided but targetDate is present, compute days from current timestamp

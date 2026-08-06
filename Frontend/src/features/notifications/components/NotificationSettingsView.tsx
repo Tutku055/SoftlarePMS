@@ -27,7 +27,7 @@ import { useAuthStore } from '../../../store/useAuthStore';
 import { useNotificationSettings } from '../hooks/useNotificationSettings';
 import { NotificationSettingsModal } from './NotificationSettingsModal';
 import type { NotificationTypeSettingDto } from '../types';
-import { NotificationDeliveryChannel } from '../types';
+import { NotificationDeliveryChannel, NotificationType } from '../types';
 import { NOTIFICATION_TYPE_CONFIG } from '../utils/urgencyUtils';
 
 export const NotificationSettingsView: React.FC = () => {
@@ -270,13 +270,24 @@ export const NotificationSettingsView: React.FC = () => {
 
                   {/* Settings detail pills */}
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
-                    <Chip
-                      size="small"
-                      icon={<AccessTimeRounded />}
-                      label={`Threshold: ${setting.reminderDays} days ahead`}
-                      variant="outlined"
-                      sx={{ fontWeight: 600 }}
-                    />
+                    {setting.type === NotificationType.SystemAnnouncement ? (
+                      <Chip
+                        size="small"
+                        icon={<AccessTimeRounded />}
+                        label="Trigger: Real-Time Anomaly"
+                        variant="outlined"
+                        color="info"
+                        sx={{ fontWeight: 600 }}
+                      />
+                    ) : (
+                      <Chip
+                        size="small"
+                        icon={<AccessTimeRounded />}
+                        label={`Threshold: ${setting.reminderDays} days ahead`}
+                        variant="outlined"
+                        sx={{ fontWeight: 600 }}
+                      />
+                    )}
 
                     <Chip
                       size="small"

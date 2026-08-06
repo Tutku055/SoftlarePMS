@@ -71,6 +71,7 @@ export interface NotificationTypeSettingDto {
  */
 export interface NotificationSummaryDto {
   unreadCount: number;
+  totalCount?: number;
 }
 
 /**

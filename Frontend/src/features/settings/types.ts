@@ -12,6 +12,7 @@ export interface AuditLogItemDto {
   isEntityActive: boolean;
   navigationRoute?: string;
   entityTitle?: string;
+  changedAt?: string;
   changes: AuditLogChangeDto[];
 }
 

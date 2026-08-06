@@ -182,19 +182,20 @@ export const NotificationsPage: React.FC = () => {
 
       {/* KPI Stats Overview Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
+        {/* Total Notifications Card */}
         <Grid size={{ xs: 6, sm: 3 }}>
           <Card
             elevation={0}
             sx={{
               borderRadius: 2.5,
               border: '1px solid',
-              borderColor: (theme) => theme.palette.divider,
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.35)',
               bgcolor: (theme) => theme.palette.background.paper,
             }}
           >
             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
               <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase' }}>
-                Total Items
+                Total Notifications
               </Typography>
               <Typography variant="h5" sx={{ fontWeight: 800, mt: 0.5 }}>
                 {stats.total}
@@ -203,6 +204,7 @@ export const NotificationsPage: React.FC = () => {
           </Card>
         </Grid>
 
+        {/* Unread Notifications Card */}
         <Grid size={{ xs: 6, sm: 3 }}>
           <Card
             elevation={0}
@@ -210,7 +212,7 @@ export const NotificationsPage: React.FC = () => {
               borderRadius: 2.5,
               border: '1px solid',
               borderColor: stats.unread > 0 ? 'primary.main' : (theme) => theme.palette.divider,
-              bgcolor: (theme) => theme.palette.background.paper,
+              bgcolor: stats.unread > 0 && isDark ? 'rgba(99, 102, 241, 0.08)' : (theme) => theme.palette.background.paper,
             }}
           >
             <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
@@ -224,13 +226,14 @@ export const NotificationsPage: React.FC = () => {
           </Card>
         </Grid>
 
+        {/* Critical Urgency Card */}
         <Grid size={{ xs: 6, sm: 3 }}>
           <Card
             elevation={0}
             sx={{
               borderRadius: 2.5,
               border: '1px solid',
-              borderColor: stats.critical > 0 ? '#EF4444' : (theme) => theme.palette.divider,
+              borderColor: '#EF4444',
               bgcolor: stats.critical > 0 && isDark ? 'rgba(239, 68, 68, 0.08)' : (theme) => theme.palette.background.paper,
             }}
           >
@@ -248,13 +251,14 @@ export const NotificationsPage: React.FC = () => {
           </Card>
         </Grid>
 
+        {/* High Urgency Card */}
         <Grid size={{ xs: 6, sm: 3 }}>
           <Card
             elevation={0}
             sx={{
               borderRadius: 2.5,
               border: '1px solid',
-              borderColor: stats.high > 0 ? '#F59E0B' : (theme) => theme.palette.divider,
+              borderColor: '#F59E0B',
               bgcolor: stats.high > 0 && isDark ? 'rgba(245, 158, 11, 0.08)' : (theme) => theme.palette.background.paper,
             }}
           >

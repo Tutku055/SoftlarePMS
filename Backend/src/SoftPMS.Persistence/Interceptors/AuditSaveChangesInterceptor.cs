@@ -441,7 +441,7 @@ public sealed class AuditSaveChangesInterceptor(ICurrentUserService currentUser)
                 NewValues = NewValues.Count == 0 ? null : JsonSerializer.Serialize(NewValues, JsonOptions),
                 ChangedByUserId = ChangedByUserId,
                 ChangedByEmail = ChangedByEmail,
-                ChangedAt = ChangedAt
+                ChangedAt = ChangedAt == default ? DateTime.UtcNow : ChangedAt
             };
         }
     }

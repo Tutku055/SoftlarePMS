@@ -126,7 +126,8 @@ public sealed class GetAuditLogsWithPaginationQueryHandler(
                     RecordId = log.RecordId ?? string.Empty,
                     Action = log.Action,
                     IsEntityActive = isEntityActive,
-                    Changes = parsedChanges
+                    Changes = parsedChanges,
+                    ChangedAt = log.ChangedAt
                 });
             }
 

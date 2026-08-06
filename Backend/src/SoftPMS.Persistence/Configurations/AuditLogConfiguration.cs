@@ -46,7 +46,8 @@ public class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
             .HasMaxLength(100);
 
         builder.Property(a => a.ChangedAt)
-            .IsRequired();
+            .IsRequired()
+            .HasDefaultValueSql("GETUTCDATE()");
 
         // 1. Heavy transaction / correlation tracing index
         builder.HasIndex(a => a.CorrelationId)

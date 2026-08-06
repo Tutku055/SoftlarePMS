@@ -12,5 +12,6 @@ public sealed class AuditLogItemDto
     public bool IsEntityActive { get; set; }
     public string? NavigationRoute { get; set; }
     public string EntityTitle { get; set; } = string.Empty;
+    public DateTime ChangedAt { get; set; }
     public List<AuditLogChangeDto> Changes { get; set; } = [];
 }

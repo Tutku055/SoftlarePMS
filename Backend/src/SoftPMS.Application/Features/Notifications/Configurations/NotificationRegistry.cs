@@ -40,14 +40,14 @@ public static class NotificationRegistry
         [NotificationType.SystemAnnouncement] = new(
             Type: NotificationType.SystemAnnouncement,
             TypeName: "System Announcement",
-            Description: "System-wide passive alerts and maintenance updates broadcasted to all organization members.",
-            DefaultReminderDays: 1,
+            Description: "System audit anomalies, security mutations, and administrative alerts for managers.",
+            DefaultReminderDays: 0,
             DefaultDeliveryChannel: NotificationDeliveryChannel.System,
             DefaultIsMuted: false,
             DefaultTitleTemplate: "System Notice: {Title}",
             DefaultMessageTemplate: "{Message}",
             SupportedPlaceholders: new[] { "{Title}", "{Message}" },
-            RequiredPermissions: Array.Empty<string>()
+            RequiredPermissions: new[] { "AuditLogs.Read", "SystemSettings.YearEndOperations" }
         ),
 
         [NotificationType.EventUpcoming] = new(

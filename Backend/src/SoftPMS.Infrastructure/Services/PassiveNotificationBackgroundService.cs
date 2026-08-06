@@ -9,7 +9,7 @@ public class PassiveNotificationBackgroundService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<PassiveNotificationBackgroundService> _logger;
-    private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(1);
 
     public PassiveNotificationBackgroundService(
         IServiceProvider serviceProvider,

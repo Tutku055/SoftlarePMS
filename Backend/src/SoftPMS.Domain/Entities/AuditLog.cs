@@ -39,5 +39,5 @@ public class AuditLog
     /// </summary>
     public string ChangedByEmail { get; set; } = string.Empty;
 
-    public DateTime ChangedAt { get; set; }
+    public DateTime ChangedAt { get; set; } = DateTime.UtcNow;
 }

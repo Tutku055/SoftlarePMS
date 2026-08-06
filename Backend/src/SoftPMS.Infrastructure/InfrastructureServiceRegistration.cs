@@ -35,6 +35,12 @@ public static class InfrastructureServiceRegistration
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<INotificationEmailTemplateBuilder, NotificationEmailTemplateBuilder>();
         services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
+        services.AddScoped<IDocumentExpiryEvaluator, Services.Notifications.DocumentExpiryEvaluator>();
+        services.AddScoped<IFinanceAlertEvaluator, Services.Notifications.FinanceAlertEvaluator>();
+        services.AddScoped<ISecurityRecurrenceAnomalyEvaluator, Services.Notifications.Evaluators.SecurityRecurrenceAnomalyEvaluator>();
+        services.AddScoped<IHighVolumeMutationAnomalyEvaluator, Services.Notifications.Evaluators.HighVolumeMutationAnomalyEvaluator>();
+        services.AddScoped<IPeriodAndCalendarMilestoneEvaluator, Services.Notifications.Evaluators.PeriodAndCalendarMilestoneEvaluator>();
+        services.AddScoped<ISystemAnnouncementEvaluator, Services.Notifications.SystemAnnouncementEvaluator>();
         services.AddScoped<IPassiveNotificationEvaluator, PassiveNotificationEvaluator>();
         services.AddHostedService<PassiveNotificationBackgroundService>();
         services.AddHostedService<NotificationOutboxBackgroundService>();

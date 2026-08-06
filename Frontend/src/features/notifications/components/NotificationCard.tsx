@@ -22,8 +22,17 @@ import {
   WarningAmberRounded,
   FiberManualRecordRounded,
   PersonOutlineRounded,
+  PersonRounded,
   LaunchRounded,
   AccountBalanceWalletRounded,
+  BusinessRounded,
+  EventRepeatRounded,
+  DateRangeRounded,
+  AdminPanelSettingsRounded,
+  GroupRounded,
+  PeopleAltRounded,
+  HistoryRounded,
+  FolderCopyRounded,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import type { UserNotificationDto } from '../types';
@@ -125,42 +134,209 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
   };
 
   const isDocumentType = notification.type === NotificationType.DocumentExpiry || notification.entityReferenceType === 'Document';
-  const isTimesheetType = notification.entityReferenceType === 'Timesheet';
+  const isTimesheetType = notification.entityReferenceType === 'Timesheet' || notification.entityReferenceType === 'TimesheetSummary';
   const isPayrollType = notification.entityReferenceType === 'Payroll';
 
-  const handleNavigation = (e: React.MouseEvent) => {
-    e.stopPropagation();
-
+  const getActionConfig = () => {
+    // 1. Finance Missing Records (Aggregated Modal)
     if (isFinanceAlert) {
-      setIsFinanceModalOpen(true);
-      return;
+      return {
+        label: financePayload?.missingCount
+          ? `View Missing Records (${financePayload.missingCount})`
+          : 'View Missing Records',
+        icon: <AccountBalanceWalletRounded sx={{ fontSize: '16px !important' }} />,
+        variant: 'contained' as const,
+        color: 'warning' as const,
+        onClick: (e: React.MouseEvent) => {
+          e.stopPropagation();
+          setIsFinanceModalOpen(true);
+        },
+      };
     }
 
+    // 2. Department Anomaly / Churn
+    if (notification.entityReferenceType === 'Department') {
+      return {
+        label: notification.entityReferenceId ? 'Go to Department' : 'Go to Departments',
+        icon: <BusinessRounded sx={{ fontSize: '16px !important' }} />,
+        variant: 'text' as const,
+        color: 'primary' as const,
+        onClick: (e: React.MouseEvent) => {
+          e.stopPropagation();
+          navigate(
+            notification.entityReferenceId
+              ? `/departments/${notification.entityReferenceId}`
+              : '/departments/list'
+          );
+        },
+      };
+    }
+
+    // 3. Year-End Process Milestone
+    if (notification.entityReferenceType === 'YearEndProcess') {
+      return {
+        label: 'Go to Year-End Operations',
+        icon: <EventRepeatRounded sx={{ fontSize: '16px !important' }} />,
+        variant: 'text' as const,
+        color: 'primary' as const,
+        onClick: (e: React.MouseEvent) => {
+          e.stopPropagation();
+          navigate('/settings/year-end');
+        },
+      };
+    }
+
+    // 4. Document Expiry or Mass Document Deletions
     if (isDocumentType) {
-      if (notification.entityReferenceId) {
-        navigate(`/documents/${notification.entityReferenceId}`);
-      } else {
-        navigate('/documents/archive');
-      }
-      return;
+      return {
+        label: notification.entityReferenceId ? 'Go to Document' : 'Go to Documents Archive',
+        icon: notification.entityReferenceId ? (
+          <DescriptionRounded sx={{ fontSize: '16px !important' }} />
+        ) : (
+          <FolderCopyRounded sx={{ fontSize: '16px !important' }} />
+        ),
+        variant: 'text' as const,
+        color: 'primary' as const,
+        onClick: (e: React.MouseEvent) => {
+          e.stopPropagation();
+          navigate(
+            notification.entityReferenceId
+              ? `/documents/${notification.entityReferenceId}`
+              : '/documents/archive'
+          );
+        },
+      };
     }
 
+    // 5. Timesheet Cutoff / Missing Timesheets
     if (isTimesheetType) {
-      navigate('/finance/timesheets');
-      return;
+      return {
+        label: notification.entityReferenceId ? 'View Employee Timesheet' : 'Go to Timesheets',
+        icon: <DateRangeRounded sx={{ fontSize: '16px !important' }} />,
+        variant: 'text' as const,
+        color: 'primary' as const,
+        onClick: (e: React.MouseEvent) => {
+          e.stopPropagation();
+          navigate(
+            notification.entityReferenceId
+              ? `/finance/timesheets/${notification.entityReferenceId}`
+              : '/finance/timesheets'
+          );
+        },
+      };
     }
 
+    // 6. Payroll Finalization / Frequent Recalculation
     if (isPayrollType) {
-      navigate('/finance/payrolls');
-      return;
+      return {
+        label: 'Go to Payrolls',
+        icon: <MonetizationOnRounded sx={{ fontSize: '16px !important' }} />,
+        variant: 'text' as const,
+        color: 'primary' as const,
+        onClick: (e: React.MouseEvent) => {
+          e.stopPropagation();
+          navigate('/finance/payrolls');
+        },
+      };
     }
 
-    if (notification.entityReferenceId) {
-      navigate(`/employees/${notification.entityReferenceId}`);
-    } else {
-      navigate('/employees/roster');
+    // 7. Security Roles & Permission Volatility
+    if (notification.entityReferenceType === 'Role' || notification.entityReferenceType === 'RolePermission') {
+      return {
+        label:
+          notification.entityReferenceId && notification.entityReferenceType === 'Role'
+            ? 'Go to Role'
+            : 'Go to Roles & Permissions',
+        icon: <AdminPanelSettingsRounded sx={{ fontSize: '16px !important' }} />,
+        variant: 'text' as const,
+        color: 'primary' as const,
+        onClick: (e: React.MouseEvent) => {
+          e.stopPropagation();
+          navigate(
+            notification.entityReferenceId && notification.entityReferenceType === 'Role'
+              ? `/settings/roles/${notification.entityReferenceId}`
+              : '/settings/roles'
+          );
+        },
+      };
     }
+
+    // 8. User Account Mutation Spike
+    if (notification.entityReferenceType === 'User') {
+      return {
+        label: notification.entityReferenceId ? 'Go to User' : 'Go to Users',
+        icon: notification.entityReferenceId ? (
+          <PersonRounded sx={{ fontSize: '16px !important' }} />
+        ) : (
+          <GroupRounded sx={{ fontSize: '16px !important' }} />
+        ),
+        variant: 'text' as const,
+        color: 'primary' as const,
+        onClick: (e: React.MouseEvent) => {
+          e.stopPropagation();
+          navigate(
+            notification.entityReferenceId
+              ? `/settings/users/${notification.entityReferenceId}`
+              : '/settings/users'
+          );
+        },
+      };
+    }
+
+    // 9. Employee Anomaly / Mutation Spike / Events
+    if (notification.entityReferenceType === 'Employee') {
+      return {
+        label: notification.entityReferenceId ? 'Go to Employee' : 'Go to Employees Roster',
+        icon: notification.entityReferenceId ? (
+          <PersonOutlineRounded sx={{ fontSize: '16px !important' }} />
+        ) : (
+          <PeopleAltRounded sx={{ fontSize: '16px !important' }} />
+        ),
+        variant: 'text' as const,
+        color: 'primary' as const,
+        onClick: (e: React.MouseEvent) => {
+          e.stopPropagation();
+          navigate(
+            notification.entityReferenceId
+              ? `/employees/${notification.entityReferenceId}`
+              : '/employees/roster'
+          );
+        },
+      };
+    }
+
+    // 10. General System Announcement Fallback
+    if (notification.type === NotificationType.SystemAnnouncement) {
+      return {
+        label: 'View System Audit Logs',
+        icon: <HistoryRounded sx={{ fontSize: '16px !important' }} />,
+        variant: 'text' as const,
+        color: 'primary' as const,
+        onClick: (e: React.MouseEvent) => {
+          e.stopPropagation();
+          navigate('/settings/system-logs');
+        },
+      };
+    }
+
+    // 11. Generic Default
+    if (notification.entityReferenceId) {
+      return {
+        label: 'Go to Employee',
+        icon: <PersonOutlineRounded sx={{ fontSize: '16px !important' }} />,
+        variant: 'text' as const,
+        color: 'primary' as const,
+        onClick: (e: React.MouseEvent) => {
+          e.stopPropagation();
+          navigate(`/employees/${notification.entityReferenceId}`);
+        },
+      };
+    }
+
+    return null;
   };
+
+  const actionConfig = getActionConfig();
 
   const formattedTargetDate = notification.targetDate
     ? parseUtcDate(notification.targetDate).toLocaleDateString('en-US', {
@@ -268,29 +444,31 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 }}
               />
 
-              {/* Remaining days badge */}
-              {notification.remainingDays !== null && notification.remainingDays !== undefined && (
-                <Chip
-                  size="small"
-                  icon={<AccessTimeRounded sx={{ fontSize: '14px !important' }} />}
-                  label={
-                    notification.remainingDays < 0
-                      ? `Overdue by ${Math.abs(notification.remainingDays)} day(s)`
-                      : notification.remainingDays === 0
-                      ? 'Due Today'
-                      : `${notification.remainingDays} day(s) left`
-                  }
-                  sx={{
-                    fontWeight: 600,
-                    fontSize: '0.75rem',
-                    color: urgencyStyles.text,
-                    backgroundColor: 'transparent',
-                    border: '1px solid',
-                    borderColor: urgencyStyles.border,
-                    height: 22,
-                  }}
-                />
-              )}
+              {/* Remaining days badge (Only for date-driven alerts, not instant System Announcements) */}
+              {notification.type !== NotificationType.SystemAnnouncement &&
+                notification.remainingDays !== null &&
+                notification.remainingDays !== undefined && (
+                  <Chip
+                    size="small"
+                    icon={<AccessTimeRounded sx={{ fontSize: '14px !important' }} />}
+                    label={
+                      notification.remainingDays < 0
+                        ? `Overdue by ${Math.abs(notification.remainingDays)} day(s)`
+                        : notification.remainingDays === 0
+                        ? 'Due Today'
+                        : `${notification.remainingDays} day(s) left`
+                    }
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: '0.75rem',
+                      color: urgencyStyles.text,
+                      backgroundColor: 'transparent',
+                      border: '1px solid',
+                      borderColor: urgencyStyles.border,
+                      height: 22,
+                    }}
+                  />
+                )}
 
               {/* Relative timestamp */}
               <Typography
@@ -333,7 +511,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
 
             {/* Target Date Details & Quick Navigation Button */}
             <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2, mt: 1.5 }}>
-              {formattedTargetDate && (
+              {notification.type !== NotificationType.SystemAnnouncement && formattedTargetDate && (
                 <Typography
                   variant="caption"
                   sx={{
@@ -349,24 +527,14 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 </Typography>
               )}
 
-              {(notification.entityReferenceId || isFinanceAlert || isDocumentType || isTimesheetType || isPayrollType) && (
+              {actionConfig && (
                 <Button
                   size="small"
-                  variant={isFinanceAlert ? 'contained' : 'text'}
-                  color={isFinanceAlert ? 'warning' : 'primary'}
-                  startIcon={
-                    isFinanceAlert ? (
-                      <AccountBalanceWalletRounded sx={{ fontSize: '16px !important' }} />
-                    ) : isDocumentType ? (
-                      <DescriptionRounded sx={{ fontSize: '16px !important' }} />
-                    ) : isTimesheetType || isPayrollType ? (
-                      <MonetizationOnRounded sx={{ fontSize: '16px !important' }} />
-                    ) : (
-                      <PersonOutlineRounded sx={{ fontSize: '16px !important' }} />
-                    )
-                  }
+                  variant={actionConfig.variant}
+                  color={actionConfig.color}
+                  startIcon={actionConfig.icon}
                   endIcon={<LaunchRounded sx={{ fontSize: '13px !important' }} />}
-                  onClick={handleNavigation}
+                  onClick={actionConfig.onClick}
                   sx={{
                     fontSize: '0.75rem',
                     fontWeight: 600,
@@ -374,7 +542,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                     py: 0.35,
                     px: 1.25,
                     borderRadius: 1.5,
-                    ...(isFinanceAlert
+                    ...(actionConfig.variant === 'contained'
                       ? {
                           boxShadow: 'none',
                           '&:hover': {
@@ -390,17 +558,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                         }),
                   }}
                 >
-                  {isFinanceAlert
-                    ? financePayload?.missingCount
-                      ? `View Missing Records (${financePayload.missingCount})`
-                      : 'View Missing Records'
-                    : isDocumentType
-                    ? 'Go to Document'
-                    : isTimesheetType
-                    ? 'Go to Timesheets'
-                    : isPayrollType
-                    ? 'Go to Payrolls'
-                    : 'Go to Employee'}
+                  {actionConfig.label}
                 </Button>
               )}
             </Box>
