@@ -23,6 +23,7 @@ import {
   FiberManualRecordRounded,
   PersonOutlineRounded,
   LaunchRounded,
+  AccountBalanceWalletRounded,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import type { UserNotificationDto } from '../types';
@@ -33,6 +34,7 @@ import {
   formatRelativeTime,
   parseUtcDate,
 } from '../utils/urgencyUtils';
+import { FinanceAlertMissingRecordsModal } from './FinanceAlertMissingRecordsModal';
 
 interface NotificationCardProps {
   notification: UserNotificationDto;
@@ -53,6 +55,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
   const isDark = theme.palette.mode === 'dark';
   const navigate = useNavigate();
   const [isBusy, setIsBusy] = useState(false);
+  const [isFinanceModalOpen, setIsFinanceModalOpen] = useState(false);
 
   const urgency = notification.urgency ?? 'Low';
   const urgencyStyles = getUrgencyThemeStyles(urgency, isDark);
@@ -61,6 +64,25 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
     color: '#6366F1',
     iconName: 'system',
   };
+
+  const isFinanceAlert = notification.type === NotificationType.FinanceAlert || notification.entityReferenceType === 'FinancePeriod';
+  let financePayload: {
+    missingType?: 'Timesheet' | 'Payroll' | 'Both';
+    period?: string;
+    year?: number;
+    month?: number;
+    missingCount?: number;
+    missingTimesheetCount?: number;
+    missingPayrollCount?: number;
+  } | null = null;
+
+  if (notification.payloadJson) {
+    try {
+      financePayload = JSON.parse(notification.payloadJson);
+    } catch {
+      // ignore parse error
+    }
+  }
 
   const getTypeIcon = () => {
     switch (notification.type) {
@@ -103,27 +125,22 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
   };
 
   const isDocumentType = notification.type === NotificationType.DocumentExpiry || notification.entityReferenceType === 'Document';
-  const isEmployeeType = notification.type === NotificationType.FinanceAlert || notification.entityReferenceType === 'Employee';
   const isTimesheetType = notification.entityReferenceType === 'Timesheet';
   const isPayrollType = notification.entityReferenceType === 'Payroll';
 
   const handleNavigation = (e: React.MouseEvent) => {
     e.stopPropagation();
 
+    if (isFinanceAlert) {
+      setIsFinanceModalOpen(true);
+      return;
+    }
+
     if (isDocumentType) {
       if (notification.entityReferenceId) {
         navigate(`/documents/${notification.entityReferenceId}`);
       } else {
         navigate('/documents/archive');
-      }
-      return;
-    }
-
-    if (isEmployeeType) {
-      if (notification.entityReferenceId) {
-        navigate(`/employees/${notification.entityReferenceId}`);
-      } else {
-        navigate('/employees/roster');
       }
       return;
     }
@@ -332,12 +349,15 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 </Typography>
               )}
 
-              {(notification.entityReferenceId || isDocumentType || isTimesheetType || isPayrollType) && (
+              {(notification.entityReferenceId || isFinanceAlert || isDocumentType || isTimesheetType || isPayrollType) && (
                 <Button
                   size="small"
-                  variant="text"
+                  variant={isFinanceAlert ? 'contained' : 'text'}
+                  color={isFinanceAlert ? 'warning' : 'primary'}
                   startIcon={
-                    isDocumentType ? (
+                    isFinanceAlert ? (
+                      <AccountBalanceWalletRounded sx={{ fontSize: '16px !important' }} />
+                    ) : isDocumentType ? (
                       <DescriptionRounded sx={{ fontSize: '16px !important' }} />
                     ) : isTimesheetType || isPayrollType ? (
                       <MonetizationOnRounded sx={{ fontSize: '16px !important' }} />
@@ -351,17 +371,30 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                     fontSize: '0.75rem',
                     fontWeight: 600,
                     textTransform: 'none',
-                    py: 0.25,
-                    px: 1,
+                    py: 0.35,
+                    px: 1.25,
                     borderRadius: 1.5,
-                    color: 'primary.main',
-                    backgroundColor: isDark ? 'rgba(99, 102, 241, 0.12)' : 'rgba(99, 102, 241, 0.08)',
-                    '&:hover': {
-                      backgroundColor: isDark ? 'rgba(99, 102, 241, 0.22)' : 'rgba(99, 102, 241, 0.16)',
-                    },
+                    ...(isFinanceAlert
+                      ? {
+                          boxShadow: 'none',
+                          '&:hover': {
+                            boxShadow: '0 2px 8px rgba(245, 158, 11, 0.4)',
+                          },
+                        }
+                      : {
+                          color: 'primary.main',
+                          backgroundColor: isDark ? 'rgba(99, 102, 241, 0.12)' : 'rgba(99, 102, 241, 0.08)',
+                          '&:hover': {
+                            backgroundColor: isDark ? 'rgba(99, 102, 241, 0.22)' : 'rgba(99, 102, 241, 0.16)',
+                          },
+                        }),
                   }}
                 >
-                  {isDocumentType
+                  {isFinanceAlert
+                    ? financePayload?.missingCount
+                      ? `View Missing Records (${financePayload.missingCount})`
+                      : 'View Missing Records'
+                    : isDocumentType
                     ? 'Go to Document'
                     : isTimesheetType
                     ? 'Go to Timesheets'
@@ -425,6 +458,25 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
           </Box>
         </Box>
       </CardContent>
+
+      {/* Aggregated Missing Records Modal for FinanceAlert */}
+      {isFinanceAlert && (
+        <FinanceAlertMissingRecordsModal
+          open={isFinanceModalOpen}
+          onClose={() => setIsFinanceModalOpen(false)}
+          year={
+            financePayload?.year ||
+            (notification.targetDate ? new Date(notification.targetDate).getFullYear() : new Date().getFullYear())
+          }
+          month={
+            financePayload?.month ||
+            (notification.targetDate ? new Date(notification.targetDate).getMonth() + 1 : new Date().getMonth() + 1)
+          }
+          missingType={financePayload?.missingType || 'Both'}
+          periodName={financePayload?.period}
+        />
+      )}
     </Card>
   );
 };
+

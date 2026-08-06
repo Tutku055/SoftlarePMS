@@ -141,3 +141,27 @@ export interface BulkOperationResultDto {
   skipped: number;
   skippedReasons: Record<string, string[]>;
 }
+
+export interface MissingFinanceRecordDto {
+  employeeId: string;
+  employeeNo: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  departmentName?: string | null;
+  professionName?: string | null;
+  hasTimesheet: boolean;
+  hasPayroll: boolean;
+  year: number;
+  month: number;
+}
+
+export interface GetMissingFinanceRecordsParams {
+  year: number;
+  month: number;
+  missingType?: 'Timesheet' | 'Payroll' | 'Both';
+  searchTerm?: string;
+  pageNumber?: number;
+  pageSize?: number;
+}
+

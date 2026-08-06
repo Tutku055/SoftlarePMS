@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SoftPMS.Application.Common.Interfaces;
@@ -322,49 +323,7 @@ public class PassiveNotificationEvaluator : IPassiveNotificationEvaluator
         var currentYear = today.Year;
         var currentMonth = today.Month;
 
-        var endOfMonth = new DateTime(currentYear, currentMonth, DateTime.DaysInMonth(currentYear, currentMonth));
-        var remainingDays = (int)Math.Floor((endOfMonth.Date - today).TotalDays);
-
-        // Strict rule: Only trigger if remaining days until period cutoff <= reminder threshold
-        if (remainingDays > reminderDays)
-        {
-            _logger.LogInformation("FinanceAlert skipped: {RemainingDays} days remaining until period end, which is > threshold of {ReminderDays} days.",
-                remainingDays, reminderDays);
-            return 0;
-        }
-
-        var periodName = new DateTime(currentYear, currentMonth, 1).ToString("MMMM yyyy", CultureInfo.InvariantCulture);
-
-        // Fetch all active employees
-        var activeEmployees = await _context.Employees
-            .AsNoTracking()
-            .Where(e => e.EmploymentStatus == EmploymentStatus.Active && !e.IsDeleted)
-            .ToListAsync(cancellationToken);
-
-        if (activeEmployees.Count == 0)
-        {
-            return 0;
-        }
-
-        // Load existing monthly timesheets for this month & year
-        var existingTimesheetEmployeeIds = await _context.MonthlyTimesheets
-            .AsNoTracking()
-            .Where(t => t.Year == currentYear && t.Month == currentMonth)
-            .Select(t => t.EmployeeId)
-            .Distinct()
-            .ToListAsync(cancellationToken);
-        var timesheetSet = new HashSet<Guid>(existingTimesheetEmployeeIds);
-
-        // Load existing payroll slips for this month & year
-        var existingPayrollEmployeeIds = await _context.PayrollSlips
-            .AsNoTracking()
-            .Where(p => p.Year == currentYear && p.Month == currentMonth)
-            .Select(p => p.EmployeeId)
-            .Distinct()
-            .ToListAsync(cancellationToken);
-        var payrollSet = new HashSet<Guid>(existingPayrollEmployeeIds);
-
-        // Fetch only users with required Finance permissions (Timesheets.Read, Payrolls.Read) or SuperAdmin
+        // Fetch authorized users with required Finance permissions (Timesheets.Read, Payrolls.Read) or SuperAdmin
         var financePermissions = definition?.RequiredPermissions ?? new[] { "Timesheets.Read", "Payrolls.Read" };
         var authorizedUsers = await _context.Users
             .AsNoTracking()
@@ -375,179 +334,255 @@ public class PassiveNotificationEvaluator : IPassiveNotificationEvaluator
                      && (u.Role.Name == "SuperAdmin" || u.Role.RolePermissions.Any(rp => financePermissions.Contains(rp.Permission.Name))))
             .ToListAsync(cancellationToken);
 
+        if (authorizedUsers.Count == 0)
+        {
+            return 0;
+        }
+
         var authorizedUserIds = authorizedUsers.Select(u => u.Id).ToHashSet();
-        var userMap = authorizedUsers.ToDictionary(u => u.Id);
-
-        // Load relevant FinanceAlert notifications (read, unread, AND soft-deleted) for active employees & period
-        var employeeRefIds = activeEmployees.Select(e => (Guid?)e.Id).ToList();
-        var allExistingAlerts = await _context.UserNotifications
-            .IgnoreQueryFilters()
-            .Where(n => n.Type == NotificationType.FinanceAlert
-                     && employeeRefIds.Contains(n.EntityReferenceId)
-                     && n.TargetDate != null
-                     && n.TargetDate.Value.Year == currentYear
-                     && n.TargetDate.Value.Month == currentMonth)
-            .ToListAsync(cancellationToken);
-
-        // Existing outbox notification IDs to prevent duplicate email queuing
-        var existingAlertIds = allExistingAlerts.Select(a => (Guid?)a.Id).ToList();
-        var existingOutboxNotificationIds = await _context.NotificationOutboxes
-            .Where(o => o.NotificationId != null && existingAlertIds.Contains(o.NotificationId))
-            .Select(o => o.NotificationId!.Value)
-            .ToHashSetAsync(cancellationToken);
-
         var dispatchedCount = 0;
         var hasUpdates = false;
 
-        foreach (var employee in activeEmployees)
+        // Evaluate all periods of the current year up to currentMonth
+        for (var m = 1; m <= currentMonth; m++)
         {
-            var hasTimesheet = timesheetSet.Contains(employee.Id);
-            var hasPayroll = payrollSet.Contains(employee.Id);
+            var periodEndOfMonth = new DateTime(currentYear, m, DateTime.DaysInMonth(currentYear, m));
+            var periodRemainingDays = (int)Math.Floor((periodEndOfMonth.Date - today).TotalDays);
 
-            // All records (read+unread+deleted) for this employee & period — existence check
-            var allMatchingForEmployee = allExistingAlerts
-                .Where(n => n.EntityReferenceId == employee.Id
-                    && n.TargetDate != null
-                    && n.TargetDate.Value.Year == currentYear
-                    && n.TargetDate.Value.Month == currentMonth)
-                .ToList();
+            // If evaluating the current ongoing month and we haven't reached reminder threshold yet, skip
+            if (m == currentMonth && periodRemainingDays > reminderDays)
+            {
+                _logger.LogInformation("FinanceAlert for {Year}-{Month:D2} skipped: {RemainingDays} days remaining until period end (threshold is {ReminderDays} days).",
+                    currentYear, m, periodRemainingDays, reminderDays);
+                continue;
+            }
 
-            // Only unread, non-deleted ones — used for update/purge
-            var unreadMatchingForEmployee = allMatchingForEmployee.Where(n => !n.IsRead && !n.IsDeleted).ToList();
+            var periodName = new DateTime(currentYear, m, 1).ToString("MMMM yyyy", CultureInfo.InvariantCulture);
+            var periodKey = $"{currentYear}-{m:D2}";
 
-            // Purge unread alerts that belong to unauthorized users
-            var unauthorizedAlerts = unreadMatchingForEmployee
-                .Where(a => !authorizedUserIds.Contains(a.UserId))
+            // Active employees employed on or before the end of this month
+            var activeEmployees = await _context.Employees
+                .AsNoTracking()
+                .Where(e => !e.IsDeleted 
+                         && e.EmploymentStatus == EmploymentStatus.Active 
+                         && e.HireDate.Date <= periodEndOfMonth.Date 
+                         && (e.TerminationDate == null || e.TerminationDate.Value.Date >= new DateTime(currentYear, m, 1)))
+                .ToListAsync(cancellationToken);
+
+            if (activeEmployees.Count == 0)
+            {
+                continue;
+            }
+
+            var empIds = activeEmployees.Select(e => e.Id).ToList();
+
+            // Load existing timesheets & payrolls for this period
+            var existingTimesheetEmployeeIds = await _context.MonthlyTimesheets
+                .AsNoTracking()
+                .Where(t => t.Year == currentYear && t.Month == m && empIds.Contains(t.EmployeeId))
+                .Select(t => t.EmployeeId)
+                .ToHashSetAsync(cancellationToken);
+
+            var existingPayrollEmployeeIds = await _context.PayrollSlips
+                .AsNoTracking()
+                .Where(p => p.Year == currentYear && p.Month == m && empIds.Contains(p.EmployeeId))
+                .Select(p => p.EmployeeId)
+                .ToHashSetAsync(cancellationToken);
+
+            var missingTimesheetCount = activeEmployees.Count(e => !existingTimesheetEmployeeIds.Contains(e.Id));
+            var missingPayrollCount = activeEmployees.Count(e => !existingPayrollEmployeeIds.Contains(e.Id));
+
+            // Load existing aggregated alerts for this period
+            var allExistingAlertsForPeriod = await _context.UserNotifications
+                .IgnoreQueryFilters()
+                .Where(n => n.Type == NotificationType.FinanceAlert
+                         && n.TargetDate != null
+                         && n.TargetDate.Value.Year == currentYear
+                         && n.TargetDate.Value.Month == m)
+                .ToListAsync(cancellationToken);
+
+            var existingAlertIds = allExistingAlertsForPeriod.Select(a => (Guid?)a.Id).ToList();
+            var existingOutboxNotificationIds = await _context.NotificationOutboxes
+                .Where(o => o.NotificationId != null && existingAlertIds.Contains(o.NotificationId))
+                .Select(o => o.NotificationId!.Value)
+                .ToHashSetAsync(cancellationToken);
+
+            // Purge unread alerts belonging to unauthorized users
+            var unauthorizedAlerts = allExistingAlertsForPeriod
+                .Where(a => !a.IsRead && !a.IsDeleted && !authorizedUserIds.Contains(a.UserId))
                 .ToList();
             if (unauthorizedAlerts.Count > 0)
             {
                 _context.UserNotifications.RemoveRange(unauthorizedAlerts);
-                unreadMatchingForEmployee = unreadMatchingForEmployee
-                    .Where(a => authorizedUserIds.Contains(a.UserId))
-                    .ToList();
+                allExistingAlertsForPeriod.RemoveAll(a => unauthorizedAlerts.Contains(a));
                 hasUpdates = true;
             }
 
-            // If employee has both timesheet and payroll, clear any previous UNREAD alerts
-            if (hasTimesheet && hasPayroll)
+            // Dispatch or update aggregated notification for each authorized user based on their specific RBAC
+            foreach (var user in authorizedUsers)
             {
-                if (unreadMatchingForEmployee.Count > 0)
+                var isSuperAdmin = user.Role.Name == "SuperAdmin";
+                var hasTimesheetPerm = isSuperAdmin || user.Role.RolePermissions.Any(rp => rp.Permission.Name == "Timesheets.Read");
+                var hasPayrollPerm = isSuperAdmin || user.Role.RolePermissions.Any(rp => rp.Permission.Name == "Payrolls.Read");
+
+                string title;
+                string message;
+                string missingType;
+                int missingCount;
+                bool shouldNotify;
+
+                if (hasTimesheetPerm && !hasPayrollPerm && !isSuperAdmin)
                 {
-                    _context.UserNotifications.RemoveRange(unreadMatchingForEmployee);
-                    hasUpdates = true;
+                    // Target Audience: Timesheets only
+                    missingType = "Timesheet";
+                    missingCount = missingTimesheetCount;
+                    shouldNotify = missingTimesheetCount > 0;
+                    title = $"Missing Timesheets: {periodName}";
+                    message = periodRemainingDays >= 0
+                        ? $"There are {missingTimesheetCount} employee(s) with missing timesheet records for {periodName} ({periodRemainingDays} day(s) remaining)."
+                        : $"Period {periodName} ended {Math.Abs(periodRemainingDays)} day(s) ago: There are {missingTimesheetCount} employee(s) with missing timesheet records.";
                 }
-                continue;
-            }
-
-            var employeeName = $"{employee.FirstName} {employee.LastName}".Trim();
-            string title;
-            string message;
-
-            if (!hasTimesheet && !hasPayroll)
-            {
-                title = $"Missing Timesheet & Payroll: {employeeName}";
-                message = remainingDays >= 0
-                    ? $"No monthly timesheet and no payroll record found for {employeeName} for period {periodName} ({remainingDays} day(s) remaining)."
-                    : $"Period {periodName} ended {Math.Abs(remainingDays)} day(s) ago: Missing monthly timesheet and payroll for {employeeName}.";
-            }
-            else if (!hasTimesheet)
-            {
-                title = $"Missing Timesheet: {employeeName}";
-                message = remainingDays >= 0
-                    ? $"No monthly timesheet record found for {employeeName} for period {periodName} ({remainingDays} day(s) remaining)."
-                    : $"Period {periodName} ended {Math.Abs(remainingDays)} day(s) ago: Missing monthly timesheet for {employeeName}.";
-            }
-            else
-            {
-                title = $"Missing Payroll: {employeeName}";
-                message = remainingDays >= 0
-                    ? $"No payroll slip generated for {employeeName} for period {periodName} ({remainingDays} day(s) remaining)."
-                    : $"Period {periodName} ended {Math.Abs(remainingDays)} day(s) ago: Missing payroll slip for {employeeName}.";
-            }
-
-            // Users who have ANY record (read or unread) for this employee this period — do NOT re-notify
-            var usersWithAnyRecord = allMatchingForEmployee.Select(a => a.UserId).ToHashSet();
-
-            // Update existing UNREAD alerts with latest data
-            foreach (var alert in unreadMatchingForEmployee)
-            {
-                alert.RemainingDays = remainingDays;
-                alert.TargetDate = endOfMonth;
-                alert.Title = title;
-                alert.Message = message;
-                alert.DeliveryChannel = channel;
-
-                // If channel is upgraded to SystemAndMail and not yet queued for email:
-                if (channel == NotificationDeliveryChannel.SystemAndMail && !existingOutboxNotificationIds.Contains(alert.Id))
+                else if (!hasTimesheetPerm && hasPayrollPerm && !isSuperAdmin)
                 {
-                    if (userMap.TryGetValue(alert.UserId, out var user) && !string.IsNullOrWhiteSpace(user.Email))
+                    // Target Audience: Payrolls only
+                    missingType = "Payroll";
+                    missingCount = missingPayrollCount;
+                    shouldNotify = missingPayrollCount > 0;
+                    title = $"Missing Payrolls: {periodName}";
+                    message = periodRemainingDays >= 0
+                        ? $"There are {missingPayrollCount} employee(s) with missing payroll records for {periodName} ({periodRemainingDays} day(s) remaining)."
+                        : $"Period {periodName} ended {Math.Abs(periodRemainingDays)} day(s) ago: There are {missingPayrollCount} employee(s) with missing payroll records.";
+                }
+                else
+                {
+                    // Target Audience: Combined (Both permissions or SuperAdmin)
+                    shouldNotify = missingTimesheetCount > 0 || missingPayrollCount > 0;
+                    missingCount = Math.Max(missingTimesheetCount, missingPayrollCount);
+
+                    if (missingTimesheetCount > 0 && missingPayrollCount > missingTimesheetCount)
                     {
-                        var htmlBody = _templateBuilder.BuildNotificationEmailHtml(alert, user.Username);
-                        var outboxItem = new NotificationOutbox
+                        missingType = "Both";
+                        title = $"Missing Timesheets & Payrolls: {periodName}";
+                        message = periodRemainingDays >= 0
+                            ? $"There are {missingTimesheetCount} employee(s) with missing timesheets and {missingPayrollCount} employee(s) with missing payroll slips for {periodName} ({periodRemainingDays} day(s) remaining)."
+                            : $"Period {periodName} ended {Math.Abs(periodRemainingDays)} day(s) ago: There are {missingTimesheetCount} employee(s) with missing timesheets and {missingPayrollCount} employee(s) with missing payroll slips.";
+                    }
+                    else if (missingTimesheetCount > 0)
+                    {
+                        missingType = "Both";
+                        title = $"Missing Timesheets & Payrolls: {periodName}";
+                        message = periodRemainingDays >= 0
+                            ? $"There are {missingTimesheetCount} employee(s) with missing timesheet and payroll records for {periodName} ({periodRemainingDays} day(s) remaining)."
+                            : $"Period {periodName} ended {Math.Abs(periodRemainingDays)} day(s) ago: There are {missingTimesheetCount} employee(s) with missing timesheet and payroll records.";
+                    }
+                    else
+                    {
+                        missingType = "Payroll";
+                        title = $"Missing Payrolls: {periodName}";
+                        message = periodRemainingDays >= 0
+                            ? $"There are {missingPayrollCount} employee(s) with missing payroll records for {periodName} ({periodRemainingDays} day(s) remaining)."
+                            : $"Period {periodName} ended {Math.Abs(periodRemainingDays)} day(s) ago: There are {missingPayrollCount} employee(s) with missing payroll records.";
+                    }
+                }
+
+                var payload = new
+                {
+                    missingType,
+                    period = periodKey,
+                    year = currentYear,
+                    month = m,
+                    missingCount,
+                    missingTimesheetCount,
+                    missingPayrollCount
+                };
+                var payloadJson = JsonSerializer.Serialize(payload);
+
+                var existingUnread = allExistingAlertsForPeriod
+                    .FirstOrDefault(a => a.UserId == user.Id && !a.IsRead && !a.IsDeleted);
+
+                if (existingUnread != null)
+                {
+                    if (shouldNotify)
+                    {
+                        existingUnread.Title = title;
+                        existingUnread.Message = message;
+                        existingUnread.TargetDate = periodEndOfMonth;
+                        existingUnread.RemainingDays = periodRemainingDays;
+                        existingUnread.DeliveryChannel = channel;
+                        existingUnread.PayloadJson = payloadJson;
+
+                        if (channel == NotificationDeliveryChannel.SystemAndMail && !existingOutboxNotificationIds.Contains(existingUnread.Id))
                         {
-                            RecipientEmail = user.Email.Trim(),
-                            RecipientName = user.Username,
-                            Subject = $"[SoftPMS] {alert.Title}",
-                            BodyHtml = htmlBody,
-                            Status = OutboxStatus.Pending,
-                            RetryCount = 0,
-                            MaxRetries = 3,
-                            NextRetryAtUtc = DateTime.UtcNow,
-                            NotificationId = alert.Id,
-                            CreatedAt = DateTime.UtcNow
-                        };
-                        _context.NotificationOutboxes.Add(outboxItem);
-                        existingOutboxNotificationIds.Add(alert.Id);
+                            if (!string.IsNullOrWhiteSpace(user.Email))
+                            {
+                                var htmlBody = _templateBuilder.BuildNotificationEmailHtml(existingUnread, user.Username);
+                                _context.NotificationOutboxes.Add(new NotificationOutbox
+                                {
+                                    RecipientEmail = user.Email.Trim(),
+                                    RecipientName = user.Username,
+                                    Subject = $"[SoftPMS] {existingUnread.Title}",
+                                    BodyHtml = htmlBody,
+                                    Status = OutboxStatus.Pending,
+                                    RetryCount = 0,
+                                    MaxRetries = 3,
+                                    NextRetryAtUtc = DateTime.UtcNow,
+                                    NotificationId = existingUnread.Id,
+                                    CreatedAt = DateTime.UtcNow
+                                });
+                                existingOutboxNotificationIds.Add(existingUnread.Id);
+                            }
+                        }
+                        hasUpdates = true;
+                    }
+                    else
+                    {
+                        // All records completed for this period -> remove unread alert
+                        _context.UserNotifications.Remove(existingUnread);
                         hasUpdates = true;
                     }
                 }
-            }
-
-            if (unreadMatchingForEmployee.Count > 0)
-            {
-                hasUpdates = true;
-            }
-
-            // Create new alerts ONLY for authorized users who have ZERO records for this employee this period
-            var newRecipients = authorizedUsers.Where(u => !usersWithAnyRecord.Contains(u.Id)).ToList();
-            foreach (var user in newRecipients)
-            {
-                var newAlert = new UserNotification
+                else
                 {
-                    UserId = user.Id,
-                    Type = NotificationType.FinanceAlert,
-                    Title = title,
-                    Message = message,
-                    DeliveryChannel = channel,
-                    TargetDate = endOfMonth,
-                    RemainingDays = remainingDays,
-                    EntityReferenceId = employee.Id,
-                    EntityReferenceType = "Employee",
-                    IsRead = false,
-                    CreatedAt = DateTime.UtcNow
-                };
-                _context.UserNotifications.Add(newAlert);
-
-                if (channel == NotificationDeliveryChannel.SystemAndMail && !string.IsNullOrWhiteSpace(user.Email))
-                {
-                    var htmlBody = _templateBuilder.BuildNotificationEmailHtml(newAlert, user.Username);
-                    var outboxItem = new NotificationOutbox
+                    var hasAnyRecord = allExistingAlertsForPeriod.Any(a => a.UserId == user.Id);
+                    if (shouldNotify && !hasAnyRecord)
                     {
-                        RecipientEmail = user.Email.Trim(),
-                        RecipientName = user.Username,
-                        Subject = $"[SoftPMS] {newAlert.Title}",
-                        BodyHtml = htmlBody,
-                        Status = OutboxStatus.Pending,
-                        RetryCount = 0,
-                        MaxRetries = 3,
-                        NextRetryAtUtc = DateTime.UtcNow,
-                        NotificationId = newAlert.Id,
-                        CreatedAt = DateTime.UtcNow
-                    };
-                    _context.NotificationOutboxes.Add(outboxItem);
+                        var newAlert = new UserNotification
+                        {
+                            UserId = user.Id,
+                            Type = NotificationType.FinanceAlert,
+                            Title = title,
+                            Message = message,
+                            DeliveryChannel = channel,
+                            TargetDate = periodEndOfMonth,
+                            RemainingDays = periodRemainingDays,
+                            EntityReferenceType = "FinancePeriod",
+                            PayloadJson = payloadJson,
+                            IsRead = false,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        _context.UserNotifications.Add(newAlert);
+
+                        if (channel == NotificationDeliveryChannel.SystemAndMail && !string.IsNullOrWhiteSpace(user.Email))
+                        {
+                            var htmlBody = _templateBuilder.BuildNotificationEmailHtml(newAlert, user.Username);
+                            _context.NotificationOutboxes.Add(new NotificationOutbox
+                            {
+                                RecipientEmail = user.Email.Trim(),
+                                RecipientName = user.Username,
+                                Subject = $"[SoftPMS] {newAlert.Title}",
+                                BodyHtml = htmlBody,
+                                Status = OutboxStatus.Pending,
+                                RetryCount = 0,
+                                MaxRetries = 3,
+                                NextRetryAtUtc = DateTime.UtcNow,
+                                NotificationId = newAlert.Id,
+                                CreatedAt = DateTime.UtcNow
+                            });
+                        }
+                        dispatchedCount++;
+                        hasUpdates = true;
+                    }
                 }
-                dispatchedCount++;
-                hasUpdates = true;
             }
         }
 

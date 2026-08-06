@@ -1,7 +1,24 @@
 import { apiClient } from '../../../config/apiClient';
-import type { MonthlyTimesheet, PayrollSlip, UpdateTimesheetEntryCommand, CalculateMonthlyPayrollCommand, GenerateMonthlyTimesheetCommand, BulkOperationResultDto, BulkTimesheetOperationRequest } from '../types';
+import type { 
+  MonthlyTimesheet, 
+  PayrollSlip, 
+  UpdateTimesheetEntryCommand, 
+  CalculateMonthlyPayrollCommand, 
+  GenerateMonthlyTimesheetCommand, 
+  BulkOperationResultDto, 
+  BulkTimesheetOperationRequest,
+  MissingFinanceRecordDto,
+  GetMissingFinanceRecordsParams,
+  PaginatedList
+} from '../types';
 
 export const financeApi = {
+  getMissingFinanceRecords: async (params: GetMissingFinanceRecordsParams) => {
+    const { data } = await apiClient.get<PaginatedList<MissingFinanceRecordDto>>('/finance/missing-records', {
+      params
+    });
+    return data;
+  },
   getMonthlyTimesheet: async (employeeId: string, year: number, month: number) => {
     const { data } = await apiClient.get<MonthlyTimesheet>(`/employees/${employeeId}/timesheets/${year}/${month}`);
     return data;
