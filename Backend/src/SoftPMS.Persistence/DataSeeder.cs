@@ -73,6 +73,15 @@ public static class DatabaseSeeder
         ("Notifications.Read", "View and manage personal notification inbox"),
         ("Notifications.AdjustThresholds", "Adjust reminder days and delivery channels for passive notifications"),
         ("Notifications.Mute", "Mute or unmute passive notification types"),
+        ("Calendar.Read", "View calendar monthly schedule and standard notes"),
+        ("Calendar.ReadConfidentialNotes", "View confidential calendar notes"),
+        ("Calendar.CreateEvent", "Create calendar events"),
+        ("Calendar.UpdateEvent", "Edit calendar events"),
+        ("Calendar.DeleteEvent", "Delete calendar events"),
+        ("Calendar.CreateNote", "Create calendar personal notes"),
+        ("Calendar.UpdateNote", "Edit calendar personal notes"),
+        ("Calendar.DeleteNote", "Delete calendar personal notes"),
+        ("Calendar.ManageSettings", "Manage calendar global settings"),
     ];
 
 
@@ -131,6 +140,22 @@ public static class DatabaseSeeder
                 db.NotificationTypeSettings.AddRange(missingSettings);
                 await db.SaveChangesAsync(ct);
                 logger.LogInformation("Seeded {Count} default notification type setting(s).", missingSettings.Count);
+            }
+
+            // ── 4. Seed default Calendar settings ─────────────────────────────
+            if (!await db.CalendarSettings.AnyAsync(ct))
+            {
+                db.CalendarSettings.Add(new CalendarSetting
+                {
+                    HolidayCountryCode = "TR",
+                    HolidayReminderDays = 3,
+                    SendEmailForHolidays = true,
+                    BirthdayReminderDays = 1,
+                    SendEmailForBirthdays = true,
+                    CreatedAt = DateTime.UtcNow
+                });
+                await db.SaveChangesAsync(ct);
+                logger.LogInformation("Seeded default CalendarSetting.");
             }
 
 

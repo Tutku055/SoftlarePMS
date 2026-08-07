@@ -28,5 +28,10 @@ public interface IPassiveNotificationEvaluator
     /// and dispatches targeted system announcements.
     /// </summary>
     Task<int> EvaluateSystemAnnouncementsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Evaluates physical events, public holidays, and employee birthdays for upcoming reminders.
+    /// </summary>
+    Task<int> EvaluateCalendarRemindersAsync(CancellationToken cancellationToken = default);
 }
 

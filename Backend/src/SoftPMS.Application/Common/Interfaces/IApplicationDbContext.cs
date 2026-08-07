@@ -32,6 +32,10 @@ public interface IApplicationDbContext
     DbSet<UserNotification> UserNotifications { get; }
     DbSet<NotificationTypeSetting> NotificationTypeSettings { get; }
     DbSet<NotificationOutbox> NotificationOutboxes { get; }
+    DbSet<CalendarNote> CalendarNotes { get; }
+    DbSet<CalendarEvent> CalendarEvents { get; }
+    DbSet<EventReminderTracker> EventReminderTrackers { get; }
+    DbSet<CalendarSetting> CalendarSettings { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task<Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);

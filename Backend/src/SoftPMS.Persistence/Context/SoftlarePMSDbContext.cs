@@ -45,10 +45,14 @@ public class SoftPMSDbContext : DbContext, IApplicationDbContext
     public DbSet<YearlyRolloverLog> YearlyRolloverLogs { get; set; }
     #endregion
 
-    #region Notifications
+    #region Notifications & Calendar
     public DbSet<UserNotification> UserNotifications { get; set; }
     public DbSet<NotificationTypeSetting> NotificationTypeSettings { get; set; }
     public DbSet<NotificationOutbox> NotificationOutboxes { get; set; }
+    public DbSet<CalendarNote> CalendarNotes { get; set; }
+    public DbSet<CalendarEvent> CalendarEvents { get; set; }
+    public DbSet<EventReminderTracker> EventReminderTrackers { get; set; }
+    public DbSet<CalendarSetting> CalendarSettings { get; set; }
     #endregion
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

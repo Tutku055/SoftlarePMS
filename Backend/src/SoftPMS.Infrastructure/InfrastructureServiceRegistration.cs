@@ -41,6 +41,8 @@ public static class InfrastructureServiceRegistration
         services.AddScoped<IHighVolumeMutationAnomalyEvaluator, Services.Notifications.Evaluators.HighVolumeMutationAnomalyEvaluator>();
         services.AddScoped<IPeriodAndCalendarMilestoneEvaluator, Services.Notifications.Evaluators.PeriodAndCalendarMilestoneEvaluator>();
         services.AddScoped<ISystemAnnouncementEvaluator, Services.Notifications.SystemAnnouncementEvaluator>();
+        services.AddScoped<IPublicHolidayService, PublicHolidayService>();
+        services.AddScoped<ICalendarNotificationEvaluator, Services.Notifications.CalendarNotificationEvaluator>();
         services.AddScoped<IPassiveNotificationEvaluator, PassiveNotificationEvaluator>();
         services.AddHostedService<PassiveNotificationBackgroundService>();
         services.AddHostedService<NotificationOutboxBackgroundService>();

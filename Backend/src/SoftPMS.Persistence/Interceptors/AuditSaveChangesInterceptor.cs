@@ -36,6 +36,8 @@ public sealed class AuditSaveChangesInterceptor(ICurrentUserService currentUser)
         nameof(NotificationOutbox),
         "NotificationOutboxes",
         "UserNotifications",
+        nameof(EventReminderTracker),
+        "EventReminderTrackers",
         "RefreshToken",
         "RefreshTokens",
         "SystemLog",

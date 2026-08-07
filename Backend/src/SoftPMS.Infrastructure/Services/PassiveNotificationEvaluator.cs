@@ -12,17 +12,20 @@ public class PassiveNotificationEvaluator : IPassiveNotificationEvaluator
     private readonly IDocumentExpiryEvaluator _documentExpiryEvaluator;
     private readonly IFinanceAlertEvaluator _financeAlertEvaluator;
     private readonly ISystemAnnouncementEvaluator _systemAnnouncementEvaluator;
+    private readonly ICalendarNotificationEvaluator _calendarNotificationEvaluator;
     private readonly ILogger<PassiveNotificationEvaluator> _logger;
 
     public PassiveNotificationEvaluator(
         IDocumentExpiryEvaluator documentExpiryEvaluator,
         IFinanceAlertEvaluator financeAlertEvaluator,
         ISystemAnnouncementEvaluator systemAnnouncementEvaluator,
+        ICalendarNotificationEvaluator calendarNotificationEvaluator,
         ILogger<PassiveNotificationEvaluator> logger)
     {
         _documentExpiryEvaluator = documentExpiryEvaluator;
         _financeAlertEvaluator = financeAlertEvaluator;
         _systemAnnouncementEvaluator = systemAnnouncementEvaluator;
+        _calendarNotificationEvaluator = calendarNotificationEvaluator;
         _logger = logger;
     }
 
@@ -67,6 +70,17 @@ public class PassiveNotificationEvaluator : IPassiveNotificationEvaluator
             result["SystemAnnouncement"] = 0;
         }
 
+        try
+        {
+            var calCount = await _calendarNotificationEvaluator.EvaluateCalendarRemindersAsync(cancellationToken);
+            result["CalendarReminders"] = calCount;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred during CalendarReminders notification evaluation.");
+            result["CalendarReminders"] = 0;
+        }
+
         var total = result.Values.Sum();
         _logger.LogInformation("Passive notification evaluation cycle finished. Total new notifications dispatched: {Total}", total);
         return result;
@@ -85,5 +99,10 @@ public class PassiveNotificationEvaluator : IPassiveNotificationEvaluator
     public Task<int> EvaluateSystemAnnouncementsAsync(CancellationToken cancellationToken = default)
     {
         return _systemAnnouncementEvaluator.EvaluateSystemAnnouncementsAsync(cancellationToken);
+    }
+
+    public Task<int> EvaluateCalendarRemindersAsync(CancellationToken cancellationToken = default)
+    {
+        return _calendarNotificationEvaluator.EvaluateCalendarRemindersAsync(cancellationToken);
     }
 }
