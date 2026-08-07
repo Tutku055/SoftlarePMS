@@ -53,9 +53,9 @@ public static class NotificationRegistry
         [NotificationType.EventUpcoming] = new(
             Type: NotificationType.EventUpcoming,
             TypeName: "Upcoming Event",
-            Description: "Passive reminders for scheduled company events, reviews, or milestones.",
-            DefaultReminderDays: 7,
-            DefaultDeliveryChannel: NotificationDeliveryChannel.System,
+            Description: "Reminders for scheduled company events, milestones, public holidays, and birthdays. Reminder threshold and email delivery are customized per event in the Calendar module.",
+            DefaultReminderDays: 0,
+            DefaultDeliveryChannel: NotificationDeliveryChannel.SystemAndMail,
             DefaultIsMuted: false,
             DefaultTitleTemplate: "Upcoming Event: {EventTitle}",
             DefaultMessageTemplate: "Reminder for upcoming event '{EventTitle}' scheduled on {EventDate}.",

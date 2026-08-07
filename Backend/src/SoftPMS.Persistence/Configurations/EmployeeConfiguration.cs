@@ -26,6 +26,10 @@ public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
             .IsRequired()
             .HasMaxLength(50);
 
+        builder.Property(e => e.Email)
+            .HasMaxLength(256)
+            .IsRequired(false);
+
         // Index on LastName/FirstName for the default sort used in the paginated list
         builder.HasIndex(e => new { e.LastName, e.FirstName })
             .HasDatabaseName("IX_Employees_LastName_FirstName");

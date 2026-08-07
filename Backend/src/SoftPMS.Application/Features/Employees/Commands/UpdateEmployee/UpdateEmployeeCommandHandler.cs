@@ -22,6 +22,7 @@ public sealed class UpdateEmployeeCommandHandler(
         // Apply core profile changes
         employee.FirstName          = request.FirstName;
         employee.LastName           = request.LastName;
+        employee.Email              = request.Email?.Trim() ?? string.Empty;
         employee.Gender             = request.Gender;
         employee.DateOfBirth        = request.DateOfBirth;
         employee.Nationality        = request.Nationality;

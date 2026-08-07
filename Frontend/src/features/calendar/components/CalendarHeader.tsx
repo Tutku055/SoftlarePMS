@@ -59,8 +59,8 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   onToggleSidebar,
 }) => {
   const hasPermission = useAuthStore((state) => state.hasPermission);
-  const canCreateEvent = hasPermission('Calendar.CreateEvent');
-  const canCreateNote = hasPermission('Calendar.CreateNote');
+  const canCreateEvent = hasPermission('Calendar.CreateEvent') || hasPermission('Calendar.CreateConfidentialEvents');
+  const canCreateNote = hasPermission('Calendar.CreateNote') || hasPermission('Calendar.CreateConfidentialNotes');
   const canManageSettings = hasPermission('Calendar.ManageSettings');
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);

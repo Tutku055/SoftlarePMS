@@ -107,7 +107,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
           {setting.description}
         </Typography>
 
-        {/* Reminder Threshold Days / Anomaly Trigger Info */}
+        {/* Reminder Threshold Days / Per-Event / Anomaly Trigger Info */}
         <Box>
           {setting.type === NotificationType.SystemAnnouncement ? (
             <Alert severity="info" sx={{ borderRadius: 2 }}>
@@ -116,6 +116,15 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
               </Typography>
               <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
                 System announcements are evaluated continuously across 15-minute audit log windows. Severity (Low, Moderate, High, Critical) is calculated dynamically based on the volume and severity of detected events.
+              </Typography>
+            </Alert>
+          ) : setting.type === NotificationType.EventUpcoming ? (
+            <Alert severity="info" sx={{ borderRadius: 2 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                Per-Event Reminder Threshold
+              </Typography>
+              <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
+                Event reminder timing is not constrained by a global threshold. Each calendar event defines its own reminder window (e.g., on the event day, 1 day before, 1 week before) directly within the Calendar module.
               </Typography>
             </Alert>
           ) : (
@@ -137,52 +146,63 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
         </Box>
 
         {/* Delivery Channel */}
-        <FormControl component="fieldset">
-          <FormLabel component="legend" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
-            Delivery Channel
-          </FormLabel>
-          <RadioGroup
-            value={deliveryChannel}
-            onChange={(e) => setDeliveryChannel(Number(e.target.value) as NotificationDeliveryChannel)}
-          >
-            <FormControlLabel
-              value={NotificationDeliveryChannel.System}
-              control={<Radio />}
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <NotificationsActiveRounded fontSize="small" color="action" />
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      In-App Only (System)
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Notifications appear inside user inboxes and badge indicators.
-                    </Typography>
+        {setting.type === NotificationType.EventUpcoming ? (
+          <Alert severity="info" sx={{ borderRadius: 2 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+              Per-Event Delivery Preferences
+            </Typography>
+            <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
+              Delivery channels (In-App notification and transactional Email reminder) are configured individually per event upon creation or modification in the Calendar module.
+            </Typography>
+          </Alert>
+        ) : (
+          <FormControl component="fieldset">
+            <FormLabel component="legend" sx={{ fontWeight: 600, mb: 1, color: 'text.primary' }}>
+              Delivery Channel
+            </FormLabel>
+            <RadioGroup
+              value={deliveryChannel}
+              onChange={(e) => setDeliveryChannel(Number(e.target.value) as NotificationDeliveryChannel)}
+            >
+              <FormControlLabel
+                value={NotificationDeliveryChannel.System}
+                control={<Radio />}
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <NotificationsActiveRounded fontSize="small" color="action" />
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        In-App Only (System)
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Notifications appear inside user inboxes and badge indicators.
+                      </Typography>
+                    </Box>
                   </Box>
-                </Box>
-              }
-              sx={{ mb: 1.5 }}
-            />
+                }
+                sx={{ mb: 1.5 }}
+              />
 
-            <FormControlLabel
-              value={NotificationDeliveryChannel.SystemAndMail}
-              control={<Radio />}
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <EmailRounded fontSize="small" color="primary" />
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      In-App + Transactional Email
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Sends an instant branded SoftPMS HTML email notification in addition to in-app inbox.
-                    </Typography>
+              <FormControlLabel
+                value={NotificationDeliveryChannel.SystemAndMail}
+                control={<Radio />}
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <EmailRounded fontSize="small" color="primary" />
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        In-App + Transactional Email
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Sends an instant branded SoftPMS HTML email notification in addition to in-app inbox.
+                      </Typography>
+                    </Box>
                   </Box>
-                </Box>
-              }
-            />
-          </RadioGroup>
-        </FormControl>
+                }
+              />
+            </RadioGroup>
+          </FormControl>
+        )}
 
         {/* Target Audience / Permission Info */}
         <Box

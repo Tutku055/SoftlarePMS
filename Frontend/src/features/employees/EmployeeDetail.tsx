@@ -149,6 +149,7 @@ export const EmployeeDetail = () => {
   const [formState, setFormState] = useState({
     firstName: '',
     lastName: '',
+    email: '',
     gender: 0,
     dateOfBirth: '',
     nationality: '',
@@ -258,12 +259,11 @@ export const EmployeeDetail = () => {
       setUploadOpen(false);
       setSelectedFile(null);
       setUploadDocType('1');
-    } catch (error) {
-      console.error('Chunk upload failed', error);
+    } catch (err: any) {
       setErrorDialog({
         open: true,
         title: 'Upload Failed',
-        message: 'An error occurred while uploading the file. Please check your connection and try again.'
+        message: err?.response?.data?.detail || err?.message || 'An error occurred during file upload.'
       });
     } finally {
       setIsUploadingChunk(false);
@@ -276,6 +276,7 @@ export const EmployeeDetail = () => {
       setFormState({
         firstName: employee.firstName || '',
         lastName: employee.lastName || '',
+        email: employee.email || '',
         gender: employee.gender ?? 0,
         dateOfBirth: employee.dateOfBirth?.split('T')[0] || '',
         nationality: employee.nationality || '',
@@ -577,6 +578,7 @@ export const EmployeeDetail = () => {
             <TextField label="Employee No" value={employee.employeeNo} size="small" fullWidth sx={premiumInputSx} disabled />
             <TextField label="First Name" name="firstName" value={formState.firstName} onChange={handleChange} size="small" fullWidth sx={premiumInputSx} />
             <TextField label="Last Name" name="lastName" value={formState.lastName} onChange={handleChange} size="small" fullWidth sx={premiumInputSx} />
+            <TextField label="Email" name="email" type="email" value={formState.email} onChange={handleChange} size="small" fullWidth sx={premiumInputSx} />
             <TextField select label="Gender" name="gender" value={formState.gender} onChange={handleChange} size="small" fullWidth sx={premiumInputSx}>
               {genders.map((g) => <MenuItem key={g.value} value={g.value}>{g.label}</MenuItem>)}
             </TextField>

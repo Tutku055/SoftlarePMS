@@ -6,7 +6,7 @@ import {
 import type { Theme } from '@mui/material';
 import { 
   SaveRounded, ArrowBackRounded, BadgeRounded, PersonRounded, 
-  PublicRounded, WorkRounded, 
+  PublicRounded, WorkRounded, EmailRounded,
   AccessTimeRounded, FlightTakeoffRounded, 
   HomeRounded, LocationCityRounded, MapRounded, MarkunreadMailboxRounded
 } from '@mui/icons-material';
@@ -87,6 +87,7 @@ export const EmployeeCreation: React.FC = () => {
     employeeNo: '',
     firstName: '',
     lastName: '',
+    email: '',
     gender: 0, 
     dateOfBirth: '',
     nationality: '',
@@ -156,6 +157,11 @@ export const EmployeeCreation: React.FC = () => {
 
     if (!formState.lastName.trim()) newErrors.lastName = 'Required';
     else if (formState.lastName.length > 50) newErrors.lastName = 'Max 50 chars';
+
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formState.email.trim()) newErrors.email = 'Required';
+    else if (!EMAIL_REGEX.test(formState.email.trim())) newErrors.email = 'Valid email required';
+    else if (formState.email.length > 256) newErrors.email = 'Max 256 chars';
 
     if (!formState.nationality.trim()) newErrors.nationality = 'Required';
     if (!formState.professionId?.trim()) newErrors.professionId = 'Required';
@@ -310,6 +316,22 @@ export const EmployeeCreation: React.FC = () => {
               slotProps={{
                 input: {
                   startAdornment: <InputAdornment position="start"><PersonRounded fontSize="small" /></InputAdornment>,
+                }
+              }}
+            />
+            <TextField
+              label="Email *"
+              name="email"
+              type="email"
+              value={formState.email}
+              onChange={handleInputChange}
+              error={!!errors.email}
+              helperText={errors.email}
+              sx={getPremiumInputSx(true, !!errors.email)}
+              fullWidth
+              slotProps={{
+                input: {
+                  startAdornment: <InputAdornment position="start"><EmailRounded fontSize="small" /></InputAdornment>,
                 }
               }}
             />

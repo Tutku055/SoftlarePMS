@@ -12,6 +12,7 @@ public record EmployeeDto(
     string EmployeeNo,
     string FirstName,
     string LastName,
+    string Email,
     Gender Gender,
     EmploymentStatus EmploymentStatus,
     Guid? ProfessionId,

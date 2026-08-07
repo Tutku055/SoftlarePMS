@@ -154,6 +154,25 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
       };
     }
 
+    // 1.5. Calendar Events / Public Holidays / Birthdays
+    if (
+      notification.type === NotificationType.EventUpcoming ||
+      notification.entityReferenceType === 'CalendarEvent' ||
+      notification.entityReferenceType === 'PublicHoliday' ||
+      notification.entityReferenceType === 'Birthday'
+    ) {
+      return {
+        label: 'Open Calendar',
+        icon: <EventRounded sx={{ fontSize: '16px !important' }} />,
+        variant: 'text' as const,
+        color: 'primary' as const,
+        onClick: (e: React.MouseEvent) => {
+          e.stopPropagation();
+          navigate('/calendar');
+        },
+      };
+    }
+
     // 2. Department Anomaly / Churn
     if (notification.entityReferenceType === 'Department') {
       return {

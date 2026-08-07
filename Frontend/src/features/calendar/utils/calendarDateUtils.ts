@@ -89,7 +89,7 @@ export const getAgendaRange = (currentDate: Date, days = 30): { startDate: strin
 export const formatTimeDisplay = (isoDateTime: string): string => {
   try {
     const date = new Date(isoDateTime);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
   } catch {
     return '';
   }

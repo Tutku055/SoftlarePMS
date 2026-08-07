@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SoftPMS.Persistence.Context;
 
@@ -11,9 +12,11 @@ using SoftPMS.Persistence.Context;
 namespace SoftPMS.Persistence.Migrations
 {
     [DbContext(typeof(SoftPMSDbContext))]
-    partial class SoftPMSDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260807170104_AddDepartmentAndVisibilityToCalendarEvent")]
+    partial class AddDepartmentAndVisibilityToCalendarEvent
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -8,6 +8,7 @@ public sealed record UpdateEmployeeCommand(
     Guid EmployeeId,
     string FirstName,
     string LastName,
+    string Email,
     Gender Gender,
     DateTime DateOfBirth,
     string Nationality,

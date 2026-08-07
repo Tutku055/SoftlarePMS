@@ -34,8 +34,8 @@ public class GetCalendarNoteByIdQueryHandler : IRequestHandler<GetCalendarNoteBy
         }
 
         var isOwner = _currentUserService.UserId == note.UserId;
-        var hasConfidentialAccess = _currentUserService.Permissions.Contains("Calendar.ReadConfidentialNotes") ||
-                                    _currentUserService.Permissions.Contains("SuperAdmin");
+        var hasConfidentialAccess = _currentUserService.Permissions.Contains("Calendar.ReadConfidentialNotes", StringComparer.OrdinalIgnoreCase) ||
+                                    _currentUserService.Permissions.Contains("SuperAdmin", StringComparer.OrdinalIgnoreCase);
 
         if (note.VisibilityLevel == VisibilityLevel.Confidential && !isOwner && !hasConfidentialAccess)
         {

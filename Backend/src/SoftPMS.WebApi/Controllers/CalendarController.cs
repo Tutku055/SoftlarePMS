@@ -48,7 +48,7 @@ public class CalendarController : ApiControllerBase
 
     /// <summary>Create a new physical calendar event.</summary>
     [HttpPost("events")]
-    [HasPermission("Calendar.CreateEvent")]
+    [HasPermission("Calendar.CreateEvent", "Calendar.CreateConfidentialEvents")]
     public async Task<IActionResult> CreateCalendarEvent([FromBody] CreateCalendarEventCommand command)
     {
         var id = await Sender.Send(command);
@@ -57,7 +57,7 @@ public class CalendarController : ApiControllerBase
 
     /// <summary>Update an existing physical calendar event.</summary>
     [HttpPut("events/{id:guid}")]
-    [HasPermission("Calendar.UpdateEvent")]
+    [HasPermission("Calendar.UpdateEvent", "Calendar.UpdateConfidentialEvents")]
     public async Task<IActionResult> UpdateCalendarEvent(Guid id, [FromBody] UpdateCalendarEventCommand command)
     {
         if (id != command.Id)
@@ -71,7 +71,7 @@ public class CalendarController : ApiControllerBase
 
     /// <summary>Delete a physical calendar event.</summary>
     [HttpDelete("events/{id:guid}")]
-    [HasPermission("Calendar.DeleteEvent")]
+    [HasPermission("Calendar.DeleteEvent", "Calendar.DeleteConfidentialEvents")]
     public async Task<IActionResult> DeleteCalendarEvent(Guid id)
     {
         await Sender.Send(new DeleteCalendarEventCommand(id));
@@ -80,7 +80,7 @@ public class CalendarController : ApiControllerBase
 
     /// <summary>Get calendar personal note by ID.</summary>
     [HttpGet("notes/{id:guid}")]
-    [HasPermission("Calendar.Read")]
+    [HasPermission("Calendar.Read", "Calendar.ReadConfidentialNotes")]
     public async Task<IActionResult> GetCalendarNote(Guid id)
     {
         var result = await Sender.Send(new GetCalendarNoteByIdQuery(id));
@@ -89,7 +89,7 @@ public class CalendarController : ApiControllerBase
 
     /// <summary>Create a personal calendar note.</summary>
     [HttpPost("notes")]
-    [HasPermission("Calendar.CreateNote")]
+    [HasPermission("Calendar.CreateNote", "Calendar.CreateConfidentialNotes")]
     public async Task<IActionResult> CreateCalendarNote([FromBody] CreateCalendarNoteCommand command)
     {
         var id = await Sender.Send(command);
@@ -98,7 +98,7 @@ public class CalendarController : ApiControllerBase
 
     /// <summary>Update an existing calendar note.</summary>
     [HttpPut("notes/{id:guid}")]
-    [HasPermission("Calendar.UpdateNote")]
+    [HasPermission("Calendar.UpdateNote", "Calendar.UpdateConfidentialNotes")]
     public async Task<IActionResult> UpdateCalendarNote(Guid id, [FromBody] UpdateCalendarNoteCommand command)
     {
         if (id != command.Id)
@@ -112,7 +112,7 @@ public class CalendarController : ApiControllerBase
 
     /// <summary>Delete a calendar note.</summary>
     [HttpDelete("notes/{id:guid}")]
-    [HasPermission("Calendar.DeleteNote")]
+    [HasPermission("Calendar.DeleteNote", "Calendar.DeleteConfidentialNotes")]
     public async Task<IActionResult> DeleteCalendarNote(Guid id)
     {
         await Sender.Send(new DeleteCalendarNoteCommand(id));

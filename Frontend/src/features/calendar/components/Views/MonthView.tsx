@@ -134,13 +134,15 @@ export const MonthView: React.FC<MonthViewProps> = ({
             // Physical Events
             if (filters.showPhysicalEvents) {
               dayData.physicalEvents?.forEach((e) => {
+                const isConf = e.visibilityLevel === 2;
                 items.push({
                   key: e.id,
                   type: 'event',
                   title: e.title,
                   time: formatTimeDisplay(e.startTime),
-                  color: '#3B82F6',
+                  color: isConf ? '#8B5CF6' : '#3B82F6',
                   rawItem: e,
+                  isConfidential: isConf,
                 });
               });
             }
@@ -199,7 +201,9 @@ export const MonthView: React.FC<MonthViewProps> = ({
                   >
                     {item.type === 'holiday' && <Celebration sx={{ fontSize: 12 }} />}
                     {item.type === 'birthday' && <Cake sx={{ fontSize: 12 }} />}
-                    {item.type === 'event' && <EventIcon sx={{ fontSize: 12 }} />}
+                    {item.type === 'event' && (
+                      item.isConfidential ? <Lock sx={{ fontSize: 12 }} /> : <EventIcon sx={{ fontSize: 12 }} />
+                    )}
                     {item.type === 'note' && (
                       item.isConfidential ? <Lock sx={{ fontSize: 12 }} /> : <StickyNote2 sx={{ fontSize: 12 }} />
                     )}
@@ -237,7 +241,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
         })}
       </Box>
 
-      {/* Overflow popover */}
+      {/* "More Items" Popover */}
       <Popover
         open={Boolean(popoverAnchor)}
         anchorEl={popoverAnchor}
@@ -247,32 +251,34 @@ export const MonthView: React.FC<MonthViewProps> = ({
         slotProps={{
           paper: {
             sx: {
-              borderRadius: 2,
               p: 1.5,
-              minWidth: 260,
-              maxWidth: 320,
-              boxShadow: 6,
-              bgcolor: 'background.paper',
-              backgroundImage: 'none',
+              width: 280,
+              borderRadius: 2,
+              maxHeight: 320,
+              overflowY: 'auto',
             },
           },
         }}
       >
         {popoverDay && (
           <Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
-              {popoverDay.date} ({popoverDay.dayOfWeek})
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, px: 1 }}>
+              {new Date(popoverDay.date + 'T00:00:00').toLocaleDateString(undefined, {
+                weekday: 'long',
+                month: 'short',
+                day: 'numeric',
+              })}
             </Typography>
             <List dense disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
               {filters.showHolidays &&
                 popoverDay.virtualEvents
                   ?.filter((v) => v.type === 1)
-                  .map((h) => (
-                    <ListItem key={h.id} disablePadding>
+                  .map((v) => (
+                    <ListItem key={v.id} disablePadding>
                       <ListItemButton
                         onClick={() => {
                           handleClosePopover();
-                          onSelectVirtualEvent(h);
+                          onSelectVirtualEvent(v);
                         }}
                         sx={{ borderRadius: 1, py: 0.5, bgcolor: '#10B98122' }}
                       >
@@ -282,7 +288,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
                         <ListItemText
                           primary={
                             <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#10B981' }}>
-                              {h.title}
+                              {v.title}
                             </Typography>
                           }
                         />
@@ -293,12 +299,12 @@ export const MonthView: React.FC<MonthViewProps> = ({
               {filters.showBirthdays &&
                 popoverDay.virtualEvents
                   ?.filter((v) => v.type === 2)
-                  .map((b) => (
-                    <ListItem key={b.id} disablePadding>
+                  .map((v) => (
+                    <ListItem key={v.id} disablePadding>
                       <ListItemButton
                         onClick={() => {
                           handleClosePopover();
-                          onSelectVirtualEvent(b);
+                          onSelectVirtualEvent(v);
                         }}
                         sx={{ borderRadius: 1, py: 0.5, bgcolor: '#EC489922' }}
                       >
@@ -308,7 +314,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
                         <ListItemText
                           primary={
                             <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#EC4899' }}>
-                              {b.title}
+                              {v.title}
                             </Typography>
                           }
                         />
@@ -317,28 +323,32 @@ export const MonthView: React.FC<MonthViewProps> = ({
                   ))}
 
               {filters.showPhysicalEvents &&
-                popoverDay.physicalEvents?.map((e) => (
-                  <ListItem key={e.id} disablePadding>
-                    <ListItemButton
-                      onClick={() => {
-                        handleClosePopover();
-                        onSelectEvent(e);
-                      }}
-                      sx={{ borderRadius: 1, py: 0.5, bgcolor: '#3B82F622' }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 28, color: '#3B82F6' }}>
-                        <EventIcon fontSize="small" />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={
-                          <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: '#3B82F6' }}>
-                            {formatTimeDisplay(e.startTime)} {e.title}
-                          </Typography>
-                        }
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
+                popoverDay.physicalEvents?.map((e) => {
+                  const isConf = e.visibilityLevel === 2;
+                  const itemColor = isConf ? '#8B5CF6' : '#3B82F6';
+                  return (
+                    <ListItem key={e.id} disablePadding>
+                      <ListItemButton
+                        onClick={() => {
+                          handleClosePopover();
+                          onSelectEvent(e);
+                        }}
+                        sx={{ borderRadius: 1, py: 0.5, bgcolor: `${itemColor}22` }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 28, color: itemColor }}>
+                          {isConf ? <Lock fontSize="small" /> : <EventIcon fontSize="small" />}
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={
+                            <Typography sx={{ fontSize: '0.8rem', fontWeight: 600, color: itemColor }}>
+                              {formatTimeDisplay(e.startTime)} {e.title}
+                            </Typography>
+                          }
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  );
+                })}
 
               {filters.showNotes &&
                 popoverDay.notes?.map((n) => (

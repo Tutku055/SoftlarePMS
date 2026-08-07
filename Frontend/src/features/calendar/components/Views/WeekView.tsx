@@ -246,6 +246,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
 
                   {/* Absolute positioned physical events */}
                   {dayEvents.map((evt) => {
+                    const isConf = evt.visibilityLevel === 2;
                     const start = new Date(evt.startTime);
                     const end = new Date(evt.endTime);
 
@@ -265,7 +266,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                           height: `${height}px`,
                           left: 3,
                           right: 3,
-                          bgcolor: 'primary.main',
+                          bgcolor: isConf ? '#7C3AED' : 'primary.main',
                           color: '#fff',
                           borderRadius: 1,
                           p: '2px 4px',
@@ -284,9 +285,12 @@ export const WeekView: React.FC<WeekViewProps> = ({
                           onSelectEvent(evt);
                         }}
                       >
-                        <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {evt.title}
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          {isConf && <Lock sx={{ fontSize: 11 }} />}
+                          <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, lineHeight: 1.1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {evt.title}
+                          </Typography>
+                        </Box>
                         <Typography sx={{ fontSize: '0.62rem', opacity: 0.85, lineHeight: 1 }}>
                           {formatTimeDisplay(evt.startTime)} – {formatTimeDisplay(evt.endTime)}
                         </Typography>

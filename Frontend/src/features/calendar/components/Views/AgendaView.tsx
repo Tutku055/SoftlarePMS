@@ -99,15 +99,21 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
         // Physical Events
         if (filters.showPhysicalEvents) {
           day.physicalEvents?.forEach((e) => {
-            if (!term || e.title.toLowerCase().includes(term) || e.description?.toLowerCase().includes(term)) {
+            if (!term || e.title.toLowerCase().includes(term) || e.description?.toLowerCase().includes(term) || e.departmentName?.toLowerCase().includes(term)) {
+              const isConf = e.visibilityLevel === 2;
+              let subtitle = e.description || undefined;
+              if (e.departmentName) {
+                subtitle = subtitle ? `[${e.departmentName}] ${subtitle}` : `Department: ${e.departmentName}`;
+              }
               items.push({
                 id: e.id,
                 type: 'event',
                 title: e.title,
-                subtitle: e.description || undefined,
+                subtitle,
                 time: `${formatTimeDisplay(e.startTime)} – ${formatTimeDisplay(e.endTime)}`,
-                color: '#3B82F6',
+                color: isConf ? '#8B5CF6' : '#3B82F6',
                 rawItem: e,
+                isConfidential: isConf,
               });
             }
           });
@@ -143,10 +149,10 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Search Header */}
-      <Box sx={{ p: 2, borderBottom: '1px solid rgba(140, 140, 160, 0.15)', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(140, 140, 160, 0.02)' }}>
+      <Box className={styles.agendaHeader} sx={{ p: 2, borderBottom: '1px solid rgba(140, 140, 160, 0.15)', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(140, 140, 160, 0.02)' }}>
         <TextField
           size="small"
-          placeholder="Search agenda by keyword, author, or event title..."
+          placeholder="Search events, notes, holidays..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           fullWidth
@@ -159,8 +165,11 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
               ),
             },
           }}
-          sx={{ maxWidth: 450 }}
+          sx={{ minWidth: 280, maxWidth: 400 }}
         />
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          {groupedDays.reduce((acc, curr) => acc + curr.items.length, 0)} items found
+        </Typography>
       </Box>
 
       {/* List Container */}
@@ -169,16 +178,16 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
           <Box sx={{ textAlign: 'center', py: 8, color: 'text.secondary' }}>
             <Schedule sx={{ fontSize: 48, opacity: 0.4, mb: 1 }} />
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              No events found in this date window
+              No upcoming items found
             </Typography>
             <Typography variant="body2">
-              Try adjusting your search query or enabled category filters.
+              Try adjusting your date range or filters.
             </Typography>
           </Box>
         ) : (
           groupedDays.map((group) => {
             const dateObj = parseDateOnly(group.date);
-            const monthShort = dateObj.toLocaleDateString(undefined, { month: 'short' });
+            const monthShort = dateObj.toLocaleDateString('en-US', { month: 'short' });
 
             return (
               <Box key={group.date} className={styles.agendaDateGroup}>
@@ -231,7 +240,9 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                         <Box sx={{ color: item.color, display: 'flex' }}>
                           {item.type === 'holiday' && <Celebration fontSize="small" />}
                           {item.type === 'birthday' && <Cake fontSize="small" />}
-                          {item.type === 'event' && <EventIcon fontSize="small" />}
+                          {item.type === 'event' && (
+                            item.isConfidential ? <Lock fontSize="small" /> : <EventIcon fontSize="small" />
+                          )}
                           {item.type === 'note' && (
                             item.isConfidential ? <Lock fontSize="small" /> : <StickyNote2 fontSize="small" />
                           )}

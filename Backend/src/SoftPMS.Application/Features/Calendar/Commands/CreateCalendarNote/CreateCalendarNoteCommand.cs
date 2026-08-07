@@ -31,6 +31,30 @@ public class CreateCalendarNoteCommandHandler : IRequestHandler<CreateCalendarNo
             throw new UnauthorizedException("User must be authenticated to create a calendar note.");
         }
 
+        var isSuperAdmin = _currentUserService.Permissions.Contains("SuperAdmin", StringComparer.OrdinalIgnoreCase);
+        var isConfidential = request.VisibilityLevel == VisibilityLevel.Confidential;
+
+        if (isConfidential)
+        {
+            var canCreateConfidential = isSuperAdmin ||
+                _currentUserService.Permissions.Contains("Calendar.CreateConfidentialNotes", StringComparer.OrdinalIgnoreCase);
+
+            if (!canCreateConfidential)
+            {
+                throw new ForbiddenAccessException("You do not have permission to create confidential calendar notes.");
+            }
+        }
+        else
+        {
+            var canCreateStandard = isSuperAdmin ||
+                _currentUserService.Permissions.Contains("Calendar.CreateNote", StringComparer.OrdinalIgnoreCase);
+
+            if (!canCreateStandard)
+            {
+                throw new ForbiddenAccessException("You do not have permission to create standard calendar notes.");
+            }
+        }
+
         var note = new CalendarNote
         {
             UserId = _currentUserService.UserId,

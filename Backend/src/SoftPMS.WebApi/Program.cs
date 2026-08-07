@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -9,6 +10,11 @@ using SoftPMS.Persistence;
 using SoftPMS.WebApi.Common;
 using SoftPMS.WebApi.Middleware;
 using SoftPMS.WebApi.OpenApi;
+
+// Force invariant (English) culture for all threads so that DateTime.ToString("MMMM dd")
+// and similar format strings produce English month/day names regardless of the server OS locale.
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
 var builder = WebApplication.CreateBuilder(args);
 

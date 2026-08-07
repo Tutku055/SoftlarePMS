@@ -279,6 +279,15 @@ export const NotificationSettingsView: React.FC = () => {
                         color="info"
                         sx={{ fontWeight: 600 }}
                       />
+                    ) : setting.type === NotificationType.EventUpcoming ? (
+                      <Chip
+                        size="small"
+                        icon={<AccessTimeRounded />}
+                        label="Trigger: Per-Event Schedule"
+                        variant="outlined"
+                        color="info"
+                        sx={{ fontWeight: 600 }}
+                      />
                     ) : (
                       <Chip
                         size="small"
@@ -289,28 +298,39 @@ export const NotificationSettingsView: React.FC = () => {
                       />
                     )}
 
-                    <Chip
-                      size="small"
-                      icon={
-                        setting.deliveryChannel === NotificationDeliveryChannel.SystemAndMail ? (
-                          <EmailRounded sx={{ color: 'primary.main' }} />
-                        ) : (
-                          <NotificationsActiveRounded />
-                        )
-                      }
-                      label={
-                        setting.deliveryChannel === NotificationDeliveryChannel.SystemAndMail
-                          ? 'In-App + Email'
-                          : 'In-App Only'
-                      }
-                      variant="outlined"
-                      color={
-                        setting.deliveryChannel === NotificationDeliveryChannel.SystemAndMail
-                          ? 'primary'
-                          : 'default'
-                      }
-                      sx={{ fontWeight: 600 }}
-                    />
+                    {setting.type === NotificationType.EventUpcoming ? (
+                      <Chip
+                        size="small"
+                        icon={<NotificationsActiveRounded />}
+                        label="Delivery: Configured Per Event"
+                        variant="outlined"
+                        color="primary"
+                        sx={{ fontWeight: 600 }}
+                      />
+                    ) : (
+                      <Chip
+                        size="small"
+                        icon={
+                          setting.deliveryChannel === NotificationDeliveryChannel.SystemAndMail ? (
+                            <EmailRounded sx={{ color: 'primary.main' }} />
+                          ) : (
+                            <NotificationsActiveRounded />
+                          )
+                        }
+                        label={
+                          setting.deliveryChannel === NotificationDeliveryChannel.SystemAndMail
+                            ? 'In-App + Email'
+                            : 'In-App Only'
+                        }
+                        variant="outlined"
+                        color={
+                          setting.deliveryChannel === NotificationDeliveryChannel.SystemAndMail
+                            ? 'primary'
+                            : 'default'
+                        }
+                        sx={{ fontWeight: 600 }}
+                      />
+                    )}
                   </Box>
 
                   {/* Target Audience & Required Permissions */}

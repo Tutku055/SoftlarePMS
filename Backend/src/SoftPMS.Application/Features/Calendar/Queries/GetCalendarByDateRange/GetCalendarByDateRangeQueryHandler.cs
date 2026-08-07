@@ -28,10 +28,24 @@ public class GetCalendarByDateRangeQueryHandler : IRequestHandler<GetCalendarByD
         var endDateTimeOffset = new DateTimeOffset(request.EndDate.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
         var todayUtc = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        // 1. Physical Events overlapping with the requested range
-        var rawEvents = await _context.CalendarEvents
+        var userPermissions = _currentUserService.Permissions;
+        var currentUserId = _currentUserService.UserId;
+        var canReadConfidentialEvents = userPermissions.Contains("Calendar.ReadConfidentialEvents", StringComparer.OrdinalIgnoreCase) ||
+                                        userPermissions.Contains("SuperAdmin", StringComparer.OrdinalIgnoreCase);
+
+        // 1. Physical Events overlapping with the requested range with RBAC confidentiality check
+        var eventsQuery = _context.CalendarEvents
+            .Include(e => e.Department)
+            .Include(e => e.User)
             .AsNoTracking()
-            .Where(e => e.StartTime < endDateTimeOffset && e.EndTime >= startDateTimeOffset)
+            .Where(e => e.StartTime < endDateTimeOffset && e.EndTime >= startDateTimeOffset);
+
+        if (!canReadConfidentialEvents)
+        {
+            eventsQuery = eventsQuery.Where(e => e.VisibilityLevel != VisibilityLevel.Confidential || e.UserId == currentUserId);
+        }
+
+        var rawEvents = await eventsQuery
             .OrderBy(e => e.StartTime)
             .ToListAsync(cancellationToken);
 
@@ -44,21 +58,24 @@ public class GetCalendarByDateRangeQueryHandler : IRequestHandler<GetCalendarByD
             EndTime = e.EndTime,
             ReminderThresholdDays = e.ReminderThresholdDays,
             SendEmailReminder = e.SendEmailReminder,
+            VisibilityLevel = e.VisibilityLevel,
+            DepartmentId = e.DepartmentId,
+            DepartmentName = e.Department != null ? e.Department.Name : null,
+            UserId = e.UserId,
+            AuthorName = e.User != null ? e.User.Username : null,
             CreatedAt = e.CreatedAt
         }).ToList();
 
         // 2. Calendar Notes for the requested range with RBAC confidentiality check
-        var userPermissions = _currentUserService.Permissions;
-        var canReadConfidential = userPermissions.Contains("Calendar.ReadConfidentialNotes") ||
-                                  userPermissions.Contains("SuperAdmin");
+        var canReadConfidentialNotes = userPermissions.Contains("Calendar.ReadConfidentialNotes", StringComparer.OrdinalIgnoreCase) ||
+                                       userPermissions.Contains("SuperAdmin", StringComparer.OrdinalIgnoreCase);
 
         var notesQuery = _context.CalendarNotes
             .Include(n => n.User)
             .AsNoTracking()
             .Where(n => n.NoteDate >= request.StartDate && n.NoteDate <= request.EndDate);
 
-        var currentUserId = _currentUserService.UserId;
-        if (!canReadConfidential)
+        if (!canReadConfidentialNotes)
         {
             notesQuery = notesQuery.Where(n => n.VisibilityLevel != VisibilityLevel.Confidential || n.UserId == currentUserId);
         }

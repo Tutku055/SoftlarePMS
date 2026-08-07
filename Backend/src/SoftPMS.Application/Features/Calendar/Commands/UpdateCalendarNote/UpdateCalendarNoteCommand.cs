@@ -37,11 +37,35 @@ public class UpdateCalendarNoteCommandHandler : IRequestHandler<UpdateCalendarNo
         }
 
         var isOwner = _currentUserService.UserId == note.UserId;
-        var isSuperAdmin = _currentUserService.Permissions.Contains("SuperAdmin");
+        var isSuperAdmin = _currentUserService.Permissions.Contains("SuperAdmin", StringComparer.OrdinalIgnoreCase);
 
         if (!isOwner && !isSuperAdmin)
         {
             throw new ForbiddenAccessException("You can only modify your own calendar notes.");
+        }
+
+        var isConfidential = request.VisibilityLevel == VisibilityLevel.Confidential;
+        var wasConfidential = note.VisibilityLevel == VisibilityLevel.Confidential;
+
+        if (isConfidential || wasConfidential)
+        {
+            var canUpdateConfidential = isSuperAdmin ||
+                _currentUserService.Permissions.Contains("Calendar.UpdateConfidentialNotes", StringComparer.OrdinalIgnoreCase);
+
+            if (!canUpdateConfidential)
+            {
+                throw new ForbiddenAccessException("You do not have permission to edit confidential calendar notes.");
+            }
+        }
+        else
+        {
+            var canUpdateStandard = isSuperAdmin ||
+                _currentUserService.Permissions.Contains("Calendar.UpdateNote", StringComparer.OrdinalIgnoreCase);
+
+            if (!canUpdateStandard)
+            {
+                throw new ForbiddenAccessException("You do not have permission to edit standard calendar notes.");
+            }
         }
 
         note.NoteDate = request.NoteDate;

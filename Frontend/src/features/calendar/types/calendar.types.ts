@@ -20,6 +20,11 @@ export interface CalendarEventDto {
   endTime: string;   // ISO DateTimeOffset
   reminderThresholdDays: number;
   sendEmailReminder: boolean;
+  visibilityLevel: VisibilityLevel;
+  departmentId?: string | null;
+  departmentName?: string | null;
+  userId?: string | null;
+  authorName?: string | null;
   createdAt: string;
 }
 
@@ -70,6 +75,8 @@ export interface CreateCalendarEventPayload {
   endTime: string;
   reminderThresholdDays: number;
   sendEmailReminder: boolean;
+  visibilityLevel?: VisibilityLevel;
+  departmentId?: string | null;
 }
 
 export interface UpdateCalendarEventPayload {
@@ -80,6 +87,8 @@ export interface UpdateCalendarEventPayload {
   endTime: string;
   reminderThresholdDays: number;
   sendEmailReminder: boolean;
+  visibilityLevel?: VisibilityLevel;
+  departmentId?: string | null;
 }
 
 export interface CreateCalendarNotePayload {

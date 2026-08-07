@@ -30,11 +30,34 @@ public class DeleteCalendarNoteCommandHandler : IRequestHandler<DeleteCalendarNo
         }
 
         var isOwner = _currentUserService.UserId == note.UserId;
-        var isSuperAdmin = _currentUserService.Permissions.Contains("SuperAdmin");
+        var isSuperAdmin = _currentUserService.Permissions.Contains("SuperAdmin", StringComparer.OrdinalIgnoreCase);
 
         if (!isOwner && !isSuperAdmin)
         {
             throw new ForbiddenAccessException("You can only delete your own calendar notes.");
+        }
+
+        var isConfidential = note.VisibilityLevel == Domain.Enums.VisibilityLevel.Confidential;
+
+        if (isConfidential)
+        {
+            var canDeleteConfidential = isSuperAdmin ||
+                _currentUserService.Permissions.Contains("Calendar.DeleteConfidentialNotes", StringComparer.OrdinalIgnoreCase);
+
+            if (!canDeleteConfidential)
+            {
+                throw new ForbiddenAccessException("You do not have permission to delete confidential calendar notes.");
+            }
+        }
+        else
+        {
+            var canDeleteStandard = isSuperAdmin ||
+                _currentUserService.Permissions.Contains("Calendar.DeleteNote", StringComparer.OrdinalIgnoreCase);
+
+            if (!canDeleteStandard)
+            {
+                throw new ForbiddenAccessException("You do not have permission to delete standard calendar notes.");
+            }
         }
 
         _context.CalendarNotes.Remove(note);

@@ -32,22 +32,52 @@ public class CalendarNotificationEvaluator : ICalendarNotificationEvaluator
         var nowUtc = DateTimeOffset.UtcNow;
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        // Fetch active users with employee details for in-app and email notifications
+        // Fetch active users with employee and role details for in-app and email notifications
         var activeUsers = await _context.Users
             .Include(u => u.Employee)
+            .Include(u => u.Role)
+                .ThenInclude(r => r.RolePermissions)
+                    .ThenInclude(rp => rp.Permission)
             .AsNoTracking()
             .Where(u => u.IsActive && !u.IsDeleted)
             .ToListAsync(cancellationToken);
 
-        var emailUsers = activeUsers
-            .Where(u => !string.IsNullOrWhiteSpace(u.Email))
-            .ToList();
-
-        // Fetch active employees for birthdays
+        // Fetch active employees
         var activeEmployees = await _context.Employees
             .AsNoTracking()
             .Where(e => !e.IsDeleted && e.EmploymentStatus == EmploymentStatus.Active)
             .ToListAsync(cancellationToken);
+
+        // Build unified recipient list deduplicated by email address with department info
+        var emailRecipients = new Dictionary<string, (string Email, string Name, Guid? EmployeeId, Guid? DepartmentId)>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var user in activeUsers)
+        {
+            var userEmail = !string.IsNullOrWhiteSpace(user.Email)
+                ? user.Email.Trim()
+                : user.Employee != null && !string.IsNullOrWhiteSpace(user.Employee.Email)
+                    ? user.Employee.Email.Trim()
+                    : null;
+
+            if (!string.IsNullOrWhiteSpace(userEmail))
+            {
+                var name = user.Employee != null
+                    ? $"{user.Employee.FirstName} {user.Employee.LastName}"
+                    : user.Username;
+                var deptId = user.Employee?.DepartmentId;
+                emailRecipients[userEmail] = (userEmail, name, user.EmployeeId, deptId);
+            }
+        }
+
+        foreach (var emp in activeEmployees.Where(e => !string.IsNullOrWhiteSpace(e.Email)))
+        {
+            var email = emp.Email.Trim();
+            if (!emailRecipients.ContainsKey(email))
+            {
+                var name = $"{emp.FirstName} {emp.LastName}";
+                emailRecipients[email] = (email, name, emp.Id, emp.DepartmentId);
+            }
+        }
 
         // Fetch calendar settings
         var settings = await _context.CalendarSettings
@@ -62,12 +92,13 @@ public class CalendarNotificationEvaluator : ICalendarNotificationEvaluator
             .Where(e => e.EndTime >= nowUtc)
             .ToListAsync(cancellationToken);
 
+        var todayUtcDate = nowUtc.UtcDateTime.Date;
+
         foreach (var evt in physicalEvents)
         {
-            var reminderThreshold = TimeSpan.FromDays(evt.ReminderThresholdDays);
-            var reminderStartTime = evt.StartTime - reminderThreshold;
+            var reminderStartDate = evt.StartTime.UtcDateTime.Date.AddDays(-evt.ReminderThresholdDays);
 
-            if (nowUtc >= reminderStartTime && nowUtc <= evt.EndTime)
+            if (todayUtcDate >= reminderStartDate && nowUtc <= evt.EndTime)
             {
                 var refKey = $"PHYS_EVENT_{evt.Id}_{evt.StartTime:yyyyMMdd}";
                 var alreadySent = await _context.EventReminderTrackers
@@ -82,10 +113,18 @@ public class CalendarNotificationEvaluator : ICalendarNotificationEvaluator
                         CreatedAt = DateTime.UtcNow
                     });
 
-                    var remainingDays = (int)Math.Max(0, Math.Ceiling((evt.StartTime - nowUtc).TotalDays));
+                    var remainingDays = Math.Max(0, (evt.StartTime.UtcDateTime.Date - todayUtcDate).Days);
+                    var isConfidential = evt.VisibilityLevel == VisibilityLevel.Confidential;
 
-                    // Dispatch In-App notifications to active users
-                    foreach (var user in activeUsers)
+                    // Filter target users for in-app notifications
+                    var targetUsers = activeUsers.Where(u =>
+                        !isConfidential ||
+                        u.Id == evt.UserId ||
+                        (u.Role != null && (u.Role.Name == "SuperAdmin" || u.Role.RolePermissions.Any(rp => rp.Permission.Name == "Calendar.ReadConfidentialEvents" || rp.Permission.Name == "SuperAdmin")))
+                    ).ToList();
+
+                    // Dispatch In-App notifications to target users
+                    foreach (var user in targetUsers)
                     {
                         _context.UserNotifications.Add(new UserNotification
                         {
@@ -93,11 +132,15 @@ public class CalendarNotificationEvaluator : ICalendarNotificationEvaluator
                             Type = NotificationType.EventUpcoming,
                             Title = $"Upcoming Event: {evt.Title}",
                             Message = string.IsNullOrWhiteSpace(evt.Description)
-                                ? $"Reminder for event '{evt.Title}' starting at {evt.StartTime:yyyy-MM-dd HH:mm} UTC."
-                                : $"Reminder for event '{evt.Title}': {evt.Description}",
+                                ? (remainingDays == 0
+                                    ? $"Reminder for event '{evt.Title}' happening today at {evt.StartTime:HH:mm} UTC."
+                                    : $"Reminder for event '{evt.Title}' in {remainingDays} day(s) on {evt.StartTime:yyyy-MM-dd HH:mm} UTC.")
+                                : (remainingDays == 0
+                                    ? $"Reminder for event '{evt.Title}' today: {evt.Description}"
+                                    : $"Reminder for event '{evt.Title}' on {evt.StartTime:yyyy-MM-dd}: {evt.Description}"),
                             EntityReferenceId = evt.Id,
                             EntityReferenceType = "CalendarEvent",
-                            DeliveryChannel = evt.SendEmailReminder ? NotificationDeliveryChannel.SystemAndMail : NotificationDeliveryChannel.System,
+                            DeliveryChannel = (!isConfidential && evt.SendEmailReminder) ? NotificationDeliveryChannel.SystemAndMail : NotificationDeliveryChannel.System,
                             TargetDate = evt.StartTime.UtcDateTime.Date,
                             RemainingDays = remainingDays,
                             IsRead = false,
@@ -105,36 +148,39 @@ public class CalendarNotificationEvaluator : ICalendarNotificationEvaluator
                         });
                     }
 
-                    // Dispatch Outbox emails to active users if enabled
-                    if (evt.SendEmailReminder)
+                    // Dispatch Outbox emails only if NOT confidential and SendEmailReminder is enabled
+                    if (!isConfidential && evt.SendEmailReminder)
                     {
+                        var targetRecipients = emailRecipients.Values
+                            .Where(r => !evt.DepartmentId.HasValue || (r.DepartmentId.HasValue && r.DepartmentId.Value == evt.DepartmentId.Value))
+                            .ToList();
+
                         var sampleNotification = new UserNotification
                         {
                             Type = NotificationType.EventUpcoming,
                             Title = $"Upcoming Event: {evt.Title}",
                             Message = string.IsNullOrWhiteSpace(evt.Description)
-                                ? $"You have an upcoming event scheduled: '{evt.Title}' on {evt.StartTime:yyyy-MM-dd HH:mm} UTC."
+                                ? (remainingDays == 0
+                                    ? $"You have an event scheduled today: '{evt.Title}' at {evt.StartTime:HH:mm} UTC."
+                                    : $"You have an upcoming event scheduled: '{evt.Title}' in {remainingDays} day(s) on {evt.StartTime:yyyy-MM-dd HH:mm} UTC.")
                                 : $"You have an upcoming event: '{evt.Title}'. Details: {evt.Description}",
                             TargetDate = evt.StartTime.UtcDateTime.Date,
                             RemainingDays = remainingDays
                         };
 
-                        foreach (var user in emailUsers)
+                        foreach (var recipient in targetRecipients)
                         {
-                            var recipientName = user.Employee != null
-                                ? $"{user.Employee.FirstName} {user.Employee.LastName}"
-                                : user.Username;
-
-                            var htmlBody = _templateBuilder.BuildNotificationEmailHtml(sampleNotification, recipientName);
+                            var htmlBody = _templateBuilder.BuildNotificationEmailHtml(sampleNotification, recipient.Name);
                             _context.NotificationOutboxes.Add(new NotificationOutbox
                             {
-                                RecipientEmail = user.Email.Trim(),
-                                RecipientName = recipientName,
+                                RecipientEmail = recipient.Email,
+                                RecipientName = recipient.Name,
                                 Subject = $"[Event Reminder] {evt.Title}",
                                 BodyHtml = htmlBody,
                                 Status = OutboxStatus.Pending,
                                 RetryCount = 0,
                                 MaxRetries = 3,
+                                NextRetryAtUtc = DateTime.UtcNow,
                                 CreatedAt = DateTime.UtcNow
                             });
                         }
@@ -195,7 +241,7 @@ public class CalendarNotificationEvaluator : ICalendarNotificationEvaluator
                     });
                 }
 
-                // Dispatch Outbox emails to active users if enabled
+                // Dispatch Outbox emails to all active recipients if enabled
                 if (settings.SendEmailForHolidays)
                 {
                     var sampleNotification = new UserNotification
@@ -207,22 +253,19 @@ public class CalendarNotificationEvaluator : ICalendarNotificationEvaluator
                         RemainingDays = remainingDays
                     };
 
-                    foreach (var user in emailUsers)
+                    foreach (var recipient in emailRecipients.Values)
                     {
-                        var recipientName = user.Employee != null
-                            ? $"{user.Employee.FirstName} {user.Employee.LastName}"
-                            : user.Username;
-
-                        var htmlBody = _templateBuilder.BuildNotificationEmailHtml(sampleNotification, recipientName);
+                        var htmlBody = _templateBuilder.BuildNotificationEmailHtml(sampleNotification, recipient.Name);
                         _context.NotificationOutboxes.Add(new NotificationOutbox
                         {
-                            RecipientEmail = user.Email.Trim(),
-                            RecipientName = recipientName,
+                            RecipientEmail = recipient.Email,
+                            RecipientName = recipient.Name,
                             Subject = $"[Holiday Notice] {holiday.Name}",
                             BodyHtml = htmlBody,
                             Status = OutboxStatus.Pending,
                             RetryCount = 0,
                             MaxRetries = 3,
+                            NextRetryAtUtc = DateTime.UtcNow,
                             CreatedAt = DateTime.UtcNow
                         });
                     }
@@ -233,7 +276,7 @@ public class CalendarNotificationEvaluator : ICalendarNotificationEvaluator
         }
 
         // ─────────────────────────────────────────────────────────────────────────────
-        // 3. VIRTUAL EMPLOYEE BIRTHDAYS
+        // 3. VIRTUAL EMPLOYEE BIRTHDAYS (DUAL-ROLE CELEBRANT & COLLEAGUE EMAILS)
         // ─────────────────────────────────────────────────────────────────────────────
         var birthdayReminderDays = settings.BirthdayReminderDays;
         var birthdayWindowEnd = today.AddDays(birthdayReminderDays);
@@ -273,16 +316,22 @@ public class CalendarNotificationEvaluator : ICalendarNotificationEvaluator
                     });
 
                     var remainingDays = nextBirthday.DayNumber - today.DayNumber;
+                    var isTodayBirthday = (nextBirthday == today);
 
                     // Dispatch In-App notifications to active users
                     foreach (var user in activeUsers)
                     {
+                        var isUserCelebrant = (user.EmployeeId.HasValue && user.EmployeeId.Value == emp.Id);
                         _context.UserNotifications.Add(new UserNotification
                         {
                             UserId = user.Id,
                             Type = NotificationType.EventUpcoming,
-                            Title = $"Upcoming Birthday: {emp.FirstName} {emp.LastName}",
-                            Message = $"{emp.FirstName} {emp.LastName}'s birthday is coming up on {nextBirthday:yyyy-MM-dd}!",
+                            Title = isUserCelebrant
+                                ? "🎉 Happy Birthday to You!"
+                                : $"Upcoming Birthday: {emp.FirstName} {emp.LastName}",
+                            Message = isUserCelebrant
+                                ? "Happy Birthday! Wishing you a fantastic year filled with health, joy, and success!"
+                                : $"{emp.FirstName} {emp.LastName}'s birthday is {(isTodayBirthday ? "today" : $"coming up on {nextBirthday:yyyy-MM-dd}")}!",
                             EntityReferenceId = emp.Id,
                             EntityReferenceType = "Birthday",
                             DeliveryChannel = settings.SendEmailForBirthdays ? NotificationDeliveryChannel.SystemAndMail : NotificationDeliveryChannel.System,
@@ -293,34 +342,63 @@ public class CalendarNotificationEvaluator : ICalendarNotificationEvaluator
                         });
                     }
 
-                    // Dispatch Outbox emails to active users if enabled
+                    // Dispatch Outbox emails if enabled
                     if (settings.SendEmailForBirthdays)
                     {
-                        var sampleNotification = new UserNotification
+                        var celebrantEmail = !string.IsNullOrWhiteSpace(emp.Email) ? emp.Email.Trim() : null;
+                        if (string.IsNullOrEmpty(celebrantEmail))
                         {
-                            Type = NotificationType.EventUpcoming,
-                            Title = $"Upcoming Birthday: {emp.FirstName} {emp.LastName}",
-                            Message = $"Upcoming celebration: {emp.FirstName} {emp.LastName}'s birthday is on {nextBirthday:yyyy-MM-dd}!",
-                            TargetDate = nextBirthday.ToDateTime(TimeOnly.MinValue),
-                            RemainingDays = remainingDays
-                        };
+                            var linkedUser = activeUsers.FirstOrDefault(u => u.EmployeeId == emp.Id && !string.IsNullOrWhiteSpace(u.Email));
+                            celebrantEmail = linkedUser?.Email.Trim();
+                        }
 
-                        foreach (var user in emailUsers)
+                        // 1. Send Celebrant Birthday Card to the birthday person
+                        if (!string.IsNullOrWhiteSpace(celebrantEmail))
                         {
-                            var recipientName = user.Employee != null
-                                ? $"{user.Employee.FirstName} {user.Employee.LastName}"
-                                : user.Username;
-
-                            var htmlBody = _templateBuilder.BuildNotificationEmailHtml(sampleNotification, recipientName);
+                            var celebrantHtml = _templateBuilder.BuildBirthdayCelebrantEmailHtml(emp.FirstName);
                             _context.NotificationOutboxes.Add(new NotificationOutbox
                             {
-                                RecipientEmail = user.Email.Trim(),
-                                RecipientName = recipientName,
-                                Subject = $"[Birthday Reminder] {emp.FirstName} {emp.LastName}'s Birthday",
-                                BodyHtml = htmlBody,
+                                RecipientEmail = celebrantEmail,
+                                RecipientName = $"{emp.FirstName} {emp.LastName}",
+                                Subject = $"🎉 Happy Birthday, {emp.FirstName}! Best Wishes from All of Us!",
+                                BodyHtml = celebrantHtml,
                                 Status = OutboxStatus.Pending,
                                 RetryCount = 0,
                                 MaxRetries = 3,
+                                NextRetryAtUtc = DateTime.UtcNow,
+                                CreatedAt = DateTime.UtcNow
+                            });
+                        }
+
+                        // 2. Send Colleague Announcement Email to all other active colleagues
+                        var colleagueCelebrantName = $"{emp.FirstName} {emp.LastName}";
+                        foreach (var recipient in emailRecipients.Values)
+                        {
+                            // Skip sending colleague alert to the celebrant themselves
+                            if (!string.IsNullOrWhiteSpace(celebrantEmail) &&
+                                string.Equals(recipient.Email, celebrantEmail, StringComparison.OrdinalIgnoreCase))
+                            {
+                                continue;
+                            }
+
+                            if (recipient.EmployeeId.HasValue && recipient.EmployeeId.Value == emp.Id)
+                            {
+                                continue;
+                            }
+
+                            var colleagueHtml = _templateBuilder.BuildBirthdayColleagueAnnouncementEmailHtml(colleagueCelebrantName, recipient.Name);
+                            _context.NotificationOutboxes.Add(new NotificationOutbox
+                            {
+                                RecipientEmail = recipient.Email,
+                                RecipientName = recipient.Name,
+                                Subject = isTodayBirthday
+                                    ? $"🎂 Today is {colleagueCelebrantName}'s Birthday! Let's Celebrate!"
+                                    : $"🎂 Upcoming Birthday: {colleagueCelebrantName} on {nextBirthday:MMMM dd}!",
+                                BodyHtml = colleagueHtml,
+                                Status = OutboxStatus.Pending,
+                                RetryCount = 0,
+                                MaxRetries = 3,
+                                NextRetryAtUtc = DateTime.UtcNow,
                                 CreatedAt = DateTime.UtcNow
                             });
                         }

@@ -115,6 +115,7 @@ export interface CreateEmployeeDto {
   employeeNo: string;
   firstName: string;
   lastName: string;
+  email: string;
   gender: number;
   dateOfBirth: string;
   nationality: string;
@@ -204,6 +205,7 @@ export interface EmployeeDetailDto {
   employeeNo: string;
   firstName: string;
   lastName: string;
+  email: string;
   gender: number;
   dateOfBirth: string;
   nationality: string;
@@ -231,6 +233,7 @@ export interface UpdateEmployeeCommand {
   employeeId: string;
   firstName: string;
   lastName: string;
+  email: string;
   gender: number;
   dateOfBirth: string;
   nationality: string;

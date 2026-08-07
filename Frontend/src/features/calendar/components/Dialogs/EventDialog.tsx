@@ -13,10 +13,17 @@ import {
   Typography,
   IconButton,
   Alert,
+  RadioGroup,
+  Radio,
+  FormControl,
+  InputLabel,
+  Select,
+  FormHelperText,
 } from '@mui/material';
-import { Close, DeleteOutlined, Event as EventIcon } from '@mui/icons-material';
-import type { CalendarEventDto, CreateCalendarEventPayload, UpdateCalendarEventPayload } from '../../types/calendar.types';
+import { Close, DeleteOutlined, Event as EventIcon, Public, Lock } from '@mui/icons-material';
+import { VisibilityLevel, type CalendarEventDto, type CreateCalendarEventPayload, type UpdateCalendarEventPayload } from '../../types/calendar.types';
 import { useAuthStore } from '../../../../store/useAuthStore';
+import { useDepartmentsLookup } from '../../../departments/hooks/useDepartmentsLookup';
 
 interface EventDialogProps {
   open: boolean;
@@ -40,9 +47,14 @@ export const EventDialog: React.FC<EventDialogProps> = ({
   onDelete,
 }) => {
   const hasPermission = useAuthStore((state) => state.hasPermission);
-  const canCreate = hasPermission('Calendar.CreateEvent');
-  const canUpdate = hasPermission('Calendar.UpdateEvent');
-  const canDelete = hasPermission('Calendar.DeleteEvent');
+  const canCreateStandard = hasPermission('Calendar.CreateEvent');
+  const canCreateConfidential = hasPermission('Calendar.CreateConfidentialEvents');
+  const canUpdateStandard = hasPermission('Calendar.UpdateEvent');
+  const canUpdateConfidential = hasPermission('Calendar.UpdateConfidentialEvents');
+  const canDeleteStandard = hasPermission('Calendar.DeleteEvent');
+  const canDeleteConfidential = hasPermission('Calendar.DeleteConfidentialEvents');
+
+  const { data: departments = [] } = useDepartmentsLookup();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -50,10 +62,22 @@ export const EventDialog: React.FC<EventDialogProps> = ({
   const [endDateTime, setEndDateTime] = useState('');
   const [reminderDays, setReminderDays] = useState(1);
   const [sendEmail, setSendEmail] = useState(true);
+  const [visibilityLevel, setVisibilityLevel] = useState<VisibilityLevel>(VisibilityLevel.Standard);
+  const [departmentId, setDepartmentId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const isEditing = Boolean(eventToEdit);
+  const isConfidential = visibilityLevel === VisibilityLevel.Confidential;
+
+  const canCreateActive = isConfidential ? canCreateConfidential : canCreateStandard;
+  const canUpdateActive = isConfidential ? canUpdateConfidential : canUpdateStandard;
+  const canDeleteActive = eventToEdit?.visibilityLevel === VisibilityLevel.Confidential
+    ? canDeleteConfidential
+    : canDeleteStandard;
+
+  const canSaveActive = isEditing ? canUpdateActive : canCreateActive;
 
   useEffect(() => {
     if (eventToEdit) {
@@ -66,6 +90,8 @@ export const EventDialog: React.FC<EventDialogProps> = ({
       setEndDateTime(formatToLocalDateTimeString(end));
       setReminderDays(eventToEdit.reminderThresholdDays);
       setSendEmail(eventToEdit.sendEmailReminder);
+      setVisibilityLevel(eventToEdit.visibilityLevel ?? VisibilityLevel.Standard);
+      setDepartmentId(eventToEdit.departmentId || '');
       setError(null);
     } else {
       const targetDate = defaultDate ? new Date(`${defaultDate}T00:00:00`) : new Date();
@@ -74,15 +100,19 @@ export const EventDialog: React.FC<EventDialogProps> = ({
       const endDate = new Date(targetDate);
       endDate.setHours(targetDate.getHours() + 1);
 
+      const defaultVis = canCreateStandard ? VisibilityLevel.Standard : (canCreateConfidential ? VisibilityLevel.Confidential : VisibilityLevel.Standard);
+
       setTitle('');
       setDescription('');
       setStartDateTime(formatToLocalDateTimeString(targetDate));
       setEndDateTime(formatToLocalDateTimeString(endDate));
       setReminderDays(1);
       setSendEmail(true);
+      setVisibilityLevel(defaultVis);
+      setDepartmentId('');
       setError(null);
     }
-  }, [eventToEdit, defaultDate, defaultHour, open]);
+  }, [eventToEdit, defaultDate, defaultHour, open, canCreateStandard, canCreateConfidential]);
 
   function formatToLocalDateTimeString(d: Date): string {
     const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
@@ -121,7 +151,9 @@ export const EventDialog: React.FC<EventDialogProps> = ({
           startTime: start.toISOString(),
           endTime: end.toISOString(),
           reminderThresholdDays: reminderDays,
-          sendEmailReminder: sendEmail,
+          sendEmailReminder: isConfidential ? false : sendEmail,
+          visibilityLevel: visibilityLevel,
+          departmentId: isConfidential ? null : (departmentId || null),
         });
       } else {
         await onCreate({
@@ -130,7 +162,9 @@ export const EventDialog: React.FC<EventDialogProps> = ({
           startTime: start.toISOString(),
           endTime: end.toISOString(),
           reminderThresholdDays: reminderDays,
-          sendEmailReminder: sendEmail,
+          sendEmailReminder: isConfidential ? false : sendEmail,
+          visibilityLevel: visibilityLevel,
+          departmentId: isConfidential ? null : (departmentId || null),
         });
       }
       onClose();
@@ -141,16 +175,21 @@ export const EventDialog: React.FC<EventDialogProps> = ({
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeleteClick = () => {
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
     if (!eventToEdit) return;
-    if (!window.confirm('Are you sure you want to delete this event?')) return;
 
     setIsSubmitting(true);
     try {
       await onDelete(eventToEdit.id);
+      setDeleteConfirmOpen(false);
       onClose();
     } catch (err: any) {
       setError(err?.response?.data?.message || err?.message || 'Failed to delete event.');
+      setDeleteConfirmOpen(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -188,13 +227,19 @@ export const EventDialog: React.FC<EventDialogProps> = ({
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, pt: '20px !important', px: 3 }}>
           {error && <Alert severity="error" sx={{ mb: 0.5 }}>{error}</Alert>}
 
+          {isEditing && eventToEdit?.authorName && (
+            <Typography variant="caption" color="text.secondary">
+              Created by: <strong>{eventToEdit.authorName}</strong>
+            </Typography>
+          )}
+
           <TextField
             label="Event Title"
             required
             fullWidth
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            disabled={isSubmitting || (isEditing && !canUpdate)}
+            disabled={isSubmitting || !canSaveActive}
             placeholder="e.g. Q4 Strategy Review Meeting"
             sx={{ mt: 0.5 }}
           />
@@ -208,7 +253,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
               value={startDateTime}
               onChange={(e) => setStartDateTime(e.target.value)}
               slotProps={{ inputLabel: { shrink: true } }}
-              disabled={isSubmitting || (isEditing && !canUpdate)}
+              disabled={isSubmitting || !canSaveActive}
             />
             <TextField
               label="End Date & Time"
@@ -218,10 +263,54 @@ export const EventDialog: React.FC<EventDialogProps> = ({
               value={endDateTime}
               onChange={(e) => setEndDateTime(e.target.value)}
               slotProps={{ inputLabel: { shrink: true } }}
-              disabled={isSubmitting || (isEditing && !canUpdate)}
+              disabled={isSubmitting || !canSaveActive}
             />
           </Box>
 
+          {/* Visibility Level */}
+          <Box>
+            <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary', mb: 1, display: 'block' }}>
+              Visibility Level
+            </Typography>
+            <RadioGroup
+              row
+              value={visibilityLevel}
+              onChange={(e) => {
+                const newLevel = Number(e.target.value) as VisibilityLevel;
+                setVisibilityLevel(newLevel);
+              }}
+            >
+              <FormControlLabel
+                value={VisibilityLevel.Standard}
+                control={<Radio size="small" />}
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Public fontSize="small" color="action" />
+                    <Typography variant="body2">Standard (Public - visible to team)</Typography>
+                  </Box>
+                }
+                disabled={isSubmitting || (isEditing ? !canUpdateStandard : !canCreateStandard)}
+              />
+              <FormControlLabel
+                value={VisibilityLevel.Confidential}
+                control={<Radio size="small" />}
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Lock fontSize="small" color="warning" />
+                    <Typography variant="body2">Confidential (Private)</Typography>
+                  </Box>
+                }
+                disabled={isSubmitting || (isEditing ? !canUpdateConfidential : !canCreateConfidential)}
+              />
+            </RadioGroup>
+            {isConfidential && (
+              <Alert severity="warning" sx={{ mt: 1, py: 0.5, fontSize: '0.8rem' }}>
+                Private events cannot be sent to employees via email. Only authorized system users receive in-app notifications.
+              </Alert>
+            )}
+          </Box>
+
+          {/* Reminders & Target Department */}
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, alignItems: 'center' }}>
             <TextField
               select
@@ -229,7 +318,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
               value={reminderDays}
               onChange={(e) => setReminderDays(Number(e.target.value))}
               fullWidth
-              disabled={isSubmitting || (isEditing && !canUpdate)}
+              disabled={isSubmitting || !canSaveActive}
             >
               <MenuItem value={0}>On the event day</MenuItem>
               <MenuItem value={1}>1 day before</MenuItem>
@@ -242,15 +331,53 @@ export const EventDialog: React.FC<EventDialogProps> = ({
             <FormControlLabel
               control={
                 <Switch
-                  checked={sendEmail}
+                  checked={!isConfidential && sendEmail}
                   onChange={(e) => setSendEmail(e.target.checked)}
                   color="primary"
-                  disabled={isSubmitting || (isEditing && !canUpdate)}
+                  disabled={isSubmitting || !canSaveActive || isConfidential}
                 />
               }
               label="Send Email Reminder"
             />
           </Box>
+
+          {/* Department Selection Box */}
+          <FormControl fullWidth size="medium" disabled={isSubmitting || !canSaveActive || isConfidential}>
+            <InputLabel id="event-department-select-label" shrink>
+              Target Department (Email Reminder)
+            </InputLabel>
+            <Select
+              labelId="event-department-select-label"
+              id="event-department-select"
+              value={departmentId}
+              label="Target Department (Email Reminder)"
+              onChange={(e) => setDepartmentId(e.target.value)}
+              MenuProps={{ disableScrollLock: true }}
+              displayEmpty
+              notched
+              renderValue={(val) =>
+                val === '' ? (
+                  <em style={{ color: 'inherit', opacity: 0.55 }}>All Departments (All Employees)</em>
+                ) : (
+                  departments.find((d) => d.id === val)?.name ?? val
+                )
+              }
+            >
+              <MenuItem value="">
+                <em>All Departments (All Employees)</em>
+              </MenuItem>
+              {departments.map((dept) => (
+                <MenuItem key={dept.id} value={dept.id}>
+                  {dept.name}
+                </MenuItem>
+              ))}
+            </Select>
+            <FormHelperText>
+              {isConfidential
+                ? 'Department targeting is disabled for private events.'
+                : 'Choose a specific department to limit email reminders to its employees, or select All.'}
+            </FormHelperText>
+          </FormControl>
 
           <TextField
             label="Description (Optional)"
@@ -260,16 +387,16 @@ export const EventDialog: React.FC<EventDialogProps> = ({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Add agenda, meeting links, or notes..."
-            disabled={isSubmitting || (isEditing && !canUpdate)}
+            disabled={isSubmitting || !canSaveActive}
           />
         </DialogContent>
 
         <DialogActions sx={{ px: 3, pb: 2.5, pt: 1, justifyContent: 'space-between' }}>
-          {isEditing && canDelete ? (
+          {isEditing && canDeleteActive ? (
             <Button
               color="error"
               startIcon={<DeleteOutlined />}
-              onClick={handleDelete}
+              onClick={handleDeleteClick}
               disabled={isSubmitting}
             >
               Delete
@@ -282,7 +409,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
             <Button onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>
-            {((!isEditing && canCreate) || (isEditing && canUpdate)) && (
+            {canSaveActive && (
               <Button type="submit" variant="contained" color="primary" disabled={isSubmitting}>
                 {isSubmitting ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Event'}
               </Button>
@@ -290,6 +417,45 @@ export const EventDialog: React.FC<EventDialogProps> = ({
           </Box>
         </DialogActions>
       </form>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => !isSubmitting && setDeleteConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: { borderRadius: 3, p: 1 },
+          },
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <DeleteOutlined color="error" />
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            Delete Event
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1">
+            Are you sure you want to delete the event <strong>{eventToEdit?.title}</strong>? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setDeleteConfirmOpen(false)} disabled={isSubmitting} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmDelete}
+            color="error"
+            variant="contained"
+            disabled={isSubmitting}
+            sx={{ fontWeight: 600 }}
+          >
+            {isSubmitting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   );
 };

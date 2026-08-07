@@ -6,6 +6,7 @@ public record CreateEmployeeDto(
     string EmployeeNo,
     string FirstName,
     string LastName,
+    string Email,
     Gender Gender,
     DateTime DateOfBirth,
     string Nationality,

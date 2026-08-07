@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SoftPMS.Persistence.Context;
 
@@ -11,9 +12,11 @@ using SoftPMS.Persistence.Context;
 namespace SoftPMS.Persistence.Migrations
 {
     [DbContext(typeof(SoftPMSDbContext))]
-    partial class SoftPMSDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260807141325_AddEmailToEmployee")]
+    partial class AddEmailToEmployee
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -97,9 +100,6 @@ namespace SoftPMS.Persistence.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid?>("DepartmentId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("Description")
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
@@ -125,17 +125,7 @@ namespace SoftPMS.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("VisibilityLevel")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("DepartmentId");
-
-                    b.HasIndex("UserId");
 
                     b.HasIndex("StartTime", "EndTime")
                         .HasDatabaseName("IX_CalendarEvents_StartTime_EndTime");
@@ -1209,23 +1199,6 @@ namespace SoftPMS.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("YearlyRolloverLogs");
-                });
-
-            modelBuilder.Entity("SoftPMS.Domain.Entities.CalendarEvent", b =>
-                {
-                    b.HasOne("SoftPMS.Domain.Entities.Department", "Department")
-                        .WithMany()
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("SoftPMS.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Department");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("SoftPMS.Domain.Entities.CalendarNote", b =>

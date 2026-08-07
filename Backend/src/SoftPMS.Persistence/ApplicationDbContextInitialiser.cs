@@ -62,6 +62,26 @@ public class ApplicationDbContextInitialiser
                 _logger.LogInformation("Professions seeded and assigned successfully.");
             }
 
+            // ONE-OFF FIX: If any existing employees have empty or null email, populate them with mock emails
+            var employeesWithoutEmail = await _context.Employees
+                .Where(e => string.IsNullOrWhiteSpace(e.Email))
+                .ToListAsync();
+
+            if (employeesWithoutEmail.Count > 0)
+            {
+                _logger.LogInformation("Found {Count} employees with empty email. Assigning random emails...", employeesWithoutEmail.Count);
+                foreach (var emp in employeesWithoutEmail)
+                {
+                    var cleanFirst = new string((emp.FirstName ?? "emp").Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
+                    var cleanLast = new string((emp.LastName ?? "user").Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
+                    if (string.IsNullOrWhiteSpace(cleanFirst)) cleanFirst = "employee";
+                    if (string.IsNullOrWhiteSpace(cleanLast)) cleanLast = $"{emp.Id.ToString()[..4]}";
+                    emp.Email = $"{cleanFirst}.{cleanLast}@softpms.com";
+                }
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Successfully assigned mock emails to {Count} existing employees.", employeesWithoutEmail.Count);
+            }
+
             // Skip completely if Employee or Department already exists in the database (One-time rule) //[cite: 1]
             if (await _context.Employees.AnyAsync() || await _context.Departments.AnyAsync())
             {
@@ -164,6 +184,7 @@ public class ApplicationDbContextInitialiser
                 .RuleFor(e => e.EmployeeNo, f => $"EMP{f.IndexFaker + 1001:D4}")
                 .RuleFor(e => e.FirstName, f => f.Name.FirstName())
                 .RuleFor(e => e.LastName, f => f.Name.LastName())
+                .RuleFor(e => e.Email, (f, e) => f.Internet.Email(e.FirstName.ToLowerInvariant(), e.LastName.ToLowerInvariant(), "softpms.com"))
                 .RuleFor(e => e.Gender, f => f.PickRandom<Gender>())
                 .RuleFor(e => e.DateOfBirth, f => f.Date.Past(30, DateTime.UtcNow.AddYears(-20)))
                 .RuleFor(e => e.Nationality, f => f.PickRandom("British", "German", "Turkish"))

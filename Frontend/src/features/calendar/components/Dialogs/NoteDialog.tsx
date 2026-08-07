@@ -56,9 +56,12 @@ export const NoteDialog: React.FC<NoteDialogProps> = ({
   const hasPermission = useAuthStore((state) => state.hasPermission);
   const currentUser = useAuthStore((state) => state.currentUser);
 
-  const canCreate = hasPermission('Calendar.CreateNote');
-  const canUpdate = hasPermission('Calendar.UpdateNote');
-  const canDelete = hasPermission('Calendar.DeleteNote');
+  const canCreateStandard = hasPermission('Calendar.CreateNote');
+  const canCreateConfidential = hasPermission('Calendar.CreateConfidentialNotes');
+  const canUpdateStandard = hasPermission('Calendar.UpdateNote');
+  const canUpdateConfidential = hasPermission('Calendar.UpdateConfidentialNotes');
+  const canDeleteStandard = hasPermission('Calendar.DeleteNote');
+  const canDeleteConfidential = hasPermission('Calendar.DeleteConfidentialNotes');
 
   const isEditing = Boolean(noteToEdit);
   const isOwner = isEditing && noteToEdit ? currentUser?.id === noteToEdit.userId : true;
@@ -69,6 +72,16 @@ export const NoteDialog: React.FC<NoteDialogProps> = ({
   const [visibilityLevel, setVisibilityLevel] = useState<VisibilityLevel>(VisibilityLevel.Standard);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  const isConfidential = visibilityLevel === VisibilityLevel.Confidential;
+  const canCreateActive = isConfidential ? canCreateConfidential : canCreateStandard;
+  const canUpdateActive = isConfidential ? canUpdateConfidential : canUpdateStandard;
+  const canDeleteActive = noteToEdit?.visibilityLevel === VisibilityLevel.Confidential
+    ? canDeleteConfidential
+    : canDeleteStandard;
+
+  const canSaveActive = isEditing ? (canUpdateActive && isOwner) : canCreateActive;
 
   useEffect(() => {
     if (noteToEdit) {
@@ -78,13 +91,15 @@ export const NoteDialog: React.FC<NoteDialogProps> = ({
       setVisibilityLevel(noteToEdit.visibilityLevel);
       setError(null);
     } else {
+      const defaultVis = canCreateStandard ? VisibilityLevel.Standard : (canCreateConfidential ? VisibilityLevel.Confidential : VisibilityLevel.Standard);
+
       setNoteDate(defaultDate || new Date().toISOString().split('T')[0]);
       setContent('');
       setColorCode('#F59E0B');
-      setVisibilityLevel(VisibilityLevel.Standard);
+      setVisibilityLevel(defaultVis);
       setError(null);
     }
-  }, [noteToEdit, defaultDate, open]);
+  }, [noteToEdit, defaultDate, open, canCreateStandard, canCreateConfidential]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,16 +136,21 @@ export const NoteDialog: React.FC<NoteDialogProps> = ({
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeleteClick = () => {
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
     if (!noteToEdit) return;
-    if (!window.confirm('Are you sure you want to delete this note?')) return;
 
     setIsSubmitting(true);
     try {
       await onDelete(noteToEdit.id);
+      setDeleteConfirmOpen(false);
       onClose();
     } catch (err: any) {
       setError(err?.response?.data?.message || err?.message || 'Failed to delete note.');
+      setDeleteConfirmOpen(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -182,7 +202,7 @@ export const NoteDialog: React.FC<NoteDialogProps> = ({
             value={noteDate}
             onChange={(e) => setNoteDate(e.target.value)}
             slotProps={{ inputLabel: { shrink: true } }}
-            disabled={isSubmitting || (isEditing && (!canUpdate || !isOwner))}
+            disabled={isSubmitting || !canSaveActive}
             sx={{ mt: 0.5 }}
           />
 
@@ -195,7 +215,7 @@ export const NoteDialog: React.FC<NoteDialogProps> = ({
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Write your note, reminder, or thoughts here..."
-            disabled={isSubmitting || (isEditing && (!canUpdate || !isOwner))}
+            disabled={isSubmitting || !canSaveActive}
           />
 
           {/* Color Selector */}
@@ -208,7 +228,7 @@ export const NoteDialog: React.FC<NoteDialogProps> = ({
                 <Tooltip key={item.color} title={item.label}>
                   <Box
                     onClick={() => {
-                      if (!isEditing || (canUpdate && isOwner)) {
+                      if (canSaveActive) {
                         setColorCode(item.color);
                       }
                     }}
@@ -217,7 +237,7 @@ export const NoteDialog: React.FC<NoteDialogProps> = ({
                       height: 32,
                       borderRadius: '50%',
                       bgcolor: item.color,
-                      cursor: 'pointer',
+                      cursor: canSaveActive ? 'pointer' : 'default',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -230,7 +250,7 @@ export const NoteDialog: React.FC<NoteDialogProps> = ({
                           ? `0 0 0 2px ${theme.palette.mode === 'dark' ? '#1F2937' : '#ffffff'}`
                           : 'none',
                       transition: 'transform 0.15s ease',
-                      '&:hover': { transform: 'scale(1.1)' },
+                      '&:hover': { transform: canSaveActive ? 'scale(1.1)' : 'none' },
                     }}
                   />
                 </Tooltip>
@@ -257,7 +277,7 @@ export const NoteDialog: React.FC<NoteDialogProps> = ({
                     <Typography variant="body2">Standard (Visible to team)</Typography>
                   </Box>
                 }
-                disabled={isSubmitting || (isEditing && (!canUpdate || !isOwner))}
+                disabled={isSubmitting || (isEditing ? (!canUpdateStandard || !isOwner) : !canCreateStandard)}
               />
               <FormControlLabel
                 value={VisibilityLevel.Confidential}
@@ -268,7 +288,7 @@ export const NoteDialog: React.FC<NoteDialogProps> = ({
                     <Typography variant="body2">Confidential (Private)</Typography>
                   </Box>
                 }
-                disabled={isSubmitting || (isEditing && (!canUpdate || !isOwner))}
+                disabled={isSubmitting || (isEditing ? (!canUpdateConfidential || !isOwner) : !canCreateConfidential)}
               />
             </RadioGroup>
             {visibilityLevel === VisibilityLevel.Confidential && (
@@ -280,11 +300,11 @@ export const NoteDialog: React.FC<NoteDialogProps> = ({
         </DialogContent>
 
         <DialogActions sx={{ px: 3, pb: 2.5, pt: 1, justifyContent: 'space-between' }}>
-          {isEditing && canDelete && isOwner ? (
+          {isEditing && canDeleteActive && isOwner ? (
             <Button
               color="error"
               startIcon={<DeleteOutlined />}
-              onClick={handleDelete}
+              onClick={handleDeleteClick}
               disabled={isSubmitting}
             >
               Delete
@@ -297,7 +317,7 @@ export const NoteDialog: React.FC<NoteDialogProps> = ({
             <Button onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>
-            {((!isEditing && canCreate) || (isEditing && canUpdate && isOwner)) && (
+            {canSaveActive && (
               <Button type="submit" variant="contained" color="primary" disabled={isSubmitting}>
                 {isSubmitting ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Note'}
               </Button>
@@ -305,6 +325,45 @@ export const NoteDialog: React.FC<NoteDialogProps> = ({
           </Box>
         </DialogActions>
       </form>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => !isSubmitting && setDeleteConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: { borderRadius: 3, p: 1 },
+          },
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <DeleteOutlined color="error" />
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            Delete Note
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1">
+            Are you sure you want to delete this note{noteToEdit?.content ? `: "${noteToEdit.content.slice(0, 40)}${noteToEdit.content.length > 40 ? '...' : ''}"` : ''}? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setDeleteConfirmOpen(false)} disabled={isSubmitting} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmDelete}
+            color="error"
+            variant="contained"
+            disabled={isSubmitting}
+            sx={{ fontWeight: 600 }}
+          >
+            {isSubmitting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   );
 };

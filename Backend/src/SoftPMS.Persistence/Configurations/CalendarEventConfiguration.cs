@@ -34,8 +34,27 @@ public class CalendarEventConfiguration : IEntityTypeConfiguration<CalendarEvent
             .IsRequired()
             .HasDefaultValue(true);
 
+        builder.Property(x => x.VisibilityLevel)
+            .IsRequired();
+
+        builder.Property(x => x.DepartmentId)
+            .IsRequired(false);
+
+        builder.Property(x => x.UserId)
+            .IsRequired(false);
+
         builder.Property(x => x.CreatedAt)
             .IsRequired();
+
+        builder.HasOne(x => x.Department)
+            .WithMany()
+            .HasForeignKey(x => x.DepartmentId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasOne(x => x.User)
+            .WithMany()
+            .HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasIndex(x => new { x.StartTime, x.EndTime })
             .HasDatabaseName("IX_CalendarEvents_StartTime_EndTime");

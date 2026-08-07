@@ -36,6 +36,7 @@ public sealed class CreateEmployeeCommandHandler(
             EmployeeNo        = request.EmployeeNo,
             FirstName         = request.FirstName,
             LastName          = request.LastName,
+            Email             = request.Email?.Trim() ?? string.Empty,
             Gender            = request.Gender,
             DateOfBirth       = request.DateOfBirth,
             Nationality       = request.Nationality,
