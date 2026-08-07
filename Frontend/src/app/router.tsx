@@ -27,6 +27,7 @@ import { OvertimeTypeList } from '../features/finance/components/OvertimeTypes/O
 import { ProfessionList } from '../features/professions/components/ProfessionList';
 import { SystemLogsPage } from '../features/settings/components/SystemLogs/SystemLogsPage';
 import { NotificationsPage } from '../features/notifications/NotificationsPage';
+import { CalendarPage } from '../features/calendar/CalendarPage';
 
 import { useLocation } from 'react-router-dom';
 
@@ -92,6 +93,14 @@ export const router = createBrowserRouter([
             element: (
               <ProtectedRoute permission="Notifications.Read">
                 <NotificationsPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'calendar',
+            element: (
+              <ProtectedRoute permission="Calendar.Read">
+                <CalendarPage />
               </ProtectedRoute>
             ),
           },

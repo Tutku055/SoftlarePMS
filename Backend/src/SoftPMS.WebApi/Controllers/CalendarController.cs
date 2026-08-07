@@ -7,6 +7,7 @@ using SoftPMS.Application.Features.Calendar.Commands.DeleteCalendarNote;
 using SoftPMS.Application.Features.Calendar.Commands.UpdateCalendarEvent;
 using SoftPMS.Application.Features.Calendar.Commands.UpdateCalendarNote;
 using SoftPMS.Application.Features.Calendar.Commands.UpdateCalendarSettings;
+using SoftPMS.Application.Features.Calendar.Queries.GetCalendarByDateRange;
 using SoftPMS.Application.Features.Calendar.Queries.GetCalendarEventById;
 using SoftPMS.Application.Features.Calendar.Queries.GetCalendarNoteById;
 using SoftPMS.Application.Features.Calendar.Queries.GetCalendarSettings;
@@ -18,6 +19,15 @@ namespace SoftPMS.WebApi.Controllers;
 [Authorize]
 public class CalendarController : ApiControllerBase
 {
+    /// <summary>Get calendar schedule for an arbitrary date range (e.g. multi-month week, rolling 30-day agenda).</summary>
+    [HttpGet("range")]
+    [HasPermission("Calendar.Read")]
+    public async Task<IActionResult> GetCalendarByRange([FromQuery] DateOnly startDate, [FromQuery] DateOnly endDate)
+    {
+        var result = await Sender.Send(new GetCalendarByDateRangeQuery(startDate, endDate));
+        return Ok(result);
+    }
+
     /// <summary>Get monthly calendar schedule combining physical events, notes, public holidays, and birthdays.</summary>
     [HttpGet("monthly")]
     [HasPermission("Calendar.Read")]

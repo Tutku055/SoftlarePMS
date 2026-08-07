@@ -1,0 +1,179 @@
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using SoftPMS.Application.Common.Interfaces;
+using SoftPMS.Application.Features.Calendar.DTOs;
+using SoftPMS.Domain.Enums;
+
+namespace SoftPMS.Application.Features.Calendar.Queries.GetCalendarByDateRange;
+
+public class GetCalendarByDateRangeQueryHandler : IRequestHandler<GetCalendarByDateRangeQuery, List<CalendarDayDto>>
+{
+    private readonly IApplicationDbContext _context;
+    private readonly ICurrentUserService _currentUserService;
+    private readonly IPublicHolidayService _publicHolidayService;
+
+    public GetCalendarByDateRangeQueryHandler(
+        IApplicationDbContext context,
+        ICurrentUserService currentUserService,
+        IPublicHolidayService publicHolidayService)
+    {
+        _context = context;
+        _currentUserService = currentUserService;
+        _publicHolidayService = publicHolidayService;
+    }
+
+    public async Task<List<CalendarDayDto>> Handle(GetCalendarByDateRangeQuery request, CancellationToken cancellationToken)
+    {
+        var startDateTimeOffset = new DateTimeOffset(request.StartDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
+        var endDateTimeOffset = new DateTimeOffset(request.EndDate.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
+        var todayUtc = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        // 1. Physical Events overlapping with the requested range
+        var rawEvents = await _context.CalendarEvents
+            .AsNoTracking()
+            .Where(e => e.StartTime < endDateTimeOffset && e.EndTime >= startDateTimeOffset)
+            .OrderBy(e => e.StartTime)
+            .ToListAsync(cancellationToken);
+
+        var physicalEventDtos = rawEvents.Select(e => new CalendarEventDto
+        {
+            Id = e.Id,
+            Title = e.Title,
+            Description = e.Description,
+            StartTime = e.StartTime,
+            EndTime = e.EndTime,
+            ReminderThresholdDays = e.ReminderThresholdDays,
+            SendEmailReminder = e.SendEmailReminder,
+            CreatedAt = e.CreatedAt
+        }).ToList();
+
+        // 2. Calendar Notes for the requested range with RBAC confidentiality check
+        var userPermissions = _currentUserService.Permissions;
+        var canReadConfidential = userPermissions.Contains("Calendar.ReadConfidentialNotes") ||
+                                  userPermissions.Contains("SuperAdmin");
+
+        var notesQuery = _context.CalendarNotes
+            .Include(n => n.User)
+            .AsNoTracking()
+            .Where(n => n.NoteDate >= request.StartDate && n.NoteDate <= request.EndDate);
+
+        var currentUserId = _currentUserService.UserId;
+        if (!canReadConfidential)
+        {
+            notesQuery = notesQuery.Where(n => n.VisibilityLevel != VisibilityLevel.Confidential || n.UserId == currentUserId);
+        }
+
+        var rawNotes = await notesQuery
+            .OrderBy(n => n.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        var noteDtos = rawNotes.Select(n => new CalendarNoteDto
+        {
+            Id = n.Id,
+            UserId = n.UserId,
+            AuthorName = n.User != null ? n.User.Username : null,
+            NoteDate = n.NoteDate,
+            Content = n.Content,
+            ColorCode = n.ColorCode,
+            VisibilityLevel = n.VisibilityLevel,
+            CreatedAt = n.CreatedAt
+        }).ToList();
+
+        // 3. Virtual Events: Employee Birthdays calculated on the fly
+        var birthdayEmployees = await _context.Employees
+            .AsNoTracking()
+            .Where(e => !e.IsDeleted && e.EmploymentStatus == EmploymentStatus.Active)
+            .ToListAsync(cancellationToken);
+
+        var birthdayVirtualEvents = new List<VirtualCalendarEventDto>();
+        for (var y = request.StartDate.Year; y <= request.EndDate.Year; y++)
+        {
+            foreach (var emp in birthdayEmployees)
+            {
+                var birthDay = emp.DateOfBirth.Day;
+                var birthMonth = emp.DateOfBirth.Month;
+
+                if (birthMonth == 2 && birthDay == 29 && !DateTime.IsLeapYear(y))
+                {
+                    birthDay = 28;
+                }
+
+                var bdayDate = new DateOnly(y, birthMonth, birthDay);
+                if (bdayDate >= request.StartDate && bdayDate <= request.EndDate)
+                {
+                    birthdayVirtualEvents.Add(new VirtualCalendarEventDto
+                    {
+                        Id = $"BDAY_{emp.Id}_{y}",
+                        Title = $"🎂 {emp.FirstName} {emp.LastName}'s Birthday",
+                        Description = $"Birthday celebration for {emp.FirstName} {emp.LastName} ({emp.EmployeeNo})",
+                        Date = bdayDate,
+                        Type = VirtualEventType.Birthday,
+                        ReferenceId = emp.Id.ToString(),
+                        ColorCode = "#EC4899"
+                    });
+                }
+            }
+        }
+
+        // 4. Virtual Events: Public Holidays calculated on the fly
+        var countryCode = await _context.CalendarSettings
+            .AsNoTracking()
+            .Select(s => s.HolidayCountryCode)
+            .FirstOrDefaultAsync(cancellationToken) ?? "TR";
+
+        var holidayVirtualEvents = new List<VirtualCalendarEventDto>();
+        for (var y = request.StartDate.Year; y <= request.EndDate.Year; y++)
+        {
+            var holidaysForYear = _publicHolidayService.GetHolidays(y, countryCode);
+            var filteredHolidays = holidaysForYear
+                .Where(h => h.Date >= request.StartDate && h.Date <= request.EndDate)
+                .Select(h => new VirtualCalendarEventDto
+                {
+                    Id = $"HOL_{h.Date:yyyy-MM-dd}_{countryCode}",
+                    Title = $"🎉 {h.Name}",
+                    Description = $"Public Holiday ({countryCode})",
+                    Date = h.Date,
+                    Type = VirtualEventType.Holiday,
+                    ColorCode = "#10B981"
+                });
+
+            holidayVirtualEvents.AddRange(filteredHolidays);
+        }
+
+        var allVirtualEvents = holidayVirtualEvents.Concat(birthdayVirtualEvents).ToList();
+
+        // 5. Merge all items grouped per day
+        var totalDays = request.EndDate.DayNumber - request.StartDate.DayNumber + 1;
+        var calendarDays = new List<CalendarDayDto>(totalDays);
+
+        for (var i = 0; i < totalDays; i++)
+        {
+            var date = request.StartDate.AddDays(i);
+            var dateStartUtc = new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
+            var dateEndUtc = dateStartUtc.AddDays(1);
+
+            var dayEvents = physicalEventDtos
+                .Where(e => e.StartTime < dateEndUtc && e.EndTime >= dateStartUtc)
+                .ToList();
+
+            var dayNotes = noteDtos
+                .Where(n => n.NoteDate == date)
+                .ToList();
+
+            var dayVirtual = allVirtualEvents
+                .Where(v => v.Date == date)
+                .ToList();
+
+            calendarDays.Add(new CalendarDayDto
+            {
+                Date = date,
+                IsToday = (date == todayUtc),
+                Notes = dayNotes,
+                PhysicalEvents = dayEvents,
+                VirtualEvents = dayVirtual
+            });
+        }
+
+        return calendarDays;
+    }
+}

@@ -7,7 +7,7 @@ import {
 import { 
   Dashboard, PeopleAlt, FolderCopy, 
   Settings, ExpandLess, ExpandMore, Business, MonetizationOnRounded,
-  NotificationsActiveRounded
+  NotificationsActiveRounded, CalendarMonth
 } from '@mui/icons-material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import styles from './Sidebar.module.css';
@@ -40,6 +40,12 @@ const menuConfig: MenuItem[] = [
     path: '/dashboard', 
     icon: <Dashboard />,
     permission: 'Dashboard.Read'
+  },
+  { 
+    title: 'Calendar', 
+    path: '/calendar', 
+    icon: <CalendarMonth />,
+    permission: 'Calendar.Read'
   },
   { 
     title: 'Notifications', 
