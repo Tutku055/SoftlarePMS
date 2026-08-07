@@ -1,7 +1,10 @@
 export interface AuditLogChangeDto {
   propertyName: string;
+  formattedPropertyName?: string;
   oldValue: string | null;
   newValue: string | null;
+  oldValueRaw?: string | null;
+  newValueRaw?: string | null;
 }
 
 export interface AuditLogItemDto {

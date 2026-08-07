@@ -96,6 +96,10 @@ export const router = createBrowserRouter([
             ),
           },
           {
+            path: 'employees',
+            element: <Navigate to="/employees/roster" replace />
+          },
+          {
             path: 'employees/roster',
             element: (
               <ProtectedRoute permission="Employees.Read">
@@ -144,6 +148,10 @@ export const router = createBrowserRouter([
             ),
           },
           {
+            path: 'departments',
+            element: <Navigate to="/departments/list" replace />
+          },
+          {
             path: 'departments/list',
             element: (
               <ProtectedRoute permission="Departments.Read">
@@ -174,6 +182,10 @@ export const router = createBrowserRouter([
                 <DepartmentDetail />
               </ProtectedRoute>
             ),
+          },
+          {
+            path: 'documents',
+            element: <Navigate to="/documents/archive" replace />
           },
           {
             path: 'documents/archive',

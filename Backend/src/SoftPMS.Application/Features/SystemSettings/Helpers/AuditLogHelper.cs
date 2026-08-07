@@ -280,8 +280,11 @@ public static class AuditLogHelper
             changes.Add(new AuditLogChangeDto
             {
                 PropertyName = key,
+                FormattedPropertyName = AuditLogEnricher.FormatPropertyName(key),
                 OldValue = oldVal,
-                NewValue = newVal
+                NewValue = newVal,
+                OldValueRaw = oldVal,
+                NewValueRaw = newVal
             });
         }
 

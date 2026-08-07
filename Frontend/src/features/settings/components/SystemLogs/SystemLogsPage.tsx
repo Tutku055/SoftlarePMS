@@ -49,15 +49,17 @@ import { useAuditLogs, useAuditLogDetails } from '../../hooks/useAuditLogs';
 import { useAuthStore } from '../../../../store/useAuthStore';
 import type { AuditLogDto, AuditLogChangeDto } from '../../types';
 
-export const NON_ROUTABLE_TABLES = ['Permissions', 'RolePermissions'] as const;
+const NON_ROUTABLE_TABLES: readonly string[] = [];
 
-export const getEntityRoute = (tableName: string, recordId: string, navigationRoute?: string | null): string => {
+const getEntityRoute = (tableName: string, recordId: string, navigationRoute?: string | null): string => {
   if (navigationRoute && navigationRoute.trim()) {
     return navigationRoute.trim();
   }
 
   const table = (tableName || '').trim().toLowerCase();
-  const cleanId = encodeURIComponent((recordId || '').trim());
+  const rawId = (recordId || '').trim();
+  const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawId);
+  const cleanId = isGuid ? encodeURIComponent(rawId) : '';
 
   if (table.includes('timesheet')) {
     return `/finance/timesheets`;
@@ -68,38 +70,50 @@ export const getEntityRoute = (tableName: string, recordId: string, navigationRo
   if (table.includes('employeeaddress') || table.includes('employeeaddresses') || table.includes('employeeadress') || table.includes('address')) {
     return cleanId ? `/employees/addresses/${cleanId}` : `/employees/addresses`;
   }
-  if (table.includes('employeenote')) {
-    return `/employees`;
-  }
-  if (table.includes('employeereference')) {
-    return `/employees`;
+  if (table.includes('employeenote') || table.includes('employeereference') || table.includes('employeecompensation')) {
+    return cleanId ? `/employees/${cleanId}` : `/employees/roster`;
   }
   if (table.includes('employee')) {
-    return cleanId ? `/employees/${cleanId}` : `/employees`;
-  }
-  if (table.includes('department')) {
-    return cleanId ? `/departments/${cleanId}` : `/departments`;
+    return cleanId ? `/employees/${cleanId}` : `/employees/roster`;
   }
   if (table.includes('profession')) {
-    return `/departments`;
+    return `/departments/professions`;
+  }
+  if (table.includes('departmentemployee')) {
+    return `/departments/employees`;
+  }
+  if (table.includes('department')) {
+    return cleanId ? `/departments/${cleanId}` : `/departments/list`;
   }
   if (table.includes('user')) {
     return cleanId ? `/settings/users/${cleanId}` : `/settings/users`;
+  }
+  if (table.includes('rolepermission') || table.includes('rolepermissions')) {
+    return `/settings/roles`;
   }
   if (table.includes('role') || table.includes('permission')) {
     return cleanId ? `/settings/roles/${cleanId}` : `/settings/roles`;
   }
   if (table.includes('document')) {
-    return cleanId ? `/documents/${cleanId}` : `/documents`;
+    return cleanId ? `/documents/${cleanId}` : `/documents/archive`;
   }
   if (table.includes('overtime')) {
     return `/finance/overtime-types`;
+  }
+  if (table.includes('rollover') || table.includes('yearend') || table.includes('year-end')) {
+    return `/settings/year-end`;
+  }
+  if (table.includes('notification')) {
+    return `/notifications`;
+  }
+  if (table.includes('audit') || table.includes('log')) {
+    return `/settings/system-logs`;
   }
 
   return cleanId ? `/${table}/${cleanId}` : `/${table}`;
 };
 
-export const getRequiredPermission = (tableName: string): string => {
+const getRequiredPermission = (tableName: string): string => {
   const table = (tableName || '').trim().toLowerCase();
 
   if (table.includes('timesheet')) {
@@ -120,11 +134,11 @@ export const getRequiredPermission = (tableName: string): string => {
   if (table.includes('employee')) {
     return 'Employees.Read';
   }
-  if (table.includes('department')) {
-    return 'Departments.Read';
-  }
   if (table.includes('profession')) {
     return 'Professions.Read';
+  }
+  if (table.includes('department')) {
+    return 'Departments.Read';
   }
   if (table.includes('document')) {
     return 'Documents.Read';
@@ -137,6 +151,12 @@ export const getRequiredPermission = (tableName: string): string => {
   }
   if (table.includes('overtime')) {
     return 'OvertimeTypes.Read';
+  }
+  if (table.includes('rollover') || table.includes('year')) {
+    return 'AuditLogs.Read';
+  }
+  if (table.includes('notification')) {
+    return 'Notifications.Read';
   }
 
   return 'AuditLogs.Read';
@@ -525,54 +545,62 @@ export const SystemLogsPage: React.FC = () => {
       return (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25 }}>
           {changes.map((change, idx) => {
+            const propLabel = change.formattedPropertyName || change.propertyName;
             const displayVal = change.newValue !== null && change.newValue !== undefined ? change.newValue : '<empty>';
-            const isNamedEntity =
-              change.propertyName.toLowerCase() === 'permissionid' ||
-              change.propertyName.toLowerCase() === 'roleid' ||
-              change.propertyName.toLowerCase() === 'name';
+            const hasRawDiff = Boolean(change.newValueRaw && change.newValueRaw !== change.newValue);
 
             return (
-              <Paper
+              <Tooltip
                 key={`${change.propertyName}-${idx}`}
-                elevation={0}
-                sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  px: 1.75,
-                  py: 0.85,
-                  borderRadius: 2,
-                  backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#DCFCE7',
-                  border: `1px solid ${isDark ? 'rgba(16, 185, 129, 0.3)' : '#BBF7D0'}`,
-                  color: isDark ? '#6EE7B7' : '#15803D',
-                  transition: 'transform 0.15s ease',
-                  '&:hover': {
-                    transform: 'translateY(-1px)',
-                  },
-                }}
+                title={
+                  hasRawDiff
+                    ? `Property: ${change.propertyName} | Raw ID: ${change.newValueRaw}`
+                    : `Property: ${change.propertyName}`
+                }
+                arrow
+                placement="top"
               >
-                <Box
-                  component="span"
+                <Paper
+                  elevation={0}
                   sx={{
-                    fontWeight: 800,
-                    fontSize: '1rem',
-                    lineHeight: 1,
-                    color: isDark ? '#34D399' : '#059669',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 1.75,
+                    py: 0.85,
+                    borderRadius: 2,
+                    backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#DCFCE7',
+                    border: `1px solid ${isDark ? 'rgba(16, 185, 129, 0.3)' : '#BBF7D0'}`,
+                    color: isDark ? '#6EE7B7' : '#15803D',
+                    transition: 'transform 0.15s ease',
+                    cursor: 'default',
+                    '&:hover': {
+                      transform: 'translateY(-1px)',
+                    },
                   }}
                 >
-                  +
-                </Box>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontWeight: 600,
-                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                    fontSize: '0.8125rem',
-                  }}
-                >
-                  {isNamedEntity ? displayVal : `${change.propertyName}: ${displayVal}`}
-                </Typography>
-              </Paper>
+                  <Box
+                    component="span"
+                    sx={{
+                      fontWeight: 800,
+                      fontSize: '1rem',
+                      lineHeight: 1,
+                      color: isDark ? '#34D399' : '#059669',
+                    }}
+                  >
+                    +
+                  </Box>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: '0.8125rem',
+                    }}
+                  >
+                    {propLabel}: <strong style={{ fontWeight: 700 }}>{displayVal}</strong>
+                  </Typography>
+                </Paper>
+              </Tooltip>
             );
           })}
         </Box>
@@ -584,55 +612,63 @@ export const SystemLogsPage: React.FC = () => {
       return (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25 }}>
           {changes.map((change, idx) => {
+            const propLabel = change.formattedPropertyName || change.propertyName;
             const displayVal = change.oldValue !== null && change.oldValue !== undefined ? change.oldValue : '<empty>';
-            const isNamedEntity =
-              change.propertyName.toLowerCase() === 'permissionid' ||
-              change.propertyName.toLowerCase() === 'roleid' ||
-              change.propertyName.toLowerCase() === 'name';
+            const hasRawDiff = Boolean(change.oldValueRaw && change.oldValueRaw !== change.oldValue);
 
             return (
-              <Paper
+              <Tooltip
                 key={`${change.propertyName}-${idx}`}
-                elevation={0}
-                sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  px: 1.75,
-                  py: 0.85,
-                  borderRadius: 2,
-                  backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2',
-                  border: `1px solid ${isDark ? 'rgba(239, 68, 68, 0.3)' : '#FECACA'}`,
-                  color: isDark ? '#FCA5A5' : '#B91C1C',
-                  transition: 'transform 0.15s ease',
-                  '&:hover': {
-                    transform: 'translateY(-1px)',
-                  },
-                }}
+                title={
+                  hasRawDiff
+                    ? `Property: ${change.propertyName} | Raw ID: ${change.oldValueRaw}`
+                    : `Property: ${change.propertyName}`
+                }
+                arrow
+                placement="top"
               >
-                <Box
-                  component="span"
+                <Paper
+                  elevation={0}
                   sx={{
-                    fontWeight: 800,
-                    fontSize: '1rem',
-                    lineHeight: 1,
-                    color: isDark ? '#F87171' : '#DC2626',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    px: 1.75,
+                    py: 0.85,
+                    borderRadius: 2,
+                    backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2',
+                    border: `1px solid ${isDark ? 'rgba(239, 68, 68, 0.3)' : '#FECACA'}`,
+                    color: isDark ? '#FCA5A5' : '#B91C1C',
+                    transition: 'transform 0.15s ease',
+                    cursor: 'default',
+                    '&:hover': {
+                      transform: 'translateY(-1px)',
+                    },
                   }}
                 >
-                  -
-                </Box>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontWeight: 600,
-                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                    fontSize: '0.8125rem',
-                    textDecoration: 'line-through',
-                  }}
-                >
-                  {isNamedEntity ? displayVal : `${change.propertyName}: ${displayVal}`}
-                </Typography>
-              </Paper>
+                  <Box
+                    component="span"
+                    sx={{
+                      fontWeight: 800,
+                      fontSize: '1rem',
+                      lineHeight: 1,
+                      color: isDark ? '#F87171' : '#DC2626',
+                    }}
+                  >
+                    -
+                  </Box>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: '0.8125rem',
+                      textDecoration: 'line-through',
+                    }}
+                  >
+                    {propLabel}: {displayVal}
+                  </Typography>
+                </Paper>
+              </Tooltip>
             );
           })}
         </Box>
@@ -643,8 +679,11 @@ export const SystemLogsPage: React.FC = () => {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
         {changes.map((change, idx) => {
+          const propLabel = change.formattedPropertyName || change.propertyName;
           const oldDisplay = change.oldValue !== null ? change.oldValue : '<null>';
           const newDisplay = change.newValue !== null ? change.newValue : '<null>';
+          const hasOldRawDiff = Boolean(change.oldValueRaw && change.oldValueRaw !== change.oldValue);
+          const hasNewRawDiff = Boolean(change.newValueRaw && change.newValueRaw !== change.newValue);
 
           return (
             <Paper
@@ -666,53 +705,69 @@ export const SystemLogsPage: React.FC = () => {
                 },
               }}
             >
-              {/* Column 1: Property Name */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0 }}>
-                <Box
-                  sx={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: '50%',
-                    backgroundColor: theme.palette.primary.main,
-                    flexShrink: 0,
-                  }}
-                />
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    fontWeight: 700,
-                    color: theme.palette.text.primary,
-                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                    fontSize: '0.875rem',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                  title={change.propertyName}
-                >
-                  {change.propertyName}
-                </Typography>
-              </Box>
-
-              {/* Column 2: Value Delta Flow */}
-              <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.25 }}>
-                <Box
-                  component="span"
-                  sx={{
-                    px: 1.25,
-                    py: 0.5,
-                    borderRadius: 1.5,
-                    fontSize: '0.8125rem',
-                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                    backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2',
-                    color: isDark ? '#FCA5A5' : '#B91C1C',
-                    textDecoration: 'line-through',
-                    wordBreak: 'break-word',
-                    maxWidth: '100%',
-                  }}
-                >
-                  {oldDisplay}
+              {/* Column 1: Human-Readable Property Name with Technical Tooltip */}
+              <Tooltip
+                title={
+                  change.propertyName !== propLabel
+                    ? `System Property: ${change.propertyName}`
+                    : `Property: ${change.propertyName}`
+                }
+                arrow
+                placement="top"
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0, cursor: 'default' }}>
+                  <Box
+                    sx={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: '50%',
+                      backgroundColor: theme.palette.primary.main,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      fontWeight: 700,
+                      color: theme.palette.text.primary,
+                      fontSize: '0.875rem',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {propLabel}
+                  </Typography>
                 </Box>
+              </Tooltip>
+
+              {/* Column 2: Value Delta Flow with Raw ID accountability */}
+              <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.25 }}>
+                <Tooltip
+                  title={hasOldRawDiff ? `Raw ID / Value: ${change.oldValueRaw}` : ''}
+                  arrow
+                  placement="top"
+                  disableHoverListener={!hasOldRawDiff}
+                >
+                  <Box
+                    component="span"
+                    sx={{
+                      px: 1.25,
+                      py: 0.5,
+                      borderRadius: 1.5,
+                      fontSize: '0.8125rem',
+                      fontFamily: hasOldRawDiff ? 'inherit' : 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                      backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2',
+                      color: isDark ? '#FCA5A5' : '#B91C1C',
+                      textDecoration: 'line-through',
+                      wordBreak: 'break-word',
+                      maxWidth: '100%',
+                      cursor: hasOldRawDiff ? 'help' : 'default',
+                    }}
+                  >
+                    {oldDisplay}
+                  </Box>
+                </Tooltip>
                 <Typography
                   component="span"
                   sx={{
@@ -724,24 +779,32 @@ export const SystemLogsPage: React.FC = () => {
                 >
                   ➔
                 </Typography>
-                <Box
-                  component="span"
-                  sx={{
-                    px: 1.25,
-                    py: 0.5,
-                    borderRadius: 1.5,
-                    fontSize: '0.8125rem',
-                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                    backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#DCFCE7',
-                    color: isDark ? '#86EFAC' : '#15803D',
-                    fontWeight: 600,
-                    border: `1px solid ${isDark ? 'rgba(16, 185, 129, 0.3)' : '#BBF7D0'}`,
-                    wordBreak: 'break-word',
-                    maxWidth: '100%',
-                  }}
+                <Tooltip
+                  title={hasNewRawDiff ? `Raw ID / Value: ${change.newValueRaw}` : ''}
+                  arrow
+                  placement="top"
+                  disableHoverListener={!hasNewRawDiff}
                 >
-                  {newDisplay}
-                </Box>
+                  <Box
+                    component="span"
+                    sx={{
+                      px: 1.25,
+                      py: 0.5,
+                      borderRadius: 1.5,
+                      fontSize: '0.8125rem',
+                      fontFamily: hasNewRawDiff ? 'inherit' : 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                      backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#DCFCE7',
+                      color: isDark ? '#86EFAC' : '#15803D',
+                      fontWeight: 600,
+                      border: `1px solid ${isDark ? 'rgba(16, 185, 129, 0.3)' : '#BBF7D0'}`,
+                      wordBreak: 'break-word',
+                      maxWidth: '100%',
+                      cursor: hasNewRawDiff ? 'help' : 'default',
+                    }}
+                  >
+                    {newDisplay}
+                  </Box>
+                </Tooltip>
               </Box>
             </Paper>
           );
@@ -784,9 +847,11 @@ export const SystemLogsPage: React.FC = () => {
       );
     }
 
+    const routeUrl = getEntityRoute(tableName, recordId, navigationRoute);
+
     const isNonRoutable = NON_ROUTABLE_TABLES.some(
       (table) => table.toLowerCase() === (tableName || '').trim().toLowerCase()
-    );
+    ) || !routeUrl;
 
     if (isNonRoutable) {
       return (
@@ -855,11 +920,14 @@ export const SystemLogsPage: React.FC = () => {
       );
     }
 
-    const routeUrl = getEntityRoute(tableName, recordId, navigationRoute);
+    const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test((recordId || '').trim());
+    const buttonTooltip = isGuid
+      ? `Navigate to ${tableName} (#${recordId.trim().substring(0, 8)}...)`
+      : `Navigate to ${tableName} overview`;
 
     return (
       <Tooltip
-        title={`Navigate to ${tableName}${recordId ? ` (#${recordId})` : ''}`}
+        title={buttonTooltip}
         arrow
         placement="top"
       >
@@ -1221,7 +1289,8 @@ export const SystemLogsPage: React.FC = () => {
                           {renderActionButton(
                             group.tableName,
                             group.recordId,
-                            group.isEntityActive
+                            group.isEntityActive,
+                            group.navigationRoute
                           )}
                         </Box>
                       </Box>

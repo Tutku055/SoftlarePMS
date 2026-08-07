@@ -246,13 +246,17 @@ public sealed class GetAuditLogsWithPaginationQueryHandler(
                 }
                 else if (distinctTables.All(t => t.Contains("employee", StringComparison.OrdinalIgnoreCase)))
                 {
-                    bulkNavigationRoute = "/employees";
+                    bulkNavigationRoute = "/employees/roster";
                 }
                 else if (distinctTables.All(t => t.Contains("department", StringComparison.OrdinalIgnoreCase)))
                 {
-                    bulkNavigationRoute = "/departments";
+                    bulkNavigationRoute = "/departments/list";
                 }
-                else if (distinctTables.All(t => t.Contains("role", StringComparison.OrdinalIgnoreCase)))
+                else if (distinctTables.All(t => t.Contains("profession", StringComparison.OrdinalIgnoreCase)))
+                {
+                    bulkNavigationRoute = "/departments/professions";
+                }
+                else if (distinctTables.All(t => t.Contains("role", StringComparison.OrdinalIgnoreCase) || t.Contains("permission", StringComparison.OrdinalIgnoreCase)))
                 {
                     bulkNavigationRoute = "/settings/roles";
                 }
@@ -262,7 +266,23 @@ public sealed class GetAuditLogsWithPaginationQueryHandler(
                 }
                 else if (distinctTables.All(t => t.Contains("document", StringComparison.OrdinalIgnoreCase)))
                 {
-                    bulkNavigationRoute = "/documents";
+                    bulkNavigationRoute = "/documents/archive";
+                }
+                else if (distinctTables.All(t => t.Contains("overtime", StringComparison.OrdinalIgnoreCase)))
+                {
+                    bulkNavigationRoute = "/finance/overtime-types";
+                }
+                else if (distinctTables.All(t => t.Contains("rollover", StringComparison.OrdinalIgnoreCase)))
+                {
+                    bulkNavigationRoute = "/settings/year-end";
+                }
+                else if (distinctTables.All(t => t.Contains("notification", StringComparison.OrdinalIgnoreCase)))
+                {
+                    bulkNavigationRoute = "/notifications";
+                }
+                else if (distinctTables.All(t => t.Contains("audit", StringComparison.OrdinalIgnoreCase) || t.Contains("log", StringComparison.OrdinalIgnoreCase)))
+                {
+                    bulkNavigationRoute = "/settings/system-logs";
                 }
 
                 bulkDtosByCorrelation[corrId] = new AuditLogDto

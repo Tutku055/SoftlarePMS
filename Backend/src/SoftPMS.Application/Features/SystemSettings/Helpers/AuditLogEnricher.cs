@@ -164,7 +164,9 @@ public static class AuditLogEnricher
                 var prop = change.PropertyName.Trim();
 
                 if (prop.Equals("EmployeeId", StringComparison.OrdinalIgnoreCase) ||
-                    prop.EndsWith("EmployeeId", StringComparison.OrdinalIgnoreCase))
+                    prop.EndsWith("EmployeeId", StringComparison.OrdinalIgnoreCase) ||
+                    prop.Equals("ManagerId", StringComparison.OrdinalIgnoreCase) ||
+                    prop.EndsWith("ManagerId", StringComparison.OrdinalIgnoreCase))
                 {
                     if (Guid.TryParse(change.OldValue, out var gOld) && gOld != Guid.Empty) employeeIds.Add(gOld);
                     if (Guid.TryParse(change.NewValue, out var gNew) && gNew != Guid.Empty) employeeIds.Add(gNew);
@@ -403,89 +405,195 @@ public static class AuditLogEnricher
             foreach (var change in item.Changes)
             {
                 var prop = change.PropertyName.Trim();
+                change.FormattedPropertyName = FormatPropertyName(prop);
+
+                // Preserve raw unmutated values for full accountability
+                if (string.IsNullOrEmpty(change.OldValueRaw))
+                    change.OldValueRaw = change.OldValue;
+                if (string.IsNullOrEmpty(change.NewValueRaw))
+                    change.NewValueRaw = change.NewValue;
 
                 if (prop.Equals("EmployeeId", StringComparison.OrdinalIgnoreCase) ||
-                    prop.EndsWith("EmployeeId", StringComparison.OrdinalIgnoreCase))
+                    prop.EndsWith("EmployeeId", StringComparison.OrdinalIgnoreCase) ||
+                    prop.Equals("ManagerId", StringComparison.OrdinalIgnoreCase) ||
+                    prop.EndsWith("ManagerId", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (Guid.TryParse(change.OldValue, out var gOld) && employeeMap.TryGetValue(gOld, out var nameOld)) change.OldValue = nameOld;
-                    if (Guid.TryParse(change.NewValue, out var gNew) && employeeMap.TryGetValue(gNew, out var nameNew)) change.NewValue = nameNew;
+                    if (Guid.TryParse(change.OldValue, out var gOld) && employeeMap.TryGetValue(gOld, out var nameOld))
+                    {
+                        change.OldValueRaw ??= change.OldValue;
+                        change.OldValue = nameOld;
+                    }
+                    if (Guid.TryParse(change.NewValue, out var gNew) && employeeMap.TryGetValue(gNew, out var nameNew))
+                    {
+                        change.NewValueRaw ??= change.NewValue;
+                        change.NewValue = nameNew;
+                    }
                 }
                 else if (prop.Equals("DepartmentId", StringComparison.OrdinalIgnoreCase) ||
                          prop.EndsWith("DepartmentId", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (Guid.TryParse(change.OldValue, out var gOld) && departmentMap.TryGetValue(gOld, out var nameOld)) change.OldValue = nameOld;
-                    if (Guid.TryParse(change.NewValue, out var gNew) && departmentMap.TryGetValue(gNew, out var nameNew)) change.NewValue = nameNew;
+                    if (Guid.TryParse(change.OldValue, out var gOld) && departmentMap.TryGetValue(gOld, out var nameOld))
+                    {
+                        change.OldValueRaw ??= change.OldValue;
+                        change.OldValue = nameOld;
+                    }
+                    if (Guid.TryParse(change.NewValue, out var gNew) && departmentMap.TryGetValue(gNew, out var nameNew))
+                    {
+                        change.NewValueRaw ??= change.NewValue;
+                        change.NewValue = nameNew;
+                    }
                 }
                 else if (prop.Equals("ProfessionId", StringComparison.OrdinalIgnoreCase) ||
                          prop.EndsWith("ProfessionId", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (Guid.TryParse(change.OldValue, out var gOld) && professionMap.TryGetValue(gOld, out var nameOld)) change.OldValue = nameOld;
-                    if (Guid.TryParse(change.NewValue, out var gNew) && professionMap.TryGetValue(gNew, out var nameNew)) change.NewValue = nameNew;
+                    if (Guid.TryParse(change.OldValue, out var gOld) && professionMap.TryGetValue(gOld, out var nameOld))
+                    {
+                        change.OldValueRaw ??= change.OldValue;
+                        change.OldValue = nameOld;
+                    }
+                    if (Guid.TryParse(change.NewValue, out var gNew) && professionMap.TryGetValue(gNew, out var nameNew))
+                    {
+                        change.NewValueRaw ??= change.NewValue;
+                        change.NewValue = nameNew;
+                    }
                 }
                 else if (prop.Equals("RoleId", StringComparison.OrdinalIgnoreCase) ||
                          prop.EndsWith("RoleId", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (Guid.TryParse(change.OldValue, out var gOld) && roleMap.TryGetValue(gOld, out var nameOld)) change.OldValue = nameOld;
-                    if (Guid.TryParse(change.NewValue, out var gNew) && roleMap.TryGetValue(gNew, out var nameNew)) change.NewValue = nameNew;
+                    if (Guid.TryParse(change.OldValue, out var gOld) && roleMap.TryGetValue(gOld, out var nameOld))
+                    {
+                        change.OldValueRaw ??= change.OldValue;
+                        change.OldValue = nameOld;
+                    }
+                    if (Guid.TryParse(change.NewValue, out var gNew) && roleMap.TryGetValue(gNew, out var nameNew))
+                    {
+                        change.NewValueRaw ??= change.NewValue;
+                        change.NewValue = nameNew;
+                    }
                 }
                 else if (prop.Equals("PermissionId", StringComparison.OrdinalIgnoreCase) ||
                          prop.EndsWith("PermissionId", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (Guid.TryParse(change.OldValue, out var gOld) && permissionMap.TryGetValue(gOld, out var nameOld)) change.OldValue = nameOld;
-                    if (Guid.TryParse(change.NewValue, out var gNew) && permissionMap.TryGetValue(gNew, out var nameNew)) change.NewValue = nameNew;
+                    if (Guid.TryParse(change.OldValue, out var gOld) && permissionMap.TryGetValue(gOld, out var nameOld))
+                    {
+                        change.OldValueRaw ??= change.OldValue;
+                        change.OldValue = nameOld;
+                    }
+                    if (Guid.TryParse(change.NewValue, out var gNew) && permissionMap.TryGetValue(gNew, out var nameNew))
+                    {
+                        change.NewValueRaw ??= change.NewValue;
+                        change.NewValue = nameNew;
+                    }
                 }
                 else if (prop.Equals("OvertimeTypeId", StringComparison.OrdinalIgnoreCase) ||
                          prop.EndsWith("OvertimeTypeId", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (Guid.TryParse(change.OldValue, out var gOld) && overtimeTypeMap.TryGetValue(gOld, out var nameOld)) change.OldValue = nameOld;
-                    if (Guid.TryParse(change.NewValue, out var gNew) && overtimeTypeMap.TryGetValue(gNew, out var nameNew)) change.NewValue = nameNew;
+                    if (Guid.TryParse(change.OldValue, out var gOld) && overtimeTypeMap.TryGetValue(gOld, out var nameOld))
+                    {
+                        change.OldValueRaw ??= change.OldValue;
+                        change.OldValue = nameOld;
+                    }
+                    if (Guid.TryParse(change.NewValue, out var gNew) && overtimeTypeMap.TryGetValue(gNew, out var nameNew))
+                    {
+                        change.NewValueRaw ??= change.NewValue;
+                        change.NewValue = nameNew;
+                    }
                 }
                 else if (prop.Equals("CreatedByUserId", StringComparison.OrdinalIgnoreCase) ||
                          prop.Equals("UserId", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (Guid.TryParse(change.OldValue, out var gOld) && userMap.TryGetValue(gOld, out var nameOld)) change.OldValue = nameOld;
-                    if (Guid.TryParse(change.NewValue, out var gNew) && userMap.TryGetValue(gNew, out var nameNew)) change.NewValue = nameNew;
+                    if (Guid.TryParse(change.OldValue, out var gOld) && userMap.TryGetValue(gOld, out var nameOld))
+                    {
+                        change.OldValueRaw ??= change.OldValue;
+                        change.OldValue = nameOld;
+                    }
+                    if (Guid.TryParse(change.NewValue, out var gNew) && userMap.TryGetValue(gNew, out var nameNew))
+                    {
+                        change.NewValueRaw ??= change.NewValue;
+                        change.NewValue = nameNew;
+                    }
                 }
                 else if (prop.Equals("MonthlyTimesheetId", StringComparison.OrdinalIgnoreCase) ||
                          prop.EndsWith("MonthlyTimesheetId", StringComparison.OrdinalIgnoreCase))
                 {
                     if (Guid.TryParse(change.OldValue, out var gOld) && monthlyTimesheetMap.TryGetValue(gOld, out var tsOld))
+                    {
+                        change.OldValueRaw ??= change.OldValue;
                         change.OldValue = $"{tsOld.EmployeeName} ({tsOld.Month:D2}/{tsOld.Year})";
+                    }
                     if (Guid.TryParse(change.NewValue, out var gNew) && monthlyTimesheetMap.TryGetValue(gNew, out var tsNew))
+                    {
+                        change.NewValueRaw ??= change.NewValue;
                         change.NewValue = $"{tsNew.EmployeeName} ({tsNew.Month:D2}/{tsNew.Year})";
+                    }
                 }
                 else if (prop.Equals("PayrollSlipId", StringComparison.OrdinalIgnoreCase) ||
                          prop.EndsWith("PayrollSlipId", StringComparison.OrdinalIgnoreCase))
                 {
                     if (Guid.TryParse(change.OldValue, out var gOld) && payrollSlipMap.TryGetValue(gOld, out var psOld))
+                    {
+                        change.OldValueRaw ??= change.OldValue;
                         change.OldValue = $"{psOld.EmployeeName} ({psOld.Month:D2}/{psOld.Year})";
+                    }
                     if (Guid.TryParse(change.NewValue, out var gNew) && payrollSlipMap.TryGetValue(gNew, out var psNew))
+                    {
+                        change.NewValueRaw ??= change.NewValue;
                         change.NewValue = $"{psNew.EmployeeName} ({psNew.Month:D2}/{psNew.Year})";
+                    }
                 }
                 else if (prop.Equals("ReferenceId", StringComparison.OrdinalIgnoreCase))
                 {
                     if (Guid.TryParse(change.OldValue, out var gOld))
                     {
+                        change.OldValueRaw ??= change.OldValue;
                         if (employeeMap.TryGetValue(gOld, out var empName)) change.OldValue = empName;
                         else if (departmentMap.TryGetValue(gOld, out var deptName)) change.OldValue = deptName;
                     }
                     if (Guid.TryParse(change.NewValue, out var gNew))
                     {
+                        change.NewValueRaw ??= change.NewValue;
                         if (employeeMap.TryGetValue(gNew, out var empName)) change.NewValue = empName;
                         else if (departmentMap.TryGetValue(gNew, out var deptName)) change.NewValue = deptName;
                     }
                 }
             }
 
-            // Resolve composite RecordId for RolePermissions
+            // Resolve composite RecordId for RolePermissions cleanly
             if (table is "rolepermissions" or "rolepermission" && !string.IsNullOrWhiteSpace(item.RecordId))
             {
-                var resolved = item.RecordId;
-                foreach (var (rId, rName) in roleMap)
-                    resolved = resolved.Replace(rId.ToString(), rName, StringComparison.OrdinalIgnoreCase);
-                foreach (var (pId, pName) in permissionMap)
-                    resolved = resolved.Replace(pId.ToString(), pName, StringComparison.OrdinalIgnoreCase);
-                item.RecordId = resolved;
+                Guid rGuid = Guid.Empty;
+                Guid pGuid = Guid.Empty;
+                var parts = item.RecordId.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                foreach (var part in parts)
+                {
+                    var seg = part.Contains('=') ? part.Split('=', 2)[1].Trim() : part.Trim();
+                    if (Guid.TryParse(seg, out var gVal) && gVal != Guid.Empty)
+                    {
+                        if (part.Contains("Role", StringComparison.OrdinalIgnoreCase))
+                            rGuid = gVal;
+                        else if (part.Contains("Permission", StringComparison.OrdinalIgnoreCase))
+                            pGuid = gVal;
+                    }
+                }
+
+                if (rGuid == Guid.Empty)
+                {
+                    var rRaw = ExtractRawChangeValue(item, "RoleId");
+                    if (!string.IsNullOrEmpty(rRaw) && Guid.TryParse(rRaw, out var gr)) rGuid = gr;
+                }
+                if (pGuid == Guid.Empty)
+                {
+                    var pRaw = ExtractRawChangeValue(item, "PermissionId");
+                    if (!string.IsNullOrEmpty(pRaw) && Guid.TryParse(pRaw, out var gp)) pGuid = gp;
+                }
+
+                var rName = rGuid != Guid.Empty && roleMap.TryGetValue(rGuid, out var rn) ? rn : ExtractChangeValue(item, "RoleId", roleMap);
+                var pName = pGuid != Guid.Empty && permissionMap.TryGetValue(pGuid, out var pn) ? pn : ExtractChangeValue(item, "PermissionId", permissionMap);
+
+                if (!string.IsNullOrWhiteSpace(rName) || !string.IsNullOrWhiteSpace(pName))
+                {
+                    item.RecordId = $"{rName ?? "Role"} • {pName ?? "Permission"}";
+                }
             }
         }
 
@@ -604,7 +712,7 @@ public static class AuditLogEnricher
                         var fileName = ExtractChangeValue(item, "FileName") ?? "File";
                         var docType = ExtractChangeValue(item, "DocumentType") ?? "Document";
                         item.EntityTitle = $"{fileName} - {docType} Document";
-                        item.NavigationRoute = $"/documents/{cleanId}";
+                        item.NavigationRoute = hasRecordGuid ? $"/documents/{recordGuid}" : "/documents/archive";
                     }
                     break;
 
@@ -613,7 +721,7 @@ public static class AuditLogEnricher
                         ? uName
                         : ExtractChangeValue(item, "Username") ?? "User";
                     item.EntityTitle = $"{username} - User Account";
-                    item.NavigationRoute = $"/settings/users/{cleanId}";
+                    item.NavigationRoute = hasRecordGuid ? $"/settings/users/{recordGuid}" : "/settings/users";
                     break;
 
                 case "yearlyrolloverlogs" or "yearlyrolloverlog":
@@ -621,7 +729,7 @@ public static class AuditLogEnricher
                         ? rollMeta.YearClosed.ToString()
                         : ExtractChangeValue(item, "YearClosed") ?? DateTime.UtcNow.Year.ToString();
                     item.EntityTitle = $"Year {yrClosed} Rollover";
-                    item.NavigationRoute = "/finance/timesheets";
+                    item.NavigationRoute = "/settings/year-end";
                     break;
 
                 case "employeeaddresses" or "employeeaddress":
@@ -636,6 +744,8 @@ public static class AuditLogEnricher
 
                     if (!string.IsNullOrEmpty(eaEmpId) && Guid.TryParse(eaEmpId, out var eaEmpGuid))
                         item.NavigationRoute = $"/employees/addresses/{eaEmpGuid}";
+                    else if (hasRecordGuid)
+                        item.NavigationRoute = $"/employees/addresses/{recordGuid}";
                     else
                         item.NavigationRoute = "/employees/addresses";
                     break;
@@ -656,8 +766,10 @@ public static class AuditLogEnricher
                     var parentEmpId = ExtractRawChangeValue(item, "EmployeeId");
                     if (!string.IsNullOrEmpty(parentEmpId) && Guid.TryParse(parentEmpId, out var pGuid))
                         item.NavigationRoute = $"/employees/{pGuid}";
+                    else if (hasRecordGuid)
+                        item.NavigationRoute = $"/employees/{recordGuid}";
                     else
-                        item.NavigationRoute = $"/employees/{cleanId}";
+                        item.NavigationRoute = "/employees/roster";
                     break;
 
                 case "employees" or "employee":
@@ -666,7 +778,7 @@ public static class AuditLogEnricher
                         : $"{ExtractChangeValue(item, "FirstName")} {ExtractChangeValue(item, "LastName")}".Trim();
                     if (string.IsNullOrWhiteSpace(empFullName)) empFullName = "Employee";
                     item.EntityTitle = $"{empFullName} - Employee";
-                    item.NavigationRoute = $"/employees/{cleanId}";
+                    item.NavigationRoute = hasRecordGuid ? $"/employees/{recordGuid}" : "/employees/roster";
                     break;
 
                 case "departments" or "department":
@@ -674,7 +786,7 @@ public static class AuditLogEnricher
                         ? dName
                         : ExtractChangeValue(item, "Name") ?? "Department";
                     item.EntityTitle = $"{deptNameDirect} - Department";
-                    item.NavigationRoute = $"/departments/{cleanId}";
+                    item.NavigationRoute = hasRecordGuid ? $"/departments/{recordGuid}" : "/departments/list";
                     break;
 
                 case "professions" or "profession":
@@ -682,7 +794,7 @@ public static class AuditLogEnricher
                         ? prName
                         : ExtractChangeValue(item, "Name") ?? "Profession";
                     item.EntityTitle = $"{profNameDirect} - Profession";
-                    item.NavigationRoute = "/departments";
+                    item.NavigationRoute = "/departments/professions";
                     break;
 
                 case "roles" or "role":
@@ -690,7 +802,7 @@ public static class AuditLogEnricher
                         ? rName
                         : ExtractChangeValue(item, "Name") ?? "Role";
                     item.EntityTitle = $"{roleNameDirect} - Role";
-                    item.NavigationRoute = $"/settings/roles/{cleanId}";
+                    item.NavigationRoute = hasRecordGuid ? $"/settings/roles/{recordGuid}" : "/settings/roles";
                     break;
 
                 case "permissions" or "permission":
@@ -702,8 +814,61 @@ public static class AuditLogEnricher
                     break;
 
                 case "rolepermissions" or "rolepermission":
-                    item.EntityTitle = $"{item.RecordId} - Role Permission";
-                    item.NavigationRoute = "/settings/roles";
+                    Guid roleGuidRp = Guid.Empty;
+                    Guid permGuidRp = Guid.Empty;
+
+                    var roleRawRp = ExtractRawChangeValue(item, "RoleId");
+                    if (!string.IsNullOrEmpty(roleRawRp) && Guid.TryParse(roleRawRp, out var grRp))
+                        roleGuidRp = grRp;
+
+                    var permRawRp = ExtractRawChangeValue(item, "PermissionId");
+                    if (!string.IsNullOrEmpty(permRawRp) && Guid.TryParse(permRawRp, out var gpRp))
+                        permGuidRp = gpRp;
+
+                    if (roleGuidRp == Guid.Empty || permGuidRp == Guid.Empty)
+                    {
+                        var rpParts = (item.RecordId ?? string.Empty).Split(new[] { ',', '=', '•' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                        foreach (var part in rpParts)
+                        {
+                            if (Guid.TryParse(part, out var gPart))
+                            {
+                                if (roleMap.ContainsKey(gPart) && roleGuidRp == Guid.Empty)
+                                    roleGuidRp = gPart;
+                                else if (permissionMap.ContainsKey(gPart) && permGuidRp == Guid.Empty)
+                                    permGuidRp = gPart;
+                            }
+                        }
+                    }
+
+                    var roleTitle = roleGuidRp != Guid.Empty && roleMap.TryGetValue(roleGuidRp, out var rNameRp)
+                        ? rNameRp
+                        : ExtractChangeValue(item, "RoleId", roleMap);
+
+                    var permTitle = permGuidRp != Guid.Empty && permissionMap.TryGetValue(permGuidRp, out var pNameRp)
+                        ? pNameRp
+                        : ExtractChangeValue(item, "PermissionId", permissionMap);
+
+                    if (!string.IsNullOrWhiteSpace(roleTitle) && !string.IsNullOrWhiteSpace(permTitle))
+                    {
+                        item.EntityTitle = $"{roleTitle} - {permTitle} (Role Permission)";
+                    }
+                    else if (!string.IsNullOrWhiteSpace(roleTitle))
+                    {
+                        item.EntityTitle = $"{roleTitle} - Role Permission";
+                    }
+                    else
+                    {
+                        item.EntityTitle = "Role Permission";
+                    }
+
+                    if (roleGuidRp != Guid.Empty)
+                    {
+                        item.NavigationRoute = $"/settings/roles/{roleGuidRp}";
+                    }
+                    else
+                    {
+                        item.NavigationRoute = "/settings/roles";
+                    }
                     break;
 
                 case "overtimetypes" or "overtimetype":
@@ -712,6 +877,16 @@ public static class AuditLogEnricher
                         : ExtractChangeValue(item, "Name") ?? "Overtime Type";
                     item.EntityTitle = $"{otNameDirect} - Overtime Type";
                     item.NavigationRoute = "/finance/overtime-types";
+                    break;
+
+                case "notificationoutboxes" or "notificationoutbox" or "notificationtypesettings" or "notificationtypesetting" or "usernotifications" or "usernotification" or "notifications" or "notification":
+                    item.EntityTitle = FormatTableName(item.TableName);
+                    item.NavigationRoute = "/notifications";
+                    break;
+
+                case "auditlogs" or "auditlog":
+                    item.EntityTitle = FormatTableName(item.TableName);
+                    item.NavigationRoute = "/settings/system-logs";
                     break;
 
                 default:
@@ -746,7 +921,85 @@ public static class AuditLogEnricher
     private static string? ExtractRawChangeValue(AuditLogItemDto item, string propertyName)
     {
         var change = item.Changes.FirstOrDefault(c => c.PropertyName.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
-        return change?.NewValue ?? change?.OldValue;
+        return change?.NewValueRaw ?? change?.OldValueRaw ?? change?.NewValue ?? change?.OldValue;
+    }
+
+    /// <summary>
+    /// Formats a property name into a human-readable title while preserving technical clarity.
+    /// E.g., "RoleId" -> "Role", "EmergencyContactPhone" -> "Emergency Contact Phone".
+    /// </summary>
+    public static string FormatPropertyName(string? propertyName)
+    {
+        if (string.IsNullOrWhiteSpace(propertyName))
+            return string.Empty;
+
+        var name = propertyName.Trim();
+
+        return name.ToLowerInvariant() switch
+        {
+            "roleid" => "Role",
+            "employeeid" => "Employee",
+            "departmentid" => "Department",
+            "professionid" => "Profession",
+            "permissionid" => "Permission",
+            "overtimetypeid" => "Overtime Type",
+            "monthlytimesheetid" => "Monthly Timesheet",
+            "payrollslipid" => "Payroll Slip",
+            "managerid" => "Manager",
+            "userid" => "User",
+            "createdbyuserid" => "Created By User",
+            "referenceid" => "Reference",
+            "dateofbirth" => "Date of Birth",
+            "hiredate" => "Hire Date",
+            "terminationdate" => "Termination Date",
+            "emergencycontactname" => "Emergency Contact Name",
+            "emergencycontactphone" => "Emergency Contact Phone",
+            "identitynumber" => "Identity Number",
+            "isactive" => "Status",
+            "issystemrole" => "System Role",
+            "issystemuser" => "System User",
+            "requirespasswordchange" => "Requires Password Change",
+            "yearclosed" => "Year Closed",
+            "documenttype" => "Document Type",
+            "ownermodule" => "Owner Module",
+            "filesizebytes" => "File Size",
+            "grosssalary" => "Gross Salary",
+            "netsalary" => "Net Salary",
+            "basesalary" => "Base Salary",
+            "hourlyrate" => "Hourly Rate",
+            "overtimerate" => "Overtime Rate",
+            "totaldeductions" => "Total Deductions",
+            "totalearnings" => "Total Earnings",
+            "totalworkinghours" => "Total Working Hours",
+            "totalovertimehours" => "Total Overtime Hours",
+            "standardhours" => "Standard Hours",
+            "overtimehours" => "Overtime Hours",
+            "itemtype" => "Item Type",
+            "addressline1" => "Address Line 1",
+            "addressline2" => "Address Line 2",
+            "postalcode" => "Postal Code",
+            "companyname" => "Company Name",
+            "contactperson" => "Contact Person",
+            "effectivedate" => "Effective Date",
+            "ispinned" => "Is Pinned",
+            "isholiday" => "Is Holiday",
+            "isweekend" => "Is Weekend",
+            "ismuted" => "Is Muted",
+            "reminderdays" => "Reminder Days",
+            "deliverychannel" => "Delivery Channel",
+            "typename" => "Type Name",
+            _ => FormatGenericPropertyName(name)
+        };
+    }
+
+    private static string FormatGenericPropertyName(string name)
+    {
+        if (name.Length > 2 && name.EndsWith("Id", StringComparison.Ordinal) && char.IsUpper(name[^2]))
+        {
+            name = name[..^2];
+        }
+        var spaced = Regex.Replace(name, @"(\B[A-Z])", " $1");
+        return spaced;
     }
 
     /// <summary>
