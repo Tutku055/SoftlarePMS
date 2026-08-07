@@ -1,4 +1,4 @@
-namespace SoftPMS.Application.Features.SystemSettings.DTOs;
+namespace SoftPMS.Application.Features.AuditLogs.DTOs;
 
 /// <summary>
 /// Structured representation of a single property mutation within an audit log entry.

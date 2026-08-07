@@ -2,10 +2,10 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
-using SoftPMS.Application.Features.SystemSettings.DTOs;
+using SoftPMS.Application.Features.AuditLogs.DTOs;
 using SoftPMS.Domain.Enums;
 
-namespace SoftPMS.Application.Features.SystemSettings.Helpers;
+namespace SoftPMS.Application.Features.AuditLogs.Helpers;
 
 /// <summary>
 /// Domain-aware enrichment service for AuditLog DTOs.

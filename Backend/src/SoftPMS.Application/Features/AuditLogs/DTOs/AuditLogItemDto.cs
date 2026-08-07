@@ -1,4 +1,4 @@
-namespace SoftPMS.Application.Features.SystemSettings.DTOs;
+namespace SoftPMS.Application.Features.AuditLogs.DTOs;
 
 /// <summary>
 /// DTO representing an individual entity mutation entry within a correlated audit log transaction.

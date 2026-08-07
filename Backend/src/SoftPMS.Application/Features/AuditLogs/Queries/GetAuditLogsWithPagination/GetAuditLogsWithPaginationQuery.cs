@@ -1,8 +1,8 @@
 using MediatR;
 using SoftPMS.Application.Common.Models;
-using SoftPMS.Application.Features.SystemSettings.DTOs;
+using SoftPMS.Application.Features.AuditLogs.DTOs;
 
-namespace SoftPMS.Application.Features.SystemSettings.Queries.GetAuditLogsWithPagination;
+namespace SoftPMS.Application.Features.AuditLogs.Queries.GetAuditLogsWithPagination;
 
 /// <summary>
 /// CQRS Query for retrieving paginated audit logs with parsed JSON change deltas

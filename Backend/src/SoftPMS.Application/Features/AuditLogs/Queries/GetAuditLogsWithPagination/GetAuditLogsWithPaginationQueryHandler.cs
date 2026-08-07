@@ -3,10 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Application.Common.Models;
-using SoftPMS.Application.Features.SystemSettings.DTOs;
-using SoftPMS.Application.Features.SystemSettings.Helpers;
+using SoftPMS.Application.Features.AuditLogs.DTOs;
+using SoftPMS.Application.Features.AuditLogs.Helpers;
 
-namespace SoftPMS.Application.Features.SystemSettings.Queries.GetAuditLogsWithPagination;
+namespace SoftPMS.Application.Features.AuditLogs.Queries.GetAuditLogsWithPagination;
 
 public sealed class GetAuditLogsWithPaginationQueryHandler(
     IApplicationDbContext context)
@@ -132,7 +132,6 @@ public sealed class GetAuditLogsWithPaginationQueryHandler(
             }
 
             await AuditLogHelper.ResolveHumanReadableNamesAsync(singleItems, context, cancellationToken);
-            await AuditLogHelper.ResolveNavigationRoutesAsync(singleItems, context, cancellationToken);
 
             foreach (var item in singleItems)
             {

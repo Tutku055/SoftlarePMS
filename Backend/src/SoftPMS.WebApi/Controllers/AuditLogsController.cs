@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SoftPMS.Application.Features.SystemSettings.Queries.GetAuditLogsWithPagination;
+using SoftPMS.Application.Features.AuditLogs.Queries.GetAuditLogDetailsByCorrelationId;
+using SoftPMS.Application.Features.AuditLogs.Queries.GetAuditLogsWithPagination;
 using SoftPMS.WebApi.Authorization;
 
 namespace SoftPMS.WebApi.Controllers;
@@ -41,7 +42,7 @@ public class AuditLogsController : ApiControllerBase
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 20)
     {
-        var query = new SoftPMS.Application.Features.SystemSettings.Queries.GetAuditLogDetailsByCorrelationId.GetAuditLogDetailsByCorrelationIdQuery(
+        var query = new GetAuditLogDetailsByCorrelationIdQuery(
             correlationId,
             pageNumber,
             pageSize);

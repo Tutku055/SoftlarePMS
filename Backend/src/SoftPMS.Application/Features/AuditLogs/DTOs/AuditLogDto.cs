@@ -1,4 +1,4 @@
-namespace SoftPMS.Application.Features.SystemSettings.DTOs;
+namespace SoftPMS.Application.Features.AuditLogs.DTOs;
 
 /// <summary>
 /// DTO representing a grouped audit trail transaction (one or more entity mutations executed together),

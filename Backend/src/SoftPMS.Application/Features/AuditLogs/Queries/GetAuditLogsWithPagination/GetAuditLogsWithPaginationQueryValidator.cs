@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace SoftPMS.Application.Features.SystemSettings.Queries.GetAuditLogsWithPagination;
+namespace SoftPMS.Application.Features.AuditLogs.Queries.GetAuditLogsWithPagination;
 
 public sealed class GetAuditLogsWithPaginationQueryValidator
     : AbstractValidator<GetAuditLogsWithPaginationQuery>

@@ -3,10 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Application.Common.Models;
-using SoftPMS.Application.Features.SystemSettings.DTOs;
-using SoftPMS.Application.Features.SystemSettings.Helpers;
+using SoftPMS.Application.Features.AuditLogs.DTOs;
+using SoftPMS.Application.Features.AuditLogs.Helpers;
 
-namespace SoftPMS.Application.Features.SystemSettings.Queries.GetAuditLogDetailsByCorrelationId;
+namespace SoftPMS.Application.Features.AuditLogs.Queries.GetAuditLogDetailsByCorrelationId;
 
 public sealed class GetAuditLogDetailsByCorrelationIdQueryHandler(
     IApplicationDbContext context)
@@ -85,7 +85,6 @@ public sealed class GetAuditLogDetailsByCorrelationIdQueryHandler(
 
         // Batch resolve human readable foreign key names and exact entity navigation routes
         await AuditLogHelper.ResolveHumanReadableNamesAsync(items, context, cancellationToken);
-        await AuditLogHelper.ResolveNavigationRoutesAsync(items, context, cancellationToken);
 
         return new PaginatedList<AuditLogItemDto>(
             items,

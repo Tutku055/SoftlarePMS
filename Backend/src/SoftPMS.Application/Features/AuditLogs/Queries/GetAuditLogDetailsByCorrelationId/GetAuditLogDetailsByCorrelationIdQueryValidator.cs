@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace SoftPMS.Application.Features.SystemSettings.Queries.GetAuditLogDetailsByCorrelationId;
+namespace SoftPMS.Application.Features.AuditLogs.Queries.GetAuditLogDetailsByCorrelationId;
 
 public sealed class GetAuditLogDetailsByCorrelationIdQueryValidator : AbstractValidator<GetAuditLogDetailsByCorrelationIdQuery>
 {

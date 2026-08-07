@@ -4,9 +4,9 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using SoftPMS.Application.Common.Interfaces;
-using SoftPMS.Application.Features.SystemSettings.DTOs;
+using SoftPMS.Application.Features.AuditLogs.DTOs;
 
-namespace SoftPMS.Application.Features.SystemSettings.Helpers;
+namespace SoftPMS.Application.Features.AuditLogs.Helpers;
 
 public static class AuditLogHelper
 {
