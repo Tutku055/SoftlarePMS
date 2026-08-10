@@ -177,13 +177,12 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Search Header */}
-      <Box className={styles.agendaHeader} sx={{ p: 2, borderBottom: '1px solid rgba(140, 140, 160, 0.15)', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(140, 140, 160, 0.02)' }}>
+      <Box sx={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, borderBottom: '1px solid rgba(140, 140, 160, 0.15)', bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(140, 140, 160, 0.02)', width: '100%', boxSizing: 'border-box' }}>
         <TextField
           size="small"
           placeholder="Search events, notes, holidays..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          fullWidth
           slotProps={{
             input: {
               startAdornment: (
@@ -193,9 +192,9 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
               ),
             },
           }}
-          sx={{ minWidth: 280, maxWidth: 400 }}
+          sx={{ width: 300 }}
         />
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+        <Typography variant="body2" color="text.secondary">
           {groupedDays.reduce((acc, curr) => acc + curr.items.length, 0)} items found
         </Typography>
       </Box>
@@ -264,8 +263,8 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                         else onSelectVirtualEvent(item.rawItem);
                       }}
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1 }}>
-                        <Box sx={{ color: item.color, display: 'flex' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0, mr: 1 }}>
+                        <Box sx={{ color: item.color, display: 'flex', flexShrink: 0 }}>
                           {item.type === 'holiday' && <Celebration fontSize="small" />}
                           {item.type === 'birthday' && <Cake fontSize="small" />}
                           {item.type === 'event' && (
@@ -275,12 +274,29 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                             item.isConfidential ? <Lock fontSize="small" /> : <StickyNote2 fontSize="small" />
                           )}
                         </Box>
-                        <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                        <Box sx={{ minWidth: 0, flex: 1 }}>
+                          <Typography
+                            variant="subtitle2"
+                            sx={{
+                              fontWeight: 700,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
                             {item.title}
                           </Typography>
                           {item.subtitle && (
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{
+                                display: 'block',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}
+                            >
                               {item.subtitle}
                             </Typography>
                           )}
@@ -292,6 +308,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                           label={item.time}
                           size="small"
                           sx={{
+                            flexShrink: 0,
                             fontWeight: 600,
                             fontSize: '0.75rem',
                             bgcolor: 'rgba(59, 130, 246, 0.15)',
