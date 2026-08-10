@@ -18,4 +18,5 @@ public interface ICurrentUserService
     /// <summary>True when a valid authenticated session is present.</summary>
     bool IsAuthenticated { get; }
     IEnumerable<string> Permissions { get; }
+    int TimezoneOffsetMinutes { get; }
 }

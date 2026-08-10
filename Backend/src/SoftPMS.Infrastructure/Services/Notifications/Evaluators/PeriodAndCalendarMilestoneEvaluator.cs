@@ -23,7 +23,11 @@ public class PeriodAndCalendarMilestoneEvaluator : IPeriodAndCalendarMilestoneEv
 
     public async Task EvaluateAsync(List<AuditAnomalyAlert> alerts, CancellationToken cancellationToken = default)
     {
-        var today = DateTime.UtcNow.Date;
+        var calendarSettings = await _context.CalendarSettings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(cancellationToken) ?? new Domain.Entities.CalendarSetting();
+
+        var today = DateTime.UtcNow.AddMinutes(-calendarSettings.CompanyTimezoneOffsetMinutes).Date;
         var currentYear = today.Year;
         var currentMonth = today.Month;
 

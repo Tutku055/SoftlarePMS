@@ -46,7 +46,12 @@ public class FinanceAlertEvaluator : IFinanceAlertEvaluator
 
         var reminderDays = setting?.ReminderDays ?? definition?.DefaultReminderDays ?? 5;
         var channel = setting?.DeliveryChannel ?? definition?.DefaultDeliveryChannel ?? NotificationDeliveryChannel.System;
-        var today = DateTime.UtcNow.Date;
+
+        var calendarSettings = await _context.CalendarSettings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(cancellationToken) ?? new CalendarSetting();
+
+        var today = DateTime.UtcNow.AddMinutes(-calendarSettings.CompanyTimezoneOffsetMinutes).Date;
         var currentYear = today.Year;
         var currentMonth = today.Month;
 

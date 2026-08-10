@@ -45,7 +45,12 @@ public class DocumentExpiryEvaluator : IDocumentExpiryEvaluator
 
         var reminderDays = setting?.ReminderDays ?? definition?.DefaultReminderDays ?? 14;
         var channel = setting?.DeliveryChannel ?? definition?.DefaultDeliveryChannel ?? NotificationDeliveryChannel.System;
-        var today = DateTime.UtcNow.Date;
+
+        var calendarSettings = await _context.CalendarSettings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(cancellationToken) ?? new CalendarSetting();
+
+        var today = DateTime.UtcNow.AddMinutes(-calendarSettings.CompanyTimezoneOffsetMinutes).Date;
         var thresholdDate = today.AddDays(reminderDays);
 
         // Load only documents that are within the threshold window

@@ -14,7 +14,7 @@ public class Employee: BaseEntity
 
     public Gender Gender { get; set; } = Gender.Unspecified;
 
-    public DateTime DateOfBirth { get; set; }
+    public DateTime? DateOfBirth { get; set; }
 
     public string Nationality { get; set; } = string.Empty;
 

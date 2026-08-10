@@ -1,4 +1,5 @@
 using FluentValidation;
+using SoftPMS.Domain.Enums;
 
 namespace SoftPMS.Application.Features.Calendar.Commands.CreateCalendarEvent;
 
@@ -16,7 +17,23 @@ public class CreateCalendarEventCommandValidator : AbstractValidator<CreateCalen
 
         RuleFor(x => x.EndTime)
             .GreaterThanOrEqualTo(x => x.StartTime)
-            .WithMessage("End time must be greater than or equal to start time.");
+            .WithMessage("End time must be greater than or equal to start time.")
+            .Must((cmd, endTime) =>
+            {
+                if (cmd.EventType == CalendarEventType.TimeBased || cmd.EventType == CalendarEventType.AllDay)
+                {
+                    return endTime.Date == cmd.StartTime.Date;
+                }
+                return true;
+            }).WithMessage("Time-based and All-Day events must start and end on the same day.")
+            .Must((cmd, endTime) =>
+            {
+                if (cmd.EventType == CalendarEventType.MultiDay)
+                {
+                    return endTime.Date > cmd.StartTime.Date;
+                }
+                return true;
+            }).WithMessage("Multi-Day events must span multiple days.");
 
         RuleFor(x => x.ReminderThresholdDays)
             .GreaterThanOrEqualTo(0)

@@ -14,97 +14,15 @@ import type {
   CalendarNoteDto,
   VirtualCalendarEventDto,
 } from "../../types/calendar.types";
+import { CalendarEventType } from "../../types/calendar.types";
 import {
   formatDateToIso,
   formatTimeDisplay,
 } from "../../utils/calendarDateUtils";
 import styles from "../Calendar.module.css";
 
-type PositionedCalendarEvent = CalendarEventDto & {
-  lane: number;
-  laneCount: number;
-  startMin: number;
-  endMin: number;
-};
-
-const MIN_EVENT_DURATION_MINUTES = 45;
-
-const layoutDayEvents = (
-  events: CalendarEventDto[],
-): PositionedCalendarEvent[] => {
-  const normalized = events
-    .map((evt) => {
-      const start = new Date(evt.startTime);
-      const end = new Date(evt.endTime);
-      const startMin = start.getHours() * 60 + start.getMinutes();
-      let endMin = end.getHours() * 60 + end.getMinutes();
-
-      if (endMin <= startMin) {
-        endMin = startMin + MIN_EVENT_DURATION_MINUTES;
-      }
-
-      return {
-        ...evt,
-        startMin,
-        endMin,
-      };
-    })
-    .sort(
-      (a, b) =>
-        a.startMin - b.startMin ||
-        a.endMin - b.endMin ||
-        a.id.localeCompare(b.id),
-    );
-
-  const positioned: PositionedCalendarEvent[] = [];
-  let cluster: typeof normalized = [];
-  let clusterEnd = -1;
-
-  const flushCluster = () => {
-    if (!cluster.length) return;
-
-    const laneEndTimes: number[] = [];
-    const clusterLayouts: PositionedCalendarEvent[] = [];
-
-    cluster.forEach((evt) => {
-      let lane = laneEndTimes.findIndex((laneEnd) => laneEnd <= evt.startMin);
-      if (lane === -1) {
-        lane = laneEndTimes.length;
-      }
-
-      laneEndTimes[lane] = evt.endMin;
-      clusterLayouts.push({
-        ...evt,
-        lane,
-        laneCount: 0,
-      });
-    });
-
-    const laneCount = Math.max(1, laneEndTimes.length);
-    clusterLayouts.forEach((evt) => {
-      positioned.push({
-        ...evt,
-        laneCount,
-      });
-    });
-
-    cluster = [];
-    clusterEnd = -1;
-  };
-
-  normalized.forEach((evt) => {
-    if (cluster.length && evt.startMin >= clusterEnd) {
-      flushCluster();
-    }
-
-    cluster.push(evt);
-    clusterEnd = clusterEnd < 0 ? evt.endMin : Math.max(clusterEnd, evt.endMin);
-  });
-
-  flushCluster();
-
-  return positioned;
-};
+import { layoutDayEvents } from "../../utils/eventLayoutUtils";
+import { EventStack } from "./EventStack";
 
 interface DayViewProps {
   currentDate: Date;
@@ -143,7 +61,11 @@ export const DayView: React.FC<DayViewProps> = ({
   const isToday = isoDate === formatDateToIso(today);
   const currentMinutesFromMidnight = today.getHours() * 60 + today.getMinutes();
   const dayEvents = filters.showPhysicalEvents
-    ? layoutDayEvents(dayData?.physicalEvents || [])
+    ? layoutDayEvents((dayData?.physicalEvents || []).filter(e => {
+        const isExplicitSolid = e.eventType === CalendarEventType.AllDay || e.eventType === CalendarEventType.MultiDay;
+        const isLegacyMultiDay = !e.eventType && e.startTime.split('T')[0] !== e.endTime.split('T')[0];
+        return !isExplicitSolid && !isLegacyMultiDay;
+      }), 3)
     : [];
 
   return (
@@ -245,6 +167,42 @@ export const DayView: React.FC<DayViewProps> = ({
                 </Typography>
               </Box>
             ))}
+            
+          {/* All-Day & Multi-Day Physical Events */}
+          {filters.showPhysicalEvents &&
+            dayData?.physicalEvents
+              ?.filter(e => {
+                const isExplicitSolid = e.eventType === CalendarEventType.AllDay || e.eventType === CalendarEventType.MultiDay;
+                const isLegacyMultiDay = !e.eventType && e.startTime.split('T')[0] !== e.endTime.split('T')[0];
+                return isExplicitSolid || isLegacyMultiDay;
+              })
+              .map((e) => {
+                const isConf = e.visibilityLevel === 2;
+                const isMulti = e.eventType === CalendarEventType.MultiDay || (!e.eventType && e.startTime.split('T')[0] !== e.endTime.split('T')[0]);
+                return (
+                  <Box
+                    key={e.id}
+                    className={styles.eventChip}
+                    style={{
+                      backgroundColor: isConf ? "#8B5CF6" : "#3B82F6",
+                      color: "#fff",
+                      padding: "3px 8px",
+                      border: "none",
+                    }}
+                    onClick={() => onSelectEvent(e)}
+                  >
+                    {isConf ? (
+                      <Lock sx={{ fontSize: 13 }} />
+                    ) : (
+                      <EventIcon sx={{ fontSize: 13 }} />
+                    )}
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                      {e.title}
+                      {isMulti && " (Multi-Day)"}
+                    </Typography>
+                  </Box>
+                );
+              })}
         </Box>
       </Box>
 
@@ -281,7 +239,19 @@ export const DayView: React.FC<DayViewProps> = ({
                 />
               ))}
 
-              {dayEvents.map((evt) => {
+              {dayEvents.map((group) => {
+                if (group.events.length > 1) {
+                  return (
+                    <EventStack
+                      key={group.id}
+                      events={group.events}
+                      onSelectEvent={onSelectEvent}
+                      slotHeight={SLOT_HEIGHT}
+                    />
+                  );
+                }
+
+                const evt = group.events[0];
                 const isConf = evt.visibilityLevel === 2;
                 const top = (evt.startMin / 60) * SLOT_HEIGHT;
                 const height = Math.max(
@@ -318,7 +288,7 @@ export const DayView: React.FC<DayViewProps> = ({
                       transition: "transform 0.15s ease",
                       "&:hover": {
                         transform: "scale(1.01)",
-                        zIndex: 9 + evt.lane,
+                        zIndex: 20,
                       },
                     }}
                     onClick={(e) => {

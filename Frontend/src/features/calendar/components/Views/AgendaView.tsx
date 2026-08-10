@@ -23,6 +23,7 @@ import type {
   CalendarNoteDto,
   VirtualCalendarEventDto,
 } from '../../types/calendar.types';
+import { CalendarEventType } from '../../types/calendar.types';
 import { parseDateOnly, formatTimeDisplay } from '../../utils/calendarDateUtils';
 import styles from '../Calendar.module.css';
 
@@ -58,6 +59,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
           color: string;
           rawItem: any;
           isConfidential?: boolean;
+          sortOrder?: number;
         }> = [];
 
         // Holidays
@@ -73,6 +75,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                   subtitle: h.description || undefined,
                   color: h.colorCode || '#10B981',
                   rawItem: h,
+                  sortOrder: -1,
                 });
               }
             });
@@ -91,6 +94,7 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                   subtitle: b.description || undefined,
                   color: b.colorCode || '#EC4899',
                   rawItem: b,
+                  sortOrder: -1,
                 });
               }
             });
@@ -105,15 +109,36 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
               if (e.departmentName) {
                 subtitle = subtitle ? `[${e.departmentName}] ${subtitle}` : `Department: ${e.departmentName}`;
               }
+              let timeLabel = '';
+              let sortOrder = 0;
+              
+              const isExplicitAllDay = e.eventType === CalendarEventType.AllDay;
+              const isExplicitMultiDay = e.eventType === CalendarEventType.MultiDay;
+              const isLegacyMultiDay = !e.eventType && e.startTime.split('T')[0] !== e.endTime.split('T')[0];
+
+              if (isExplicitAllDay) {
+                timeLabel = 'All Day';
+                sortOrder = -1;
+              } else if (isExplicitMultiDay || isLegacyMultiDay) {
+                const sDate = new Date(e.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const eDate = new Date(e.endTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                timeLabel = `${sDate} - ${eDate}`;
+                sortOrder = -2;
+              } else {
+                timeLabel = `${formatTimeDisplay(e.startTime)} – ${formatTimeDisplay(e.endTime)}`;
+                sortOrder = 0;
+              }
+
               items.push({
                 id: e.id,
                 type: 'event',
                 title: e.title,
                 subtitle,
-                time: `${formatTimeDisplay(e.startTime)} – ${formatTimeDisplay(e.endTime)}`,
+                time: timeLabel,
                 color: isConf ? '#8B5CF6' : '#3B82F6',
                 rawItem: e,
                 isConfidential: isConf,
+                sortOrder,
               });
             }
           });
@@ -131,10 +156,13 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
                 color: n.colorCode || '#F59E0B',
                 rawItem: n,
                 isConfidential: n.visibilityLevel === 2,
+                sortOrder: 1,
               });
             }
           });
         }
+
+        items.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
         return {
           date: day.date,

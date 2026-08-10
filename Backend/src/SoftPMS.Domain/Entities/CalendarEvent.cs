@@ -25,4 +25,6 @@ public class CalendarEvent : BaseEntity
     public Guid? UserId { get; set; }
 
     public virtual User? User { get; set; }
+
+    public CalendarEventType EventType { get; set; } = CalendarEventType.TimeBased;
 }

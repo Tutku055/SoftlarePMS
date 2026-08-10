@@ -28,9 +28,14 @@ public class CalendarNotificationEvaluator : ICalendarNotificationEvaluator
 
     public async Task<int> EvaluateCalendarRemindersAsync(CancellationToken cancellationToken = default)
     {
+        // Fetch calendar settings early for Timezone Offset
+        var settings = await _context.CalendarSettings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(cancellationToken) ?? new CalendarSetting();
+
         var dispatchedCount = 0;
         var nowUtc = DateTimeOffset.UtcNow;
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddMinutes(-settings.CompanyTimezoneOffsetMinutes));
 
         // Fetch active users with employee and role details for in-app and email notifications
         var activeUsers = await _context.Users
@@ -79,10 +84,7 @@ public class CalendarNotificationEvaluator : ICalendarNotificationEvaluator
             }
         }
 
-        // Fetch calendar settings
-        var settings = await _context.CalendarSettings
-            .AsNoTracking()
-            .FirstOrDefaultAsync(cancellationToken) ?? new CalendarSetting();
+
 
         // ─────────────────────────────────────────────────────────────────────────────
         // 1. PHYSICAL CALENDAR EVENTS
@@ -281,10 +283,10 @@ public class CalendarNotificationEvaluator : ICalendarNotificationEvaluator
         var birthdayReminderDays = settings.BirthdayReminderDays;
         var birthdayWindowEnd = today.AddDays(birthdayReminderDays);
 
-        foreach (var emp in activeEmployees)
+        foreach (var emp in activeEmployees.Where(e => e.DateOfBirth.HasValue))
         {
-            var birthDay = emp.DateOfBirth.Day;
-            var birthMonth = emp.DateOfBirth.Month;
+            var birthDay = emp.DateOfBirth.Value.Day;
+            var birthMonth = emp.DateOfBirth.Value.Month;
 
             // Handle Feb 29 for non-leap years
             if (birthMonth == 2 && birthDay == 29 && !DateTime.IsLeapYear(today.Year))
@@ -296,7 +298,7 @@ public class CalendarNotificationEvaluator : ICalendarNotificationEvaluator
             if (nextBirthday < today)
             {
                 var nextYear = today.Year + 1;
-                var nextYearDay = (birthMonth == 2 && birthDay == 29 && !DateTime.IsLeapYear(nextYear)) ? 28 : emp.DateOfBirth.Day;
+                var nextYearDay = (birthMonth == 2 && birthDay == 29 && !DateTime.IsLeapYear(nextYear)) ? 28 : emp.DateOfBirth.Value.Day;
                 nextBirthday = new DateOnly(nextYear, birthMonth, nextYearDay);
             }
 

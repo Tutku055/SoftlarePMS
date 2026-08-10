@@ -33,6 +33,9 @@ apiClient.interceptors.request.use(
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    if (config.headers) {
+      config.headers['X-Timezone-Offset'] = new Date().getTimezoneOffset().toString();
+    }
     return config;
   },
   (error) => Promise.reject(error)

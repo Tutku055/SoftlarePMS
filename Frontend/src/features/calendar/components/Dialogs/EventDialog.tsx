@@ -21,7 +21,8 @@ import {
   FormHelperText,
 } from '@mui/material';
 import { Close, DeleteOutlined, Event as EventIcon, Public, Lock } from '@mui/icons-material';
-import { VisibilityLevel, type CalendarEventDto, type CreateCalendarEventPayload, type UpdateCalendarEventPayload } from '../../types/calendar.types';
+import { VisibilityLevel, CalendarEventType, type CalendarEventDto, type CreateCalendarEventPayload, type UpdateCalendarEventPayload } from '../../types/calendar.types';
+import { toLocalISOStringWithOffset } from '../../utils/calendarDateUtils';
 import { useAuthStore } from '../../../../store/useAuthStore';
 import { useDepartmentsLookup } from '../../../departments/hooks/useDepartmentsLookup';
 
@@ -62,6 +63,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
   const [endDateTime, setEndDateTime] = useState('');
   const [reminderDays, setReminderDays] = useState(1);
   const [sendEmail, setSendEmail] = useState(true);
+  const [eventType, setEventType] = useState<CalendarEventType>(CalendarEventType.TimeBased);
   const [visibilityLevel, setVisibilityLevel] = useState<VisibilityLevel>(VisibilityLevel.Standard);
   const [departmentId, setDepartmentId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +92,14 @@ export const EventDialog: React.FC<EventDialogProps> = ({
       setEndDateTime(formatToLocalDateTimeString(end));
       setReminderDays(eventToEdit.reminderThresholdDays);
       setSendEmail(eventToEdit.sendEmailReminder);
+      let initialEventType = eventToEdit.eventType;
+      if (!initialEventType) {
+        const s = eventToEdit.startTime.split('T')[0];
+        const e = eventToEdit.endTime.split('T')[0];
+        initialEventType = (s !== e) ? CalendarEventType.MultiDay : CalendarEventType.TimeBased;
+      }
+
+      setEventType(initialEventType);
       setVisibilityLevel(eventToEdit.visibilityLevel ?? VisibilityLevel.Standard);
       setDepartmentId(eventToEdit.departmentId || '');
       setError(null);
@@ -108,6 +118,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
       setEndDateTime(formatToLocalDateTimeString(endDate));
       setReminderDays(1);
       setSendEmail(true);
+      setEventType(CalendarEventType.TimeBased);
       setVisibilityLevel(defaultVis);
       setDepartmentId('');
       setError(null);
@@ -131,11 +142,20 @@ export const EventDialog: React.FC<EventDialogProps> = ({
       return;
     }
 
-    const start = new Date(startDateTime);
-    const end = new Date(endDateTime);
+    let finalStart = new Date(startDateTime);
+    let finalEnd = new Date(endDateTime);
 
-    if (end <= start) {
-      setError('End time must be after start time.');
+    if (eventType === CalendarEventType.AllDay) {
+      finalStart.setHours(0, 0, 0, 0);
+      finalEnd = new Date(finalStart);
+      finalEnd.setHours(23, 59, 59, 0);
+    } else if (eventType === CalendarEventType.MultiDay) {
+      finalStart.setHours(0, 0, 0, 0);
+      finalEnd.setHours(23, 59, 59, 0);
+    }
+
+    if (finalEnd < finalStart) {
+      setError('End time must be on or after start time.');
       return;
     }
 
@@ -148,8 +168,9 @@ export const EventDialog: React.FC<EventDialogProps> = ({
           id: eventToEdit.id,
           title: title.trim(),
           description: description.trim() || null,
-          startTime: start.toISOString(),
-          endTime: end.toISOString(),
+          startTime: toLocalISOStringWithOffset(finalStart),
+          endTime: toLocalISOStringWithOffset(finalEnd),
+          eventType,
           reminderThresholdDays: reminderDays,
           sendEmailReminder: isConfidential ? false : sendEmail,
           visibilityLevel: visibilityLevel,
@@ -159,8 +180,9 @@ export const EventDialog: React.FC<EventDialogProps> = ({
         await onCreate({
           title: title.trim(),
           description: description.trim() || null,
-          startTime: start.toISOString(),
-          endTime: end.toISOString(),
+          startTime: toLocalISOStringWithOffset(finalStart),
+          endTime: toLocalISOStringWithOffset(finalEnd),
+          eventType,
           reminderThresholdDays: reminderDays,
           sendEmailReminder: isConfidential ? false : sendEmail,
           visibilityLevel: visibilityLevel,
@@ -244,27 +266,90 @@ export const EventDialog: React.FC<EventDialogProps> = ({
             sx={{ mt: 0.5 }}
           />
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-            <TextField
-              label="Start Date & Time"
-              type="datetime-local"
-              required
-              fullWidth
-              value={startDateTime}
-              onChange={(e) => setStartDateTime(e.target.value)}
-              slotProps={{ inputLabel: { shrink: true } }}
-              disabled={isSubmitting || !canSaveActive}
-            />
-            <TextField
-              label="End Date & Time"
-              type="datetime-local"
-              required
-              fullWidth
-              value={endDateTime}
-              onChange={(e) => setEndDateTime(e.target.value)}
-              slotProps={{ inputLabel: { shrink: true } }}
-              disabled={isSubmitting || !canSaveActive}
-            />
+          <Box>
+            <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', color: 'text.secondary', mb: 1, display: 'block' }}>
+              Event Type
+            </Typography>
+            <RadioGroup
+              row
+              value={eventType}
+              onChange={(e) => setEventType(Number(e.target.value) as CalendarEventType)}
+            >
+              <FormControlLabel value={CalendarEventType.TimeBased} control={<Radio size="small" />} label="Time-Based" disabled={isSubmitting || !canSaveActive} />
+              <FormControlLabel value={CalendarEventType.AllDay} control={<Radio size="small" />} label="All-Day" disabled={isSubmitting || !canSaveActive} />
+              <FormControlLabel value={CalendarEventType.MultiDay} control={<Radio size="small" />} label="Multi-Day" disabled={isSubmitting || !canSaveActive} />
+            </RadioGroup>
+          </Box>
+
+          <Box sx={{ display: 'grid', gridTemplateColumns: eventType === CalendarEventType.AllDay ? '1fr' : '1fr 1fr', gap: 2 }}>
+            {eventType === CalendarEventType.TimeBased ? (
+              <>
+                <Box sx={{ gridColumn: 'span 2', bgcolor: 'action.hover', p: 1.5, borderRadius: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <EventIcon fontSize="small" color="action" />
+                  <Typography variant="body2" color="text.secondary">
+                    Event Date: <strong style={{ color: 'var(--mui-palette-text-primary)' }}>{new Date(startDateTime).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>
+                  </Typography>
+                </Box>
+                <TextField
+                  label="Start Time"
+                  type="time"
+                  required
+                  fullWidth
+                  value={startDateTime.split('T')[1]?.substring(0, 5) || '09:00'}
+                  onChange={(e) => {
+                    const datePart = startDateTime.split('T')[0];
+                    setStartDateTime(`${datePart}T${e.target.value}`);
+                  }}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  disabled={isSubmitting || !canSaveActive}
+                />
+                <TextField
+                  label="End Time"
+                  type="time"
+                  required
+                  fullWidth
+                  value={endDateTime.split('T')[1]?.substring(0, 5) || '10:00'}
+                  onChange={(e) => {
+                    const datePart = endDateTime.split('T')[0];
+                    setEndDateTime(`${datePart}T${e.target.value}`);
+                  }}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  disabled={isSubmitting || !canSaveActive}
+                />
+              </>
+            ) : (
+              <>
+                <TextField
+                  label="Start Date"
+                  type="date"
+                  required
+                  fullWidth
+                  value={startDateTime.split('T')[0]}
+                  onChange={(e) => {
+                    setStartDateTime(`${e.target.value}T00:00`);
+                    if (eventType === CalendarEventType.AllDay) {
+                      setEndDateTime(`${e.target.value}T23:59`);
+                    }
+                  }}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  disabled={isSubmitting || !canSaveActive}
+                />
+                {eventType === CalendarEventType.MultiDay && (
+                  <TextField
+                    label="End Date"
+                    type="date"
+                    required
+                    fullWidth
+                    value={endDateTime.split('T')[0]}
+                    onChange={(e) => {
+                      setEndDateTime(`${e.target.value}T23:59`);
+                    }}
+                    slotProps={{ inputLabel: { shrink: true } }}
+                    disabled={isSubmitting || !canSaveActive}
+                  />
+                )}
+              </>
+            )}
           </Box>
 
           {/* Visibility Level */}

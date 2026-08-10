@@ -133,12 +133,12 @@
 .monthCell {
   border-right: 1px solid rgba(140, 140, 160, 0.12);
   border-bottom: 1px solid rgba(140, 140, 160, 0.12);
-  padding: 4px 6px;
+  padding: 4px 0px;
   display: flex;
   flex-direction: column;
   min-height: 0;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
   transition: background-color 0.15s ease;
   position: relative;
   cursor: pointer;
@@ -184,6 +184,7 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 2px;
+  padding: 0 6px;
 }
 
 .dayNumber {
@@ -214,8 +215,9 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  overflow: hidden;
+  overflow: visible;
   flex: 1;
+  padding: 0 6px;
 }
 
 /* Event & Note Chips */
@@ -235,6 +237,8 @@
   user-select: none;
   border-left: 3px solid transparent;
   min-width: 0;
+  height: 22px;
+  box-sizing: border-box;
   line-height: 1.2;
 }
 

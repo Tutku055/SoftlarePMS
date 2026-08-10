@@ -61,6 +61,7 @@ export const CalendarSettingsDialog: React.FC<CalendarSettingsDialogProps> = ({
   const [sendEmailForHolidays, setSendEmailForHolidays] = useState(true);
   const [birthdayReminderDays, setBirthdayReminderDays] = useState(1);
   const [sendEmailForBirthdays, setSendEmailForBirthdays] = useState(true);
+  const [companyTimezoneOffsetMinutes, setCompanyTimezoneOffsetMinutes] = useState(-180);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -71,6 +72,7 @@ export const CalendarSettingsDialog: React.FC<CalendarSettingsDialogProps> = ({
       setSendEmailForHolidays(settings.sendEmailForHolidays ?? true);
       setBirthdayReminderDays(settings.birthdayReminderDays ?? 1);
       setSendEmailForBirthdays(settings.sendEmailForBirthdays ?? true);
+      setCompanyTimezoneOffsetMinutes(settings.companyTimezoneOffsetMinutes ?? -180);
       setError(null);
     }
   }, [settings, open]);
@@ -89,6 +91,7 @@ export const CalendarSettingsDialog: React.FC<CalendarSettingsDialogProps> = ({
         sendEmailForHolidays,
         birthdayReminderDays,
         sendEmailForBirthdays,
+        companyTimezoneOffsetMinutes,
       });
       onClose();
     } catch (err: any) {
@@ -183,6 +186,35 @@ export const CalendarSettingsDialog: React.FC<CalendarSettingsDialogProps> = ({
                 label="Send Email"
               />
             </Box>
+          </Box>
+
+          <Divider />
+
+          {/* System Timezone Section */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <SettingsIcon sx={{ color: '#3B82F6' }} />
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                System Timezone (Background Tasks)
+              </Typography>
+            </Box>
+
+            <TextField
+              select
+              label="Company Base Timezone"
+              value={companyTimezoneOffsetMinutes}
+              onChange={(e) => setCompanyTimezoneOffsetMinutes(Number(e.target.value))}
+              fullWidth
+              disabled={isSubmitting || !canManage}
+              helperText="Defines when 'Midnight' occurs for automated background emails."
+            >
+              <MenuItem value={-180}>UTC+03:00 (Istanbul, Moscow)</MenuItem>
+              <MenuItem value={-120}>UTC+02:00 (Athens, Cairo)</MenuItem>
+              <MenuItem value={-60}>UTC+01:00 (Berlin, Paris)</MenuItem>
+              <MenuItem value={0}>UTC±00:00 (London, Lisbon)</MenuItem>
+              <MenuItem value={300}>UTC-05:00 (New York, Toronto)</MenuItem>
+              <MenuItem value={420}>UTC-07:00 (Los Angeles, Vancouver)</MenuItem>
+            </TextField>
           </Box>
 
           <Divider />

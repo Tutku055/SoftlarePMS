@@ -11,6 +11,7 @@ public class CalendarEventDto
     public DateTimeOffset EndTime { get; set; }
     public int ReminderThresholdDays { get; set; }
     public bool SendEmailReminder { get; set; }
+    public CalendarEventType EventType { get; set; } = CalendarEventType.TimeBased;
     public VisibilityLevel VisibilityLevel { get; set; } = VisibilityLevel.Standard;
     public Guid? DepartmentId { get; set; }
     public string? DepartmentName { get; set; }

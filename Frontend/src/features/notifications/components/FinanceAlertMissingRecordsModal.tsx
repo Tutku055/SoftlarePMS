@@ -59,12 +59,21 @@ export const FinanceAlertMissingRecordsModal: React.FC<FinanceAlertMissingRecord
   const theme = useTheme();
   const navigate = useNavigate();
 
+  const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<PaginatedList<MissingFinanceRecordDto> | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(searchInput);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const fetchRecords = useCallback(async () => {
     if (!open || !year || !month) return;
@@ -92,6 +101,7 @@ export const FinanceAlertMissingRecordsModal: React.FC<FinanceAlertMissingRecord
     if (open) {
       fetchRecords();
     } else {
+      setSearchInput('');
       setSearchTerm('');
       setPage(0);
       setData(null);
@@ -197,7 +207,7 @@ export const FinanceAlertMissingRecordsModal: React.FC<FinanceAlertMissingRecord
       </DialogTitle>
 
       {/* Content */}
-      <DialogContent sx={{ p: 2.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <DialogContent sx={{ p: 3, pt: 3.5, display: 'flex', flexDirection: 'column', gap: 3 }}>
         {/* Search & Stats Bar */}
         <Box
           sx={{
@@ -211,9 +221,9 @@ export const FinanceAlertMissingRecordsModal: React.FC<FinanceAlertMissingRecord
           <TextField
             size="small"
             placeholder="Search by employee name or number..."
-            value={searchTerm}
+            value={searchInput}
             onChange={(e) => {
-              setSearchTerm(e.target.value);
+              setSearchInput(e.target.value);
               setPage(0);
             }}
             sx={{ width: { xs: '100%', sm: 360 } }}
@@ -224,9 +234,9 @@ export const FinanceAlertMissingRecordsModal: React.FC<FinanceAlertMissingRecord
                     <SearchRounded fontSize="small" sx={{ color: 'text.secondary' }} />
                   </InputAdornment>
                 ),
-                endAdornment: searchTerm ? (
+                endAdornment: searchInput ? (
                   <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setSearchTerm('')}>
+                    <IconButton size="small" onClick={() => { setSearchInput(''); setSearchTerm(''); }}>
                       <ClearRounded fontSize="small" />
                     </IconButton>
                   </InputAdornment>
@@ -274,8 +284,8 @@ export const FinanceAlertMissingRecordsModal: React.FC<FinanceAlertMissingRecord
                 <TableCell align="right" sx={{ fontWeight: 700, bgcolor: 'background.paper' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
-            <TableBody>
-              {loading ? (
+            <TableBody sx={{ opacity: loading && data ? 0.6 : 1, transition: 'opacity 0.2s', pointerEvents: loading ? 'none' : 'auto' }}>
+              {loading && (!data || data.items.length === 0) ? (
                 <TableRow>
                   <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
                     <CircularProgress size={36} color="warning" />

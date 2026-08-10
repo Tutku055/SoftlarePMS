@@ -24,9 +24,12 @@ public class GetCalendarByDateRangeQueryHandler : IRequestHandler<GetCalendarByD
 
     public async Task<List<CalendarDayDto>> Handle(GetCalendarByDateRangeQuery request, CancellationToken cancellationToken)
     {
-        var startDateTimeOffset = new DateTimeOffset(request.StartDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
-        var endDateTimeOffset = new DateTimeOffset(request.EndDate.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
-        var todayUtc = DateOnly.FromDateTime(DateTime.UtcNow);
+        var tzOffsetMinutes = _currentUserService.TimezoneOffsetMinutes;
+        var tzOffset = TimeSpan.FromMinutes(tzOffsetMinutes);
+
+        var startDateTimeOffset = new DateTimeOffset(request.StartDate.ToDateTime(TimeOnly.MinValue).AddMinutes(tzOffsetMinutes), TimeSpan.Zero);
+        var endDateTimeOffset = new DateTimeOffset(request.EndDate.AddDays(1).ToDateTime(TimeOnly.MinValue).AddMinutes(tzOffsetMinutes), TimeSpan.Zero);
+        var todayLocal = DateOnly.FromDateTime(DateTime.UtcNow.AddMinutes(-tzOffsetMinutes));
 
         var userPermissions = _currentUserService.Permissions;
         var currentUserId = _currentUserService.UserId;
@@ -58,6 +61,7 @@ public class GetCalendarByDateRangeQueryHandler : IRequestHandler<GetCalendarByD
             EndTime = e.EndTime,
             ReminderThresholdDays = e.ReminderThresholdDays,
             SendEmailReminder = e.SendEmailReminder,
+            EventType = e.EventType,
             VisibilityLevel = e.VisibilityLevel,
             DepartmentId = e.DepartmentId,
             DepartmentName = e.Department != null ? e.Department.Name : null,
@@ -97,9 +101,17 @@ public class GetCalendarByDateRangeQueryHandler : IRequestHandler<GetCalendarByD
         }).ToList();
 
         // 3. Virtual Events: Employee Birthdays calculated on the fly
+        var targetMonths = new List<int>();
+        for(var d = request.StartDate; d <= request.EndDate; d = d.AddDays(1))
+        {
+            if (!targetMonths.Contains(d.Month)) targetMonths.Add(d.Month);
+        }
+
         var birthdayEmployees = await _context.Employees
             .AsNoTracking()
-            .Where(e => !e.IsDeleted && e.EmploymentStatus == EmploymentStatus.Active)
+            .Where(e => !e.IsDeleted && e.EmploymentStatus == EmploymentStatus.Active 
+                     && e.DateOfBirth != null 
+                     && targetMonths.Contains(e.DateOfBirth.Value.Month))
             .ToListAsync(cancellationToken);
 
         var birthdayVirtualEvents = new List<VirtualCalendarEventDto>();
@@ -107,8 +119,8 @@ public class GetCalendarByDateRangeQueryHandler : IRequestHandler<GetCalendarByD
         {
             foreach (var emp in birthdayEmployees)
             {
-                var birthDay = emp.DateOfBirth.Day;
-                var birthMonth = emp.DateOfBirth.Month;
+                var birthDay = emp.DateOfBirth!.Value.Day;
+                var birthMonth = emp.DateOfBirth!.Value.Month;
 
                 if (birthMonth == 2 && birthDay == 29 && !DateTime.IsLeapYear(y))
                 {
@@ -166,7 +178,7 @@ public class GetCalendarByDateRangeQueryHandler : IRequestHandler<GetCalendarByD
         for (var i = 0; i < totalDays; i++)
         {
             var date = request.StartDate.AddDays(i);
-            var dateStartUtc = new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
+            var dateStartUtc = new DateTimeOffset(date.ToDateTime(TimeOnly.MinValue).AddMinutes(tzOffsetMinutes), TimeSpan.Zero);
             var dateEndUtc = dateStartUtc.AddDays(1);
 
             var dayEvents = physicalEventDtos
@@ -184,7 +196,7 @@ public class GetCalendarByDateRangeQueryHandler : IRequestHandler<GetCalendarByD
             calendarDays.Add(new CalendarDayDto
             {
                 Date = date,
-                IsToday = (date == todayUtc),
+                IsToday = (date == todayLocal),
                 Notes = dayNotes,
                 PhysicalEvents = dayEvents,
                 VirtualEvents = dayVirtual

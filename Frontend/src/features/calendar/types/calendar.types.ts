@@ -12,12 +12,21 @@ export const VirtualEventType = {
 
 export type VirtualEventType = (typeof VirtualEventType)[keyof typeof VirtualEventType];
 
+export const CalendarEventType = {
+  TimeBased: 1,
+  AllDay: 2,
+  MultiDay: 3,
+} as const;
+
+export type CalendarEventType = (typeof CalendarEventType)[keyof typeof CalendarEventType];
+
 export interface CalendarEventDto {
   id: string;
   title: string;
   description?: string | null;
   startTime: string; // ISO DateTimeOffset
   endTime: string;   // ISO DateTimeOffset
+  eventType: CalendarEventType;
   reminderThresholdDays: number;
   sendEmailReminder: boolean;
   visibilityLevel: VisibilityLevel;
@@ -66,6 +75,7 @@ export interface CalendarSettingsDto {
   sendEmailForHolidays: boolean;
   birthdayReminderDays: number;
   sendEmailForBirthdays: boolean;
+  companyTimezoneOffsetMinutes: number;
 }
 
 export interface CreateCalendarEventPayload {
@@ -73,6 +83,7 @@ export interface CreateCalendarEventPayload {
   description?: string | null;
   startTime: string;
   endTime: string;
+  eventType?: CalendarEventType;
   reminderThresholdDays: number;
   sendEmailReminder: boolean;
   visibilityLevel?: VisibilityLevel;
@@ -85,6 +96,7 @@ export interface UpdateCalendarEventPayload {
   description?: string | null;
   startTime: string;
   endTime: string;
+  eventType?: CalendarEventType;
   reminderThresholdDays: number;
   sendEmailReminder: boolean;
   visibilityLevel?: VisibilityLevel;
@@ -112,6 +124,7 @@ export interface UpdateCalendarSettingsPayload {
   sendEmailForHolidays: boolean;
   birthdayReminderDays: number;
   sendEmailForBirthdays: boolean;
+  companyTimezoneOffsetMinutes: number;
 }
 
 export type CalendarViewMode = 'month' | 'week' | 'day' | 'agenda';

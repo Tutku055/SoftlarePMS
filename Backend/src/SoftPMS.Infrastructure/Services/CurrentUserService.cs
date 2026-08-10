@@ -45,4 +45,18 @@ public sealed class CurrentUserService(IHttpContextAccessor httpContextAccessor)
             .Where(c => c.Type == "permission" || c.Type == "permissions")
             .Select(c => c.Value)
             .ToList() ?? new List<string>();
+
+    public int TimezoneOffsetMinutes
+    {
+        get
+        {
+            if (httpContextAccessor.HttpContext != null &&
+                httpContextAccessor.HttpContext.Request.Headers.TryGetValue("X-Timezone-Offset", out var headerValue) &&
+                int.TryParse(headerValue, out var offset))
+            {
+                return offset;
+            }
+            return 0; // Default to UTC
+        }
+    }
 }

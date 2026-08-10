@@ -11,7 +11,7 @@ using SoftPMS.Application.Features.Calendar.Queries.GetCalendarByDateRange;
 using SoftPMS.Application.Features.Calendar.Queries.GetCalendarEventById;
 using SoftPMS.Application.Features.Calendar.Queries.GetCalendarNoteById;
 using SoftPMS.Application.Features.Calendar.Queries.GetCalendarSettings;
-using SoftPMS.Application.Features.Calendar.Queries.GetMonthlyCalendar;
+
 using SoftPMS.WebApi.Authorization;
 
 namespace SoftPMS.WebApi.Controllers;
@@ -33,7 +33,11 @@ public class CalendarController : ApiControllerBase
     [HasPermission("Calendar.Read")]
     public async Task<IActionResult> GetMonthlyCalendar([FromQuery] int year, [FromQuery] int month)
     {
-        var result = await Sender.Send(new GetMonthlyCalendarQuery(year, month));
+        var daysInMonth = DateTime.DaysInMonth(year, month);
+        var startDate = new DateOnly(year, month, 1);
+        var endDate = new DateOnly(year, month, daysInMonth);
+
+        var result = await Sender.Send(new GetCalendarByDateRangeQuery(startDate, endDate));
         return Ok(result);
     }
 

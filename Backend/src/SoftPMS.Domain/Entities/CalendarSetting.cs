@@ -12,5 +12,7 @@ public class CalendarSetting : BaseEntity
 
     public bool SendEmailForBirthdays { get; set; } = true;
 
+    public int CompanyTimezoneOffsetMinutes { get; set; } = -180;
+
     public DateTime? UpdatedAt { get; set; }
 }

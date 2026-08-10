@@ -7,4 +7,5 @@ public class CalendarSettingsDto
     public bool SendEmailForHolidays { get; set; } = true;
     public int BirthdayReminderDays { get; set; } = 1;
     public bool SendEmailForBirthdays { get; set; } = true;
+    public int CompanyTimezoneOffsetMinutes { get; set; } = -180;
 }

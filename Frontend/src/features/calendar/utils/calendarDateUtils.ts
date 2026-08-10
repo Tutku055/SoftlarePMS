@@ -12,6 +12,23 @@ export const parseDateOnly = (dateStr: string): Date => {
   return new Date(y, m - 1, d, 0, 0, 0, 0);
 };
 
+export const toLocalISOStringWithOffset = (date: Date): string => {
+  const pad = (n: number, length: number = 2) => String(n).padStart(length, '0');
+  const tzOffset = -date.getTimezoneOffset(); // in minutes
+  const diff = tzOffset >= 0 ? '+' : '-';
+  const offsetHours = pad(Math.floor(Math.abs(tzOffset) / 60));
+  const offsetMinutes = pad(Math.abs(tzOffset) % 60);
+
+  return date.getFullYear() +
+      '-' + pad(date.getMonth() + 1) +
+      '-' + pad(date.getDate()) +
+      'T' + pad(date.getHours()) +
+      ':' + pad(date.getMinutes()) +
+      ':' + pad(date.getSeconds()) +
+      '.' + pad(date.getMilliseconds(), 3) +
+      diff + offsetHours + ':' + offsetMinutes;
+};
+
 export const getMonthGridRange = (currentDate: Date): { startDate: string; endDate: string; dates: Date[] } => {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
