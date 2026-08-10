@@ -109,6 +109,12 @@ const getEntityRoute = (tableName: string, recordId: string, navigationRoute?: s
   if (table.includes('audit') || table.includes('log')) {
     return `/settings/system-logs`;
   }
+  if (table.includes('calendarevent') || table.includes('calendarevents')) {
+    return `/calendar`;
+  }
+  if (table.includes('calendarnote') || table.includes('calendarnotes')) {
+    return `/calendar`;
+  }
 
   return cleanId ? `/${table}/${cleanId}` : `/${table}`;
 };

@@ -1,5 +1,9 @@
-import React, { useState, useMemo } from 'react';
-import { Box, CircularProgress, Alert, Paper } from '@mui/material';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Box, CircularProgress, Alert, Paper, Dialog, DialogTitle, DialogContent, Typography, CardActionArea, IconButton, Zoom } from '@mui/material';
+import EventIcon from '@mui/icons-material/Event';
+import NoteIcon from '@mui/icons-material/Note';
+import CloseIcon from '@mui/icons-material/Close';
 import type {
   CalendarViewMode,
   CalendarFilters,
@@ -34,9 +38,32 @@ import { CalendarSettingsDialog } from './components/Dialogs/CalendarSettingsDia
 import styles from './components/Calendar.module.css';
 
 export const CalendarPage: React.FC = () => {
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<CalendarViewMode>('month');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const dateParam = searchParams.get('date');
+
+  const initialDate = useMemo(() => {
+    if (dateParam) {
+      const parsed = new Date(dateParam);
+      if (!isNaN(parsed.getTime())) return parsed;
+    }
+    return new Date();
+  }, [dateParam]);
+
+  const [currentDate, setCurrentDate] = useState<Date>(initialDate);
+  const [viewMode, setViewMode] = useState<CalendarViewMode>(dateParam ? 'day' : 'month');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    if (dateParam) {
+      const parsed = new Date(dateParam);
+      if (!isNaN(parsed.getTime())) {
+        setCurrentDate(parsed);
+        setViewMode('day');
+        // Clear param so subsequent normal navigations don't get stuck on this date
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [dateParam, setSearchParams]);
 
   // Category filters
   const [filters, setFilters] = useState<CalendarFilters>({
@@ -60,6 +87,7 @@ export const CalendarPage: React.FC = () => {
 
   const [defaultDateForCreate, setDefaultDateForCreate] = useState<string | undefined>(undefined);
   const [defaultHourForCreate, setDefaultHourForCreate] = useState<number | undefined>(undefined);
+  const [creationContext, setCreationContext] = useState<{dateStr?: string, hour?: number} | null>(null);
 
   // Calculate dynamic date boundaries
   const { startDate, endDate, dates } = useMemo(() => {
@@ -256,7 +284,7 @@ export const CalendarPage: React.FC = () => {
               onSelectEvent={handleSelectEvent}
               onSelectNote={handleSelectNote}
               onSelectVirtualEvent={handleSelectVirtualEvent}
-              onCellClick={(dateStr) => handleOpenCreateEvent(dateStr)}
+              onCellClick={(dateStr) => setCreationContext({ dateStr })}
             />
           )}
 
@@ -268,7 +296,7 @@ export const CalendarPage: React.FC = () => {
               onSelectEvent={handleSelectEvent}
               onSelectNote={handleSelectNote}
               onSelectVirtualEvent={handleSelectVirtualEvent}
-              onTimeSlotClick={(dateStr, hour) => handleOpenCreateEvent(dateStr, hour)}
+              onTimeSlotClick={(dateStr, hour) => setCreationContext({ dateStr, hour })}
             />
           )}
 
@@ -280,7 +308,7 @@ export const CalendarPage: React.FC = () => {
               onSelectEvent={handleSelectEvent}
               onSelectNote={handleSelectNote}
               onSelectVirtualEvent={handleSelectVirtualEvent}
-              onTimeSlotClick={(dateStr, hour) => handleOpenCreateEvent(dateStr, hour)}
+              onTimeSlotClick={(dateStr, hour) => setCreationContext({ dateStr, hour })}
             />
           )}
 
@@ -297,6 +325,122 @@ export const CalendarPage: React.FC = () => {
       </Box>
 
       {/* Dialogs */}
+      <Dialog
+        open={!!creationContext}
+        onClose={() => setCreationContext(null)}
+        maxWidth="xs"
+        fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            borderRadius: 4,
+            backgroundImage: (theme: any) => theme.palette.mode === 'dark' 
+              ? 'linear-gradient(to bottom right, rgba(255,255,255,0.05), rgba(0,0,0,0.2))' 
+              : 'none',
+            bgcolor: 'background.paper',
+            boxShadow: (theme: any) => theme.palette.mode === 'dark' 
+              ? '0 24px 48px rgba(0,0,0,0.6)' 
+              : '0 24px 48px rgba(0,0,0,0.1)',
+            overflow: 'hidden'
+          }
+        }}
+      >
+        <DialogTitle sx={{ m: 0, p: 3, pb: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h5" component="div" sx={{ fontWeight: 800, background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Create New...
+          </Typography>
+          <IconButton
+            aria-label="close"
+            onClick={() => setCreationContext(null)}
+            sx={{
+              color: (theme) => theme.palette.grey[500],
+              '&:hover': { bgcolor: 'action.hover', transition: 'all 0.3s' },
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ px: 3, pb: 4 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Select the type of item you'd like to add to your calendar.
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+            <Zoom in={!!creationContext} style={{ transitionDelay: '50ms' }}>
+              <Paper
+                elevation={0}
+                sx={{
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 3,
+                  overflow: 'hidden',
+                  bgcolor: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'background.paper',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    boxShadow: (theme: any) => theme.palette.mode === 'dark' ? '0 8px 24px rgba(33, 150, 243, 0.3)' : '0 8px 24px rgba(33, 150, 243, 0.15)',
+                    transform: 'translateY(-3px)'
+                  }
+                }}
+              >
+                <CardActionArea 
+                  onClick={() => {
+                    handleOpenCreateEvent(creationContext?.dateStr, creationContext?.hour);
+                    setCreationContext(null);
+                  }}
+                  sx={{ p: 2.5, display: 'flex', alignItems: 'flex-start', gap: 2.5 }}
+                >
+                  <Box sx={{ p: 1.5, borderRadius: 2.5, bgcolor: 'primary.main', color: 'primary.contrastText', display: 'flex', boxShadow: '0 4px 12px rgba(33, 150, 243, 0.3)' }}>
+                    <EventIcon fontSize="large" />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>Event</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+                      Schedule a meeting, appointment, or set a specific time block.
+                    </Typography>
+                  </Box>
+                </CardActionArea>
+              </Paper>
+            </Zoom>
+
+            <Zoom in={!!creationContext} style={{ transitionDelay: '150ms' }}>
+              <Paper
+                elevation={0}
+                sx={{
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 3,
+                  overflow: 'hidden',
+                  bgcolor: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'background.paper',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    borderColor: 'secondary.main',
+                    boxShadow: (theme: any) => theme.palette.mode === 'dark' ? '0 8px 24px rgba(156, 39, 176, 0.3)' : '0 8px 24px rgba(156, 39, 176, 0.15)',
+                    transform: 'translateY(-3px)'
+                  }
+                }}
+              >
+                <CardActionArea 
+                  onClick={() => {
+                    handleOpenCreateNote(creationContext?.dateStr);
+                    setCreationContext(null);
+                  }}
+                  sx={{ p: 2.5, display: 'flex', alignItems: 'flex-start', gap: 2.5 }}
+                >
+                  <Box sx={{ p: 1.5, borderRadius: 2.5, bgcolor: 'secondary.main', color: 'secondary.contrastText', display: 'flex', boxShadow: '0 4px 12px rgba(156, 39, 176, 0.3)' }}>
+                    <NoteIcon fontSize="large" />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>Note</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.5 }}>
+                      Add a quick reminder, task, or information for this specific day.
+                    </Typography>
+                  </Box>
+                </CardActionArea>
+              </Paper>
+            </Zoom>
+          </Box>
+        </DialogContent>
+      </Dialog>
+
       <EventDialog
         open={isEventDialogOpen}
         onClose={() => setIsEventDialogOpen(false)}

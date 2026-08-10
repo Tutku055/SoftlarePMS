@@ -85,6 +85,8 @@ public static class AuditLogEnricher
         var documentIds = new HashSet<Guid>();
         var rolloverLogIds = new HashSet<Guid>();
         var employeeAddressIds = new HashSet<Guid>();
+        var calendarEventIds = new HashSet<Guid>();
+        var calendarNoteIds = new HashSet<Guid>();
 
         foreach (var item in items)
         {
@@ -137,6 +139,12 @@ public static class AuditLogEnricher
                         break;
                     case "employeeaddresses" or "employeeaddress":
                         employeeAddressIds.Add(recordGuid);
+                        break;
+                    case "calendarevents" or "calendarevent":
+                        calendarEventIds.Add(recordGuid);
+                        break;
+                    case "calendarnotes" or "calendarnote":
+                        calendarNoteIds.Add(recordGuid);
                         break;
                 }
             }
@@ -396,6 +404,22 @@ public static class AuditLogEnricher
                     EmployeeName = a.Employee.FirstName + " " + a.Employee.LastName
                 })
                 .ToDictionaryAsync(a => a.Id, cancellationToken)
+            : [];
+
+        // O. CalendarEvents
+        var calendarEventMap = calendarEventIds.Count > 0
+            ? await context.CalendarEvents.AsNoTracking()
+                .Where(c => calendarEventIds.Contains(c.Id))
+                .Select(c => new { c.Id, c.Title, c.StartTime })
+                .ToDictionaryAsync(c => c.Id, cancellationToken)
+            : [];
+
+        // P. CalendarNotes
+        var calendarNoteMap = calendarNoteIds.Count > 0
+            ? await context.CalendarNotes.AsNoTracking()
+                .Where(c => calendarNoteIds.Contains(c.Id))
+                .Select(c => new { c.Id, c.NoteDate })
+                .ToDictionaryAsync(c => c.Id, cancellationToken)
             : [];
 
         // ── 4. Foreign Key (FK) Name Replacement in Changes ────────────────────
@@ -877,6 +901,40 @@ public static class AuditLogEnricher
                         : ExtractChangeValue(item, "Name") ?? "Overtime Type";
                     item.EntityTitle = $"{otNameDirect} - Overtime Type";
                     item.NavigationRoute = "/finance/overtime-types";
+                    break;
+
+                case "calendarevents" or "calendarevent":
+                    var eventDateParam = "";
+                    if (hasRecordGuid && calendarEventMap.TryGetValue(recordGuid, out var ceMeta))
+                    {
+                        item.EntityTitle = $"{ceMeta.Title} - Calendar Event";
+                        eventDateParam = $"?date={ceMeta.StartTime:yyyy-MM-dd}";
+                    }
+                    else
+                    {
+                        var ceTitle = ExtractChangeValue(item, "Title") ?? "Calendar Event";
+                        item.EntityTitle = $"{ceTitle} - Calendar Event";
+                        var startTimeStr = ExtractChangeValue(item, "StartTime");
+                        if (DateTime.TryParse(startTimeStr, out var stDt))
+                            eventDateParam = $"?date={stDt:yyyy-MM-dd}";
+                    }
+                    item.NavigationRoute = $"/calendar{eventDateParam}";
+                    break;
+
+                case "calendarnotes" or "calendarnote":
+                    var noteDateParam = "";
+                    if (hasRecordGuid && calendarNoteMap.TryGetValue(recordGuid, out var cnMeta))
+                    {
+                        noteDateParam = $"?date={cnMeta.NoteDate:yyyy-MM-dd}";
+                    }
+                    else
+                    {
+                        var noteDateStr = ExtractChangeValue(item, "NoteDate");
+                        if (DateTime.TryParse(noteDateStr, out var ntDt))
+                            noteDateParam = $"?date={ntDt:yyyy-MM-dd}";
+                    }
+                    item.EntityTitle = "Calendar Note";
+                    item.NavigationRoute = $"/calendar{noteDateParam}";
                     break;
 
                 case "notificationoutboxes" or "notificationoutbox" or "notificationtypesettings" or "notificationtypesetting" or "usernotifications" or "usernotification" or "notifications" or "notification":

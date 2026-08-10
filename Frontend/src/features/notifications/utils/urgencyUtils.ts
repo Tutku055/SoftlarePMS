@@ -194,6 +194,7 @@ export interface NotificationTypeMeta {
   description: string;
   color: string;
   iconName: 'document' | 'finance' | 'system' | 'event';
+  requiredPermissions: string[];
 }
 
 export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, NotificationTypeMeta> = {
@@ -204,6 +205,7 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, NotificationType
     description: 'Expiring employee documents and certificates',
     color: '#8B5CF6',
     iconName: 'document',
+    requiredPermissions: ['Documents.Read'],
   },
   [NotificationType.FinanceAlert]: {
     type: NotificationType.FinanceAlert,
@@ -212,6 +214,7 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, NotificationType
     description: 'Monthly timesheets and financial review alerts',
     color: '#F59E0B',
     iconName: 'finance',
+    requiredPermissions: ['Timesheets.Read', 'Payrolls.Read'],
   },
   [NotificationType.SystemAnnouncement]: {
     type: NotificationType.SystemAnnouncement,
@@ -220,6 +223,7 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, NotificationType
     description: 'System-wide maintenance and operational passive notices',
     color: '#6366F1',
     iconName: 'system',
+    requiredPermissions: ['AuditLogs.Read', 'SystemSettings.YearEndOperations'],
   },
   [NotificationType.EventUpcoming]: {
     type: NotificationType.EventUpcoming,
@@ -228,6 +232,7 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, NotificationType
     description: 'Scheduled organizational milestones and calendar events',
     color: '#10B981',
     iconName: 'event',
+    requiredPermissions: [],
   },
 };
 

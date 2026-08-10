@@ -152,6 +152,12 @@ export const EventDialog: React.FC<EventDialogProps> = ({
     } else if (eventType === CalendarEventType.MultiDay) {
       finalStart.setHours(0, 0, 0, 0);
       finalEnd.setHours(23, 59, 59, 0);
+    } else if (eventType === CalendarEventType.TimeBased) {
+      // Ensure time-based events end on the exact same date to pass backend validation
+      const year = finalStart.getFullYear();
+      const month = finalStart.getMonth();
+      const date = finalStart.getDate();
+      finalEnd.setFullYear(year, month, date);
     }
 
     if (finalEnd < finalStart) {
@@ -273,7 +279,18 @@ export const EventDialog: React.FC<EventDialogProps> = ({
             <RadioGroup
               row
               value={eventType}
-              onChange={(e) => setEventType(Number(e.target.value) as CalendarEventType)}
+              onChange={(e) => {
+                const newType = Number(e.target.value) as CalendarEventType;
+                setEventType(newType);
+                
+                // When switching from Multi-Day to Time-Based or All-Day, force the End Date to match Start Date
+                // to prevent 400 Validation Error.
+                if (newType === CalendarEventType.TimeBased || newType === CalendarEventType.AllDay) {
+                  const startDatePart = startDateTime.split('T')[0];
+                  const endTimePart = endDateTime.includes('T') ? endDateTime.split('T')[1] : '10:00';
+                  setEndDateTime(`${startDatePart}T${endTimePart}`);
+                }
+              }}
             >
               <FormControlLabel value={CalendarEventType.TimeBased} control={<Radio size="small" />} label="Time-Based" disabled={isSubmitting || !canSaveActive} />
               <FormControlLabel value={CalendarEventType.AllDay} control={<Radio size="small" />} label="All-Day" disabled={isSubmitting || !canSaveActive} />
@@ -284,12 +301,23 @@ export const EventDialog: React.FC<EventDialogProps> = ({
           <Box sx={{ display: 'grid', gridTemplateColumns: eventType === CalendarEventType.AllDay ? '1fr' : '1fr 1fr', gap: 2 }}>
             {eventType === CalendarEventType.TimeBased ? (
               <>
-                <Box sx={{ gridColumn: 'span 2', bgcolor: 'action.hover', p: 1.5, borderRadius: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <EventIcon fontSize="small" color="action" />
-                  <Typography variant="body2" color="text.secondary">
-                    Event Date: <strong style={{ color: 'var(--mui-palette-text-primary)' }}>{new Date(startDateTime).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>
-                  </Typography>
-                </Box>
+                <TextField
+                  label="Event Date"
+                  type="date"
+                  required
+                  fullWidth
+                  sx={{ gridColumn: 'span 2' }}
+                  value={startDateTime.split('T')[0]}
+                  onChange={(e) => {
+                    const newDate = e.target.value;
+                    const startTimePart = startDateTime.split('T')[1] || '09:00';
+                    const endTimePart = endDateTime.split('T')[1] || '10:00';
+                    setStartDateTime(`${newDate}T${startTimePart}`);
+                    setEndDateTime(`${newDate}T${endTimePart}`);
+                  }}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  disabled={isSubmitting || !canSaveActive}
+                />
                 <TextField
                   label="Start Time"
                   type="time"

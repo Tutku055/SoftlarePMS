@@ -312,23 +312,30 @@ export const NotificationsPage: React.FC = () => {
               onClick={() => setSelectedType('all')}
               sx={{ fontWeight: 600 }}
             />
-            {Object.values(NOTIFICATION_TYPE_CONFIG).map((meta) => {
-              const isSelected = selectedType === meta.type;
-              return (
-                <Chip
-                  key={meta.type}
-                  label={meta.label}
-                  clickable
-                  color={isSelected ? 'primary' : 'default'}
-                  variant={isSelected ? 'filled' : 'outlined'}
-                  onClick={() => setSelectedType(isSelected ? 'all' : meta.type)}
-                  sx={{
-                    fontWeight: 600,
-                    borderColor: isSelected ? undefined : meta.color,
-                  }}
-                />
-              );
-            })}
+            {Object.values(NOTIFICATION_TYPE_CONFIG)
+              .filter((meta) => {
+                if (!meta.requiredPermissions || meta.requiredPermissions.length === 0) {
+                  return true;
+                }
+                return meta.requiredPermissions.some((perm) => hasPermission(perm));
+              })
+              .map((meta) => {
+                const isSelected = selectedType === meta.type;
+                return (
+                  <Chip
+                    key={meta.type}
+                    label={meta.label}
+                    clickable
+                    color={isSelected ? 'primary' : 'default'}
+                    variant={isSelected ? 'filled' : 'outlined'}
+                    onClick={() => setSelectedType(isSelected ? 'all' : meta.type)}
+                    sx={{
+                      fontWeight: 600,
+                      borderColor: isSelected ? undefined : meta.color,
+                    }}
+                  />
+                );
+              })}
           </Box>
 
           {/* Search, Status, Urgency & Sort Bar */}

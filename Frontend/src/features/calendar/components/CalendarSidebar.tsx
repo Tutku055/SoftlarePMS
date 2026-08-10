@@ -74,17 +74,25 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
     d1.getMonth() === d2.getMonth() &&
     d1.getDate() === d2.getDate();
 
-  // Calculate summary counts
-  const totalPhysicalEvents = calendarData.reduce((acc, curr) => acc + (curr.physicalEvents?.length || 0), 0);
-  const totalHolidays = calendarData.reduce(
-    (acc, curr) => acc + (curr.virtualEvents?.filter((v) => v.type === 1).length || 0),
-    0
-  );
-  const totalBirthdays = calendarData.reduce(
-    (acc, curr) => acc + (curr.virtualEvents?.filter((v) => v.type === 2).length || 0),
-    0
-  );
-  const totalNotes = calendarData.reduce((acc, curr) => acc + (curr.notes?.length || 0), 0);
+  // Calculate summary counts by unique ID to avoid double-counting multi-day events
+  const physicalEventIds = new Set<string>();
+  const holidayIds = new Set<string>();
+  const birthdayIds = new Set<string>();
+  const noteIds = new Set<string>();
+
+  calendarData.forEach((day) => {
+    day.physicalEvents?.forEach((e) => physicalEventIds.add(e.id));
+    day.virtualEvents?.forEach((v) => {
+      if (v.type === 1) holidayIds.add(v.id);
+      if (v.type === 2) birthdayIds.add(v.id);
+    });
+    day.notes?.forEach((n) => noteIds.add(n.id));
+  });
+
+  const totalPhysicalEvents = physicalEventIds.size;
+  const totalHolidays = holidayIds.size;
+  const totalBirthdays = birthdayIds.size;
+  const totalNotes = noteIds.size;
 
   return (
     <Box className={`${styles.sidebarContainer} ${!isOpen ? styles.sidebarClosed : ''}`}>
