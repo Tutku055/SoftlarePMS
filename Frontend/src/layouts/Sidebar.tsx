@@ -54,6 +54,12 @@ const menuConfig: MenuItem[] = [
     permission: 'Notifications.Read'
   },
   { 
+    title: 'Document Archive', 
+    path: '/documents/archive', 
+    icon: <FolderCopy />,
+    permission: 'Documents.Read'
+  },
+  { 
     title: 'Personnel Operations', 
     icon: <PeopleAlt />,
     children: [
@@ -69,13 +75,6 @@ const menuConfig: MenuItem[] = [
       { title: 'Department List', path: '/departments/list', permission: 'Departments.Read' },
       { title: 'Department Employees', path: '/departments/employees', permission: 'Departments.Read' },
       { title: 'Professions', path: '/departments/professions', permission: 'Professions.Read' }
-    ]
-  },
-  { 
-    title: 'Documents & Records', 
-    icon: <FolderCopy />,
-    children: [
-      { title: 'Document Archive', path: '/documents/archive', permission: 'Documents.Read' }
     ]
   },
   { 
@@ -255,7 +254,7 @@ export const Sidebar: React.FC = () => {
             </Box>
           </Toolbar>
 
-          <Box sx={{ overflowY: 'auto', overflowX: 'hidden', px: 1, pb: 4 }}>
+          <Box className={styles.sidebarNav} sx={{ overflowY: 'auto', overflowX: 'hidden', px: 1, pb: 4 }}>
             <List>
               {menuConfig.map((item) => renderMenuItem(item))}
             </List>
