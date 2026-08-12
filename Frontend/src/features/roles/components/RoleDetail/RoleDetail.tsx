@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../../store/useAuthStore';
+import { useBreadcrumbTitle } from '../../../../store/useBreadcrumbStore';
 import { PopupDialog } from '../../../../components/PopupDialog/PopupDialog';
 import { getAdaptedRoleColor } from '../../../../theme/colorUtils';
 
@@ -37,8 +38,10 @@ import {
   Checkbox,
   Accordion,
   AccordionSummary,
-  AccordionDetails
+  AccordionDetails,
+  Tooltip
 } from '@mui/material';
+import { PageHeader } from '../../../../components/PageHeader/PageHeader';
 import {
   ArrowBackRounded,
   DeleteRounded,
@@ -132,6 +135,7 @@ export const RoleDetail = () => {
   const [activeTab, setActiveTab] = useState(0);
 
   const { data: role, isLoading, isError } = useRoleDetail(id);
+  useBreadcrumbTitle(role?.name || null);
   const { data: availablePermissions } = usePermissionsList();
 
   const { mutate: updateRole, isPending: isUpdating } = useUpdateRole();
@@ -319,22 +323,21 @@ export const RoleDetail = () => {
   const roleInitials = role.name ? role.name.slice(0, 2).toUpperCase() : 'RL';
 
   return (
-    <Box sx={{ width: '100%', pb: 4 }}>
-      <Box sx={{ mb: 3 }}>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-          <IconButton onClick={() => navigate(-1)} sx={{ bgcolor: 'action.hover' }}>
-            <ArrowBackRounded />
-          </IconButton>
-          <Box>
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.02em', color: 'text.primary' }}>
-              Role Profile
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Managing role parameters and system permissions.
-            </Typography>
-          </Box>
-        </Stack>
-      </Box>
+    <Box sx={{ p: { xs: 2, sm: 3.5 }, maxWidth: 1400, mx: 'auto' }}>
+      <PageHeader
+        title="Role Profile"
+        subtitle={`ID: ${role.id} | ${role.name}`}
+        icon={<SecurityRounded />}
+        actions={
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+            <Tooltip title="Back to Roles">
+              <IconButton onClick={() => navigate('/settings/roles')} sx={{ bgcolor: 'action.hover' }}>
+                <ArrowBackRounded />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        }
+      />
 
       <Box sx={glassPanelSx}>
         <Box className={styles.profileSummaryGrid}>

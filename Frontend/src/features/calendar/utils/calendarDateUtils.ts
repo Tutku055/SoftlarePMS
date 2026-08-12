@@ -112,6 +112,45 @@ export const formatTimeDisplay = (isoDateTime: string): string => {
   }
 };
 
+export const formatEventTimeLabel = (event: {
+  eventType?: number;
+  startTime: string;
+  endTime?: string | null;
+}): string => {
+  const eventType = event.eventType;
+  const sDate = new Date(event.startTime);
+  const eDate = event.endTime ? new Date(event.endTime) : sDate;
+
+  const sIso = event.startTime.split('T')[0];
+  const eIso = (event.endTime || event.startTime).split('T')[0];
+
+  // 1: TimeBased, 2: AllDay, 3: MultiDay
+  const resolvedType = (eventType === 1 || eventType === 2 || eventType === 3)
+    ? eventType
+    : (sIso !== eIso ? 3 : 1);
+
+  if (resolvedType === 2) { // AllDay
+    return 'All Day';
+  }
+
+  if (resolvedType === 3) { // MultiDay
+    const sStr = sDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const eStr = eDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (sDate.getFullYear() !== eDate.getFullYear()) {
+      return `${sStr}, ${sDate.getFullYear()} – ${eStr}, ${eDate.getFullYear()}`;
+    }
+    return sIso !== eIso ? `${sStr} – ${eStr}` : 'All Day';
+  }
+
+  // TimeBased (1)
+  const sTime = formatTimeDisplay(event.startTime);
+  const eTime = event.endTime ? formatTimeDisplay(event.endTime) : '';
+  if (eTime && eTime !== sTime) {
+    return `${sTime} – ${eTime}`;
+  }
+  return sTime;
+};
+
 export const formatRangeLabel = (
   mode: 'month' | 'week' | 'day' | 'agenda',
   currentDate: Date

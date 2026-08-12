@@ -221,7 +221,7 @@ export const NOTIFICATION_TYPE_CONFIG: Record<NotificationType, NotificationType
     label: 'System Announcement',
     shortLabel: 'System',
     description: 'System-wide maintenance and operational passive notices',
-    color: '#6366F1',
+    color: '#0EA5E9',
     iconName: 'system',
     requiredPermissions: ['AuditLogs.Read', 'SystemSettings.YearEndOperations'],
   },

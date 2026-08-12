@@ -108,7 +108,9 @@ namespace SoftPMS.Persistence.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.Property<int>("EventType")
-                        .HasColumnType("int");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
 
                     b.Property<int>("ReminderThresholdDays")
                         .ValueGeneratedOnAdd()

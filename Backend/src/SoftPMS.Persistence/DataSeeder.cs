@@ -165,8 +165,6 @@ public static class DatabaseSeeder
                 logger.LogInformation("Seeded default CalendarSetting.");
             }
 
-
-
             // ── 6. Seed SuperAdmin role ────────────────────────────────────────────
             var superAdminRoleName = "SuperAdmin";
             var superAdminRole = await db.Roles

@@ -93,7 +93,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
       setReminderDays(eventToEdit.reminderThresholdDays);
       setSendEmail(eventToEdit.sendEmailReminder);
       let initialEventType = eventToEdit.eventType;
-      if (!initialEventType) {
+      if (!initialEventType || (initialEventType !== CalendarEventType.TimeBased && initialEventType !== CalendarEventType.AllDay && initialEventType !== CalendarEventType.MultiDay)) {
         const s = eventToEdit.startTime.split('T')[0];
         const e = eventToEdit.endTime.split('T')[0];
         initialEventType = (s !== e) ? CalendarEventType.MultiDay : CalendarEventType.TimeBased;
@@ -145,6 +145,8 @@ export const EventDialog: React.FC<EventDialogProps> = ({
     let finalStart = new Date(startDateTime);
     let finalEnd = new Date(endDateTime);
 
+    let payloadEventType = eventType;
+
     if (eventType === CalendarEventType.AllDay) {
       finalStart.setHours(0, 0, 0, 0);
       finalEnd = new Date(finalStart);
@@ -152,6 +154,9 @@ export const EventDialog: React.FC<EventDialogProps> = ({
     } else if (eventType === CalendarEventType.MultiDay) {
       finalStart.setHours(0, 0, 0, 0);
       finalEnd.setHours(23, 59, 59, 0);
+      if (finalStart.toDateString() === finalEnd.toDateString()) {
+        payloadEventType = CalendarEventType.AllDay;
+      }
     } else if (eventType === CalendarEventType.TimeBased) {
       // Ensure time-based events end on the exact same date to pass backend validation
       const year = finalStart.getFullYear();
@@ -176,11 +181,11 @@ export const EventDialog: React.FC<EventDialogProps> = ({
           description: description.trim() || null,
           startTime: toLocalISOStringWithOffset(finalStart),
           endTime: toLocalISOStringWithOffset(finalEnd),
-          eventType,
+          eventType: payloadEventType,
           reminderThresholdDays: reminderDays,
-          sendEmailReminder: isConfidential ? false : sendEmail,
-          visibilityLevel: visibilityLevel,
-          departmentId: isConfidential ? null : (departmentId || null),
+          sendEmailReminder: sendEmail,
+          visibilityLevel,
+          departmentId: visibilityLevel === VisibilityLevel.Confidential ? null : (departmentId || null),
         });
       } else {
         await onCreate({
@@ -188,7 +193,7 @@ export const EventDialog: React.FC<EventDialogProps> = ({
           description: description.trim() || null,
           startTime: toLocalISOStringWithOffset(finalStart),
           endTime: toLocalISOStringWithOffset(finalEnd),
-          eventType,
+          eventType: payloadEventType,
           reminderThresholdDays: reminderDays,
           sendEmailReminder: isConfidential ? false : sendEmail,
           visibilityLevel: visibilityLevel,
@@ -283,12 +288,22 @@ export const EventDialog: React.FC<EventDialogProps> = ({
                 const newType = Number(e.target.value) as CalendarEventType;
                 setEventType(newType);
                 
-                // When switching from Multi-Day to Time-Based or All-Day, force the End Date to match Start Date
-                // to prevent 400 Validation Error.
+                const startDatePart = startDateTime.split('T')[0];
+                const endDatePart = endDateTime.split('T')[0];
+
                 if (newType === CalendarEventType.TimeBased || newType === CalendarEventType.AllDay) {
-                  const startDatePart = startDateTime.split('T')[0];
-                  const endTimePart = endDateTime.includes('T') ? endDateTime.split('T')[1] : '10:00';
+                  // Force End Date to match Start Date
+                  const endTimePart = endDateTime.includes('T') ? endDateTime.split('T')[1] : (newType === CalendarEventType.AllDay ? '23:59' : '10:00');
                   setEndDateTime(`${startDatePart}T${endTimePart}`);
+                } else if (newType === CalendarEventType.MultiDay) {
+                  // If startDate == endDate when switching to Multi-Day, default end date to +1 day automatically
+                  if (startDatePart === endDatePart) {
+                    const sDate = new Date(`${startDatePart}T00:00:00`);
+                    sDate.setDate(sDate.getDate() + 1);
+                    const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+                    const nextDayStr = `${sDate.getFullYear()}-${pad(sDate.getMonth() + 1)}-${pad(sDate.getDate())}`;
+                    setEndDateTime(`${nextDayStr}T23:59`);
+                  }
                 }
               }}
             >
@@ -354,9 +369,19 @@ export const EventDialog: React.FC<EventDialogProps> = ({
                   fullWidth
                   value={startDateTime.split('T')[0]}
                   onChange={(e) => {
-                    setStartDateTime(`${e.target.value}T00:00`);
+                    const newStartDate = e.target.value;
+                    setStartDateTime(`${newStartDate}T00:00`);
                     if (eventType === CalendarEventType.AllDay) {
-                      setEndDateTime(`${e.target.value}T23:59`);
+                      setEndDateTime(`${newStartDate}T23:59`);
+                    } else if (eventType === CalendarEventType.MultiDay) {
+                      const endDatePart = endDateTime.split('T')[0];
+                      if (newStartDate >= endDatePart) {
+                        const sDate = new Date(`${newStartDate}T00:00:00`);
+                        sDate.setDate(sDate.getDate() + 1);
+                        const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+                        const nextDayStr = `${sDate.getFullYear()}-${pad(sDate.getMonth() + 1)}-${pad(sDate.getDate())}`;
+                        setEndDateTime(`${nextDayStr}T23:59`);
+                      }
                     }
                   }}
                   slotProps={{ inputLabel: { shrink: true } }}
@@ -370,7 +395,15 @@ export const EventDialog: React.FC<EventDialogProps> = ({
                     fullWidth
                     value={endDateTime.split('T')[0]}
                     onChange={(e) => {
-                      setEndDateTime(`${e.target.value}T23:59`);
+                      const newEndDate = e.target.value;
+                      const startDatePart = startDateTime.split('T')[0];
+                      if (newEndDate === startDatePart) {
+                        // User picked the same date for End Date in Multi-Day mode -> auto-revert to All-Day!
+                        setEventType(CalendarEventType.AllDay);
+                        setEndDateTime(`${newEndDate}T23:59`);
+                      } else {
+                        setEndDateTime(`${newEndDate}T23:59`);
+                      }
                     }}
                     slotProps={{ inputLabel: { shrink: true } }}
                     disabled={isSubmitting || !canSaveActive}

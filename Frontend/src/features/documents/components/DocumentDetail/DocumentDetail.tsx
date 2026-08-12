@@ -5,6 +5,7 @@ import { useUpdateDocument } from '../../hooks/useUpdateDocument';
 import { useDeleteDocument } from '../../hooks/useDocuments';
 import { documentsApi } from '../../api/documentsApi';
 import { useAuthStore } from '../../../../store/useAuthStore';
+import { useBreadcrumbTitle } from '../../../../store/useBreadcrumbStore';
 import { formatDateDisplay } from '../../../finance/constants/currencyConstants';
 
 import {
@@ -106,6 +107,7 @@ export const DocumentDetail = () => {
   const [activeTab, setActiveTab] = useState(0);
 
   const { data: document, isLoading, isError, refetch } = useDocumentDetail(id);
+  useBreadcrumbTitle(document?.fileName || null);
   const { mutate: updateDocument, isPending: isUpdating } = useUpdateDocument();
 
   const [formState, setFormState] = useState({

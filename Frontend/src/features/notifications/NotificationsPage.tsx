@@ -32,17 +32,33 @@ import {
   InboxRounded,
   MarkEmailReadRounded,
 } from '@mui/icons-material';
+import { useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useNotifications } from './hooks/useNotifications';
 import type { NotificationSortOption } from './hooks/useNotifications';
 import { NotificationCard } from './components/NotificationCard';
 import { NotificationSettingsView } from './components/NotificationSettingsView';
 import { NOTIFICATION_TYPE_CONFIG } from './utils/urgencyUtils';
+import { NotificationType } from './types';
+
+import { PageHeader } from '../../components/PageHeader/PageHeader';
 
 export const NotificationsPage: React.FC = () => {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
   const hasPermission = useAuthStore((state) => state.hasPermission);
+  const [searchParams] = useSearchParams();
+
+  // Parse initial type from URL on mount
+  let initialType: NotificationType | 'all' = 'all';
+  const typeParam = searchParams.get('type');
+  if (typeParam) {
+    const typeNum = parseInt(typeParam, 10);
+    const validTypes = Object.values(NotificationType) as number[];
+    if (validTypes.includes(typeNum)) {
+      initialType = typeNum as NotificationType;
+    }
+  }
 
   const canAdjustSettings =
     hasPermission('Notifications.AdjustThresholds') || hasPermission('Notifications.Mute');
@@ -73,7 +89,7 @@ export const NotificationsPage: React.FC = () => {
     markAllAsRead,
     deleteNotification,
     refetch,
-  } = useNotifications();
+  } = useNotifications(initialType);
 
   const handleToggleRead = async (id: string) => {
     try {
@@ -106,79 +122,49 @@ export const NotificationsPage: React.FC = () => {
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3.5 }, maxWidth: 1400, mx: 'auto' }}>
-      {/* Page Header */}
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', sm: 'row' },
-          alignItems: { xs: 'flex-start', sm: 'center' },
-          justifyContent: 'space-between',
-          gap: 2,
-          mb: 3,
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Box
-            sx={{
-              p: 1.2,
-              borderRadius: 2.5,
-              backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(99, 102, 241, 0.1)',
-              color: 'primary.main',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <NotificationsRounded sx={{ fontSize: 28 }} />
-          </Box>
-          <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.5px' }}>
-                Notifications
-              </Typography>
-              {unreadCount > 0 && (
-                <Chip
-                  label={`${unreadCount} Unread`}
-                  size="small"
-                  color="primary"
-                  sx={{ fontWeight: 700, fontSize: '0.75rem', height: 24 }}
-                />
-              )}
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              System alerts, document expiry notices, and organizational passive reminders.
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Header Action Buttons */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, alignSelf: { xs: 'stretch', sm: 'auto' } }}>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<RefreshRounded />}
-            onClick={() => refetch()}
-            disabled={isLoading}
-            sx={{ borderRadius: 2 }}
-          >
-            Refresh
-          </Button>
-
-          {activeTab === 0 && unreadCount > 0 && (
-            <Button
-              variant="contained"
+      <PageHeader
+        title="Notifications"
+        subtitle="System alerts, document expiry notices, and organizational passive reminders."
+        icon={<NotificationsRounded />}
+        badge={
+          unreadCount > 0 ? (
+            <Chip
+              label={`${unreadCount} Unread`}
               size="small"
               color="primary"
-              startIcon={<MarkEmailReadRounded />}
-              onClick={handleMarkAllAsRead}
-              disabled={isActionLoading || isLoading}
-              sx={{ borderRadius: 2, fontWeight: 600 }}
+              sx={{ fontWeight: 700, fontSize: '0.75rem', height: 24 }}
+            />
+          ) : undefined
+        }
+        actions={
+          <>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<RefreshRounded />}
+              onClick={() => refetch()}
+              disabled={isLoading}
+              sx={{ borderRadius: 2 }}
             >
-              Mark All as Read
+              Refresh
             </Button>
-          )}
-        </Box>
-      </Box>
+
+            {activeTab === 0 && unreadCount > 0 && (
+              <Button
+                variant="contained"
+                size="small"
+                color="primary"
+                startIcon={<MarkEmailReadRounded />}
+                onClick={handleMarkAllAsRead}
+                disabled={isActionLoading || isLoading}
+                sx={{ borderRadius: 2, fontWeight: 600 }}
+              >
+                Mark All as Read
+              </Button>
+            )}
+          </>
+        }
+      />
 
       {/* KPI Stats Overview Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>

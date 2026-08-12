@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import type { Theme } from '@mui/material';
 import { 
-  SaveRounded, ArrowBackRounded, BadgeRounded, PersonRounded, 
+  SaveRounded, ArrowBackRounded, BadgeRounded, PersonRounded, PersonAddRounded,
   PublicRounded, WorkRounded, EmailRounded,
   AccessTimeRounded, FlightTakeoffRounded, 
   HomeRounded, LocationCityRounded, MapRounded, MarkunreadMailboxRounded
@@ -16,6 +16,7 @@ import { useDepartments } from './hooks/useDepartments';
 import { useProfessionsLookup } from '../professions/hooks/useProfessionsLookup';
 import styles from './EmployeeCreation.module.css';
 import type { CreateEmployeeDto, DepartmentDto } from './types';
+import { PageHeader } from '../../components/PageHeader/PageHeader';
 
 // Theme-compatible glass panel
 const glassPanelSx = {
@@ -221,45 +222,21 @@ export const EmployeeCreation: React.FC = () => {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1400, margin: '0 auto' }}>
-      
-      {/* HEADER */}
-      <Box className={styles.headerContainer} sx={{ mb: 4 }}>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-          <Tooltip title="Back to Roster">
-            <IconButton 
-              onClick={() => navigate('/employees/roster')} 
-              sx={{ 
-                bgcolor: 'action.hover', 
-                width: 40, 
-                height: 40, 
-                borderRadius: '50%',
-                flexShrink: 0
-              }}
-            >
-              <ArrowBackRounded />
-            </IconButton>
-          </Tooltip>
-          <Box>
-            <Typography 
-              variant="h4" 
-              className={styles.pageTitle} 
-              sx={{ 
-                fontSize: { xs: '1.5rem', md: '2.125rem' },
-                fontWeight: 700, 
-                letterSpacing: '-0.02em', 
-                color: 'text.primary',
-                textShadow: (theme: Theme) => theme.palette.mode === 'dark' ? '0 1px 2px rgba(0,0,0,0.5)' : '0 1px 2px rgba(0,0,0,0.05)'
-              }}
-            >
-              Onboard Employee
-            </Typography>
-            <Typography variant="subtitle1" color="text.secondary" sx={{ fontWeight: 500 }}>
-              Create a new employee profile and define their initial setup
-            </Typography>
-          </Box>
-        </Stack>
-      </Box>
+    <Box sx={{ p: { xs: 2, sm: 3.5 }, maxWidth: 1400, mx: 'auto' }}>
+      <PageHeader
+        title="Onboard Employee"
+        subtitle="Create a new employee profile and define their initial setup."
+        icon={<PersonAddRounded />}
+        actions={
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+            <Tooltip title="Back to Roster">
+              <IconButton onClick={() => navigate('/employees/roster')} sx={{ bgcolor: 'action.hover' }}>
+                <ArrowBackRounded />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        }
+      />
 
       <form onSubmit={handleSubmit} noValidate>
         

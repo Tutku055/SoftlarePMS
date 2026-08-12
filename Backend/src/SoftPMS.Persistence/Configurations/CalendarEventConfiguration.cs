@@ -37,6 +37,10 @@ public class CalendarEventConfiguration : IEntityTypeConfiguration<CalendarEvent
         builder.Property(x => x.VisibilityLevel)
             .IsRequired();
 
+        builder.Property(x => x.EventType)
+            .IsRequired()
+            .HasDefaultValue(SoftPMS.Domain.Enums.CalendarEventType.TimeBased);
+
         builder.Property(x => x.DepartmentId)
             .IsRequired(false);
 

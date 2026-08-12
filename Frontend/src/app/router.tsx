@@ -28,6 +28,7 @@ import { ProfessionList } from '../features/professions/components/ProfessionLis
 import { SystemLogsPage } from '../features/settings/components/SystemLogs/SystemLogsPage';
 import { NotificationsPage } from '../features/notifications/NotificationsPage';
 import { CalendarPage } from '../features/calendar/CalendarPage';
+import { DashboardView } from '../features/dashboard/components/DashboardView';
 
 import { useLocation } from 'react-router-dom';
 
@@ -86,7 +87,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'dashboard',
-            element: <div>Dashboard</div>
+            element: <DashboardView />
           },
           {
             path: 'notifications',

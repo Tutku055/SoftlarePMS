@@ -36,7 +36,8 @@ import {
   AddRounded,
   SaveRounded,
   CheckRounded,
-  ExpandMoreRounded
+  ExpandMoreRounded,
+  SecurityRounded,
 } from '@mui/icons-material';
 import type {
   GridPaginationModel,
@@ -51,6 +52,7 @@ import { usePermissionsList } from '../../hooks/usePermissionsList';
 import { useAuthStore } from '../../../../store/useAuthStore';
 import ExcelJS from 'exceljs';
 import { getAdaptedRoleColor } from '../../../../theme/colorUtils';
+import { PageHeader } from '../../../../components/PageHeader/PageHeader';
 
 const COLUMN_NAMES: Record<string, string> = {
   name: 'Role Name',
@@ -451,113 +453,98 @@ export const RoleList = () => {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1536, margin: '0 auto' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-        <Box>
-          <Typography
-            variant="h4"
-            component="h1"
-            sx={{
-              fontWeight: 700,
-              letterSpacing: '-0.02em',
-              color: 'text.primary',
-              textShadow: (theme) => theme.palette.mode === 'dark' 
-                ? '0 1px 2px rgba(0,0,0,0.5)' 
-                : '0 1px 2px rgba(0,0,0,0.05)',
-            }}
-          >
-            Roles & Permissions
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Manage system roles, permissions, and user assignments.
+    <Box sx={{ p: { xs: 2, sm: 3.5 }, maxWidth: 1400, mx: 'auto' }}>
+      <PageHeader
+        title="Roles & Permissions"
+        subtitle="Manage system roles, permissions, and user assignments."
+        icon={<SecurityRounded />}
+        actions={
+          <Stack direction="row" spacing={1.5}>
+            <Button
+              variant="contained"
+              startIcon={<AddRounded />}
+              onClick={() => setIsCreateDialogOpen(true)}
+              sx={{
+                borderRadius: '10px',
+                fontWeight: 600,
+                textTransform: 'none',
+                boxShadow: 'none',
+              }}
+            >
+              Create Role
+            </Button>
+
+            <Tooltip title="Manage Columns" arrow>
+              <Button
+                variant="outlined"
+                startIcon={<ViewColumnRounded />}
+                onClick={(e) => setColumnMenuAnchor(e.currentTarget)}
+                sx={{
+                  borderRadius: '10px',
+                  borderColor: 'divider',
+                  color: 'text.primary',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    backgroundColor: 'action.hover',
+                    borderColor: 'text.primary',
+                  }
+                }}
+              >
+                Columns
+              </Button>
+            </Tooltip>
+
+            <Tooltip title="Export to Excel" arrow>
+              <Button
+                variant="outlined"
+                startIcon={<FileDownloadRounded />}
+                onClick={handleExport}
+                disabled={!data?.items?.length}
+                sx={{
+                  borderRadius: '10px',
+                  borderColor: 'divider',
+                  color: 'text.primary',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    backgroundColor: 'action.hover',
+                    borderColor: 'text.primary',
+                  }
+                }}
+              >
+                Export
+              </Button>
+            </Tooltip>
+          </Stack>
+        }
+      />
+
+      <Menu
+        anchorEl={columnMenuAnchor}
+        open={Boolean(columnMenuAnchor)}
+        onClose={() => setColumnMenuAnchor(null)}
+        slotProps={{ paper: { sx: { borderRadius: 3, minWidth: 220, mt: 1, boxShadow: '0 8px 32px rgba(0,0,0,0.1)' } } }}
+      >
+        <Box sx={{ px: 2, pt: 1.5, pb: 1 }}>
+          <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 600 }}>
+            Visible Columns
           </Typography>
         </Box>
-
-        <Stack direction="row" spacing={1.5}>
-          <Button
-            variant="contained"
-            startIcon={<AddRounded />}
-            onClick={() => setIsCreateDialogOpen(true)}
-            sx={{
-              borderRadius: '10px',
-              fontWeight: 600,
-              textTransform: 'none',
-              boxShadow: 'none',
-            }}
-          >
-            Create Role
-          </Button>
-
-          <Tooltip title="Manage Columns" arrow>
-            <Button
-              variant="outlined"
-              startIcon={<ViewColumnRounded />}
-              onClick={(e) => setColumnMenuAnchor(e.currentTarget)}
-              sx={{
-                borderRadius: '10px',
-                borderColor: 'divider',
-                color: 'text.primary',
-                fontWeight: 600,
-                textTransform: 'none',
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  backgroundColor: 'action.hover',
-                  borderColor: 'text.primary',
-                }
-              }}
-            >
-              Columns
-            </Button>
-          </Tooltip>
-
-          <Menu
-            anchorEl={columnMenuAnchor}
-            open={Boolean(columnMenuAnchor)}
-            onClose={() => setColumnMenuAnchor(null)}
-            slotProps={{ paper: { sx: { borderRadius: 3, minWidth: 220, mt: 1, boxShadow: '0 8px 32px rgba(0,0,0,0.1)' } } }}
-          >
-            <Box sx={{ px: 2, pt: 1.5, pb: 1 }}>
-              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 600 }}>
-                Visible Columns
-              </Typography>
-            </Box>
-            <Box sx={{ px: 1, pb: 1, display: 'flex', gap: 1 }}>
-              <Button size="small" sx={{ flex: 1, borderRadius: 1.5 }} onClick={handleShowAll}>Show All</Button>
-              <Button size="small" color="inherit" sx={{ flex: 1, borderRadius: 1.5 }} onClick={handleHideAll}>Hide All</Button>
-            </Box>
-            <Divider sx={{ mb: 0.5 }} />
-            {Object.keys(COLUMN_NAMES).map((key) => (
-              <MenuItem key={key} onClick={() => handleColumnToggle(key)} sx={{ py: 0.5 }}>
-                <Checkbox checked={columnVisibility[key] !== false} size="small" sx={{ pointerEvents: 'none', py: 0 }} />
-                <ListItemText primary={COLUMN_NAMES[key]} slotProps={{ primary: { variant: 'body2' } }} />
-              </MenuItem>
-            ))}
-          </Menu>
-
-          <Tooltip title="Export to Excel" arrow>
-            <Button
-              variant="outlined"
-              startIcon={<FileDownloadRounded />}
-              onClick={handleExport}
-              disabled={!data?.items?.length}
-              sx={{
-                borderRadius: '10px',
-                borderColor: 'divider',
-                color: 'text.primary',
-                fontWeight: 600,
-                textTransform: 'none',
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  backgroundColor: 'action.hover',
-                  borderColor: 'text.primary',
-                }
-              }}
-            >
-              Export
-            </Button>
-          </Tooltip>
-        </Stack>
-      </Box>
+        <Box sx={{ px: 1, pb: 1, display: 'flex', gap: 1 }}>
+          <Button size="small" sx={{ flex: 1, borderRadius: 1.5 }} onClick={handleShowAll}>Show All</Button>
+          <Button size="small" color="inherit" sx={{ flex: 1, borderRadius: 1.5 }} onClick={handleHideAll}>Hide All</Button>
+        </Box>
+        <Divider sx={{ mb: 0.5 }} />
+        {Object.keys(COLUMN_NAMES).map((key) => (
+          <MenuItem key={key} onClick={() => handleColumnToggle(key)} sx={{ py: 0.5 }}>
+            <Checkbox checked={columnVisibility[key] !== false} size="small" sx={{ pointerEvents: 'none', py: 0 }} />
+            <ListItemText primary={COLUMN_NAMES[key]} slotProps={{ primary: { variant: 'body2' } }} />
+          </MenuItem>
+        ))}
+      </Menu>
 
       <Box
         sx={{

@@ -5,6 +5,7 @@ import { useThemeStore } from '../store/useThemeStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import { useNotificationStore } from '../store/useNotificationStore';
+import { useBreadcrumbStore, getBreadcrumbsForPath } from '../store/useBreadcrumbStore';
 import styles from './Topbar.module.css';
 
 const drawerWidth = 280;
@@ -14,7 +15,8 @@ export const Topbar: React.FC = () => {
   const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
   const location = useLocation();
-  const pathnames = location.pathname.split('/').filter((x) => x);
+  const customTitle = useBreadcrumbStore((state) => state.customTitle);
+  const breadcrumbs = getBreadcrumbsForPath(location.pathname, customTitle);
 
   const handleLogout = () => {
     logout();
@@ -72,34 +74,36 @@ export const Topbar: React.FC = () => {
       <Toolbar sx={{ minHeight: '70px !important' }}>
         <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
           <Breadcrumbs aria-label="breadcrumb">
-            <Link 
-              component={RouterLink} 
-              to="/" 
-              color={pathnames.length === 0 ? "text.primary" : "inherit"}
-              underline="hover"
-              sx={{ fontWeight: pathnames.length === 0 ? 700 : 500 }}
-            >
-              Dashboard
-            </Link>
-            {pathnames.map((value, index) => {
-              const last = index === pathnames.length - 1;
-              const to = `/${pathnames.slice(0, index + 1).join('/')}`;
-              const label = value.length > 20 ? 'Details' : value.charAt(0).toUpperCase() + value.slice(1);
+            {breadcrumbs.map((item, index) => {
+              const isLast = index === breadcrumbs.length - 1;
 
-              return last ? (
-                <Typography color="text.primary" key={to} sx={{ fontWeight: 700, letterSpacing: '-0.5px' }}>
-                  {label}
-                </Typography>
-              ) : (
-                <Link 
-                  component={RouterLink} 
-                  to={to} 
-                  color="inherit" 
-                  underline="hover" 
-                  key={to}
-                  sx={{ fontWeight: 500 }}
+              if (isLast || !item.path) {
+                return (
+                  <Typography
+                    key={`${item.label}-${index}`}
+                    color="text.primary"
+                    sx={{
+                      fontWeight: isLast ? 700 : 500,
+                      letterSpacing: '-0.3px',
+                      fontSize: '0.9rem',
+                      opacity: !isLast && !item.path ? 0.7 : 1,
+                    }}
+                  >
+                    {item.label}
+                  </Typography>
+                );
+              }
+
+              return (
+                <Link
+                  component={RouterLink}
+                  to={item.path}
+                  key={`${item.label}-${index}`}
+                  color="inherit"
+                  underline="hover"
+                  sx={{ fontWeight: 500, fontSize: '0.9rem' }}
                 >
-                  {label}
+                  {item.label}
                 </Link>
               );
             })}

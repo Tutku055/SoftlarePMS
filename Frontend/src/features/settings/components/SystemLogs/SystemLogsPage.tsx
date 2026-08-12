@@ -45,6 +45,7 @@ import {
   AccessTimeRounded,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { PageHeader } from '../../../../components/PageHeader/PageHeader';
 import { useAuditLogs, useAuditLogDetails } from '../../hooks/useAuditLogs';
 import { useAuthStore } from '../../../../store/useAuthStore';
 import type { AuditLogDto, AuditLogChangeDto } from '../../types';
@@ -422,7 +423,7 @@ export const SystemLogsPage: React.FC = () => {
     [pageNumber, pageSize, searchInput, activeActionFilter]
   );
 
-  const { data, isLoading, isFetching, refetch } = useAuditLogs(queryParams);
+  const { data, isLoading, refetch } = useAuditLogs(queryParams);
   const groupedLogs: AuditLogDto[] = data?.items || [];
   const totalCount = data?.totalCount || 0;
   const totalPages = data?.totalPages || 1;
@@ -967,100 +968,64 @@ export const SystemLogsPage: React.FC = () => {
   const quickFilterActions = ['All', 'Created', 'Modified', 'Deleted'];
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, maxWidth: 1600, mx: 'auto' }}>
-      {/* ── 1. Page Header & Stats Banner ─────────────────────────────── */}
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', md: 'row' },
-          justifyContent: 'space-between',
-          alignItems: { xs: 'flex-start', md: 'center' },
-          gap: 2,
-          mb: 3,
-        }}
-      >
-        <Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box
+    <Box sx={{ p: { xs: 2, sm: 3.5 }, maxWidth: 1400, mx: 'auto' }}>
+      <PageHeader
+        title="System Logs"
+        subtitle="Audit trail and correlated transaction viewer with join-resolution."
+        icon={<HistoryToggleOffRounded />}
+        actions={
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleExpandAll}
+              startIcon={
+                expandedGroupIds.size === groupedLogs.length && groupedLogs.length > 0 ? (
+                  <KeyboardArrowUpRounded />
+                ) : (
+                  <KeyboardArrowDownRounded />
+                )
+              }
               sx={{
-                p: 1,
-                borderRadius: 2.5,
-                backgroundColor: isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(79, 70, 229, 0.1)',
-                color: theme.palette.primary.main,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                borderColor: theme.palette.divider,
+                color: 'text.primary',
+                '&:hover': {
+                  borderColor: theme.palette.primary.main,
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                },
               }}
             >
-              <HistoryToggleOffRounded sx={{ fontSize: 28 }} />
-            </Box>
-            <Box>
-              <Typography variant="h4" sx={{ fontWeight: 700, letterSpacing: '-0.02em' }}>
-                System Logs
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Audit trail and correlated transaction viewer with join-resolution
-              </Typography>
-            </Box>
+              {expandedGroupIds.size === groupedLogs.length && groupedLogs.length > 0
+                ? 'Collapse All'
+                : 'Expand All'}
+            </Button>
+
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => refetch()}
+              disabled={isLoading}
+              startIcon={<RefreshRounded />}
+              sx={{
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 600,
+                borderColor: theme.palette.divider,
+                color: 'text.primary',
+                '&:hover': {
+                  borderColor: theme.palette.primary.main,
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+                },
+              }}
+            >
+              Refresh Logs
+            </Button>
           </Box>
-        </Box>
-
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={handleExpandAll}
-            startIcon={
-              expandedGroupIds.size === groupedLogs.length && groupedLogs.length > 0 ? (
-                <KeyboardArrowUpRounded />
-              ) : (
-                <KeyboardArrowDownRounded />
-              )
-            }
-            sx={{
-              borderRadius: 2,
-              textTransform: 'none',
-              fontWeight: 600,
-              borderColor: theme.palette.divider,
-              color: 'text.primary',
-              '&:hover': {
-                borderColor: theme.palette.primary.main,
-                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
-              },
-            }}
-          >
-            {expandedGroupIds.size === groupedLogs.length && groupedLogs.length > 0
-              ? 'Collapse All'
-              : 'Expand All'}
-          </Button>
-
-          <Button
-            variant="contained"
-            size="small"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            startIcon={
-              <RefreshRounded
-                sx={{
-                  animation: isFetching ? 'spin 1s linear infinite' : 'none',
-                  '@keyframes spin': {
-                    '0%': { transform: 'rotate(0deg)' },
-                    '100%': { transform: 'rotate(360deg)' },
-                  },
-                }}
-              />
-            }
-            sx={{
-              borderRadius: 2,
-              textTransform: 'none',
-              fontWeight: 600,
-              boxShadow: 'none',
-            }}
-          >
-            Refresh
-          </Button>
-        </Box>
-      </Box>
+        }
+      />
 
       {/* ── 2. Filters & Search Bar ───────────────────────────────────── */}
       <Paper

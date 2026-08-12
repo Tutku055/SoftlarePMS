@@ -8,6 +8,8 @@ import { useDepartments } from './hooks/useDepartments';
 import { useProfessionsLookup } from '../professions/hooks/useProfessionsLookup';
 import { useDocuments } from '../documents/hooks/useDocuments';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useBreadcrumbTitle } from '../../store/useBreadcrumbStore';
+import { PageHeader } from '../../components/PageHeader/PageHeader';
 import { documentsApi } from '../documents/api/documentsApi';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import { DataTable } from '../../components/DataTable/DataTable';
@@ -140,6 +142,7 @@ export const EmployeeDetail = () => {
   const hasPermission = useAuthStore((state) => state.hasPermission);
 
   const { data: employee, isLoading, isError } = useEmployeeDetail(id);
+  useBreadcrumbTitle(employee ? `${employee.firstName} ${employee.lastName}`.trim() : null);
   const { mutate: updateEmployee, isPending: isUpdatingEmployee } = useUpdateEmployee();
   const { mutate: updateAddressMutation, isPending: isUpdatingAddress } = useUpdateEmployeeAddressMutation();
   const { data: deptData } = useDepartments();
@@ -468,48 +471,31 @@ export const EmployeeDetail = () => {
   const statusProps = getStatusProps(employee.employmentStatus);
 
   return (
-    <Box className={styles.pageContainer}>
-      
-      {/* ── TOP ACTION BAR ────────────────────────────────────────────────── */}
-      <Box className={styles.headerContainer}>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-          <Tooltip title="Back to Roster">
-            <IconButton onClick={() => navigate('/employees/roster')} sx={{ bgcolor: 'action.hover' }}>
-              <ArrowBackRounded />
-            </IconButton>
-          </Tooltip>
-          <Box>
-            {/* .pageTitle sınıfındaki tasarım[cite: 9] */}
-            <Typography 
-              variant="h4" 
-              sx={{ 
-                fontWeight: 700, 
-                letterSpacing: '-0.02em', 
-                color: 'text.primary',
-                textShadow: (theme) => theme.palette.mode === 'dark' ? '0 1px 2px rgba(0,0,0,0.5)' : '0 1px 2px rgba(0,0,0,0.05)'
-              }}
-            >
-              Employee Profile
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              ID: {employee.id}
-            </Typography>
-          </Box>
-        </Stack>
-
-        <Stack direction="row" spacing={1.5}>
-          {hasPermission('Employees.Update') && (
-            <>
-              <Button onClick={handleTerminate} disabled={isUpdatingEmployee || isUpdatingAddress || formState.employmentStatus === 3} variant="outlined" color="error" startIcon={<PersonRemoveRounded />} sx={actionButtonSx}>
-                {formState.employmentStatus === 3 ? 'Terminated' : 'Terminate'}
-              </Button>
-              <Button onClick={handleSave} disabled={isUpdatingEmployee || isUpdatingAddress} variant="contained" startIcon={<SaveRounded />} sx={{ borderRadius: '10px', fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}>
-                {isUpdatingEmployee || isUpdatingAddress ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </>
-          )}
-        </Stack>
-      </Box>
+    <Box sx={{ p: { xs: 2, sm: 3.5 }, maxWidth: 1400, mx: 'auto' }}>
+      <PageHeader
+        title="Employee Profile"
+        subtitle={`ID: ${employee.id} | ${employee.firstName} ${employee.lastName}`}
+        icon={<BadgeRounded />}
+        actions={
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+            <Tooltip title="Back to Roster">
+              <IconButton onClick={() => navigate('/employees/roster')} sx={{ bgcolor: 'action.hover' }}>
+                <ArrowBackRounded />
+              </IconButton>
+            </Tooltip>
+            {hasPermission('Employees.Update') && (
+              <>
+                <Button onClick={handleTerminate} disabled={isUpdatingEmployee || isUpdatingAddress || formState.employmentStatus === 3} variant="outlined" color="error" startIcon={<PersonRemoveRounded />} sx={actionButtonSx}>
+                  {formState.employmentStatus === 3 ? 'Terminated' : 'Terminate'}
+                </Button>
+                <Button onClick={handleSave} disabled={isUpdatingEmployee || isUpdatingAddress} variant="contained" startIcon={<SaveRounded />} sx={{ borderRadius: '10px', fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}>
+                  {isUpdatingEmployee || isUpdatingAddress ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </>
+            )}
+          </Stack>
+        }
+      />
 
       {/* ── PROFILE SUMMARY CARD ────────────────────────────────────────── */}
       <Box sx={glassPanelSx}>

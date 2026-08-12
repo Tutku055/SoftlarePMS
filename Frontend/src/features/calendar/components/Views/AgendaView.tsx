@@ -24,7 +24,7 @@ import type {
   VirtualCalendarEventDto,
 } from '../../types/calendar.types';
 import { CalendarEventType } from '../../types/calendar.types';
-import { parseDateOnly, formatTimeDisplay } from '../../utils/calendarDateUtils';
+import { parseDateOnly, formatEventTimeLabel } from '../../utils/calendarDateUtils';
 import styles from '../Calendar.module.css';
 
 interface AgendaViewProps {
@@ -109,24 +109,13 @@ export const AgendaView: React.FC<AgendaViewProps> = ({
               if (e.departmentName) {
                 subtitle = subtitle ? `[${e.departmentName}] ${subtitle}` : `Department: ${e.departmentName}`;
               }
-              let timeLabel = '';
+              const timeLabel = formatEventTimeLabel(e);
               let sortOrder = 0;
               
-              const isExplicitAllDay = e.eventType === CalendarEventType.AllDay;
-              const isExplicitMultiDay = e.eventType === CalendarEventType.MultiDay;
-              const isLegacyMultiDay = !e.eventType && e.startTime.split('T')[0] !== e.endTime.split('T')[0];
-
-              if (isExplicitAllDay) {
-                timeLabel = 'All Day';
+              if (e.eventType === CalendarEventType.AllDay) {
                 sortOrder = -1;
-              } else if (isExplicitMultiDay || isLegacyMultiDay) {
-                const sDate = new Date(e.startTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                const eDate = new Date(e.endTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                timeLabel = `${sDate} - ${eDate}`;
+              } else if (e.eventType === CalendarEventType.MultiDay || (!e.eventType && e.startTime.split('T')[0] !== e.endTime.split('T')[0])) {
                 sortOrder = -2;
-              } else {
-                timeLabel = `${formatTimeDisplay(e.startTime)} – ${formatTimeDisplay(e.endTime)}`;
-                sortOrder = 0;
               }
 
               items.push({

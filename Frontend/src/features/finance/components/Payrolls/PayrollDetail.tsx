@@ -37,8 +37,10 @@ import {
   SettingsRounded,
   ReceiptLongRounded,
   PrintRounded,
-  WarningRounded
+  WarningRounded,
+  PaymentsRounded,
 } from '@mui/icons-material';
+import { PageHeader } from '../../../../components/PageHeader/PageHeader';
 import * as z from 'zod';
 import styles from './PayrollDetail.module.css';
 import { 
@@ -476,37 +478,21 @@ export const PayrollDetail = () => {
   }
 
   return (
-    <Box className={styles.pageContainer}>
-      
-      {/* ── TOP ACTION BAR ────────────────────────────────────────────────── */}
-      <Box className={styles.headerContainer}>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-          <Tooltip title="Back to Payrolls">
-            <IconButton onClick={() => navigate('/finance/payrolls')} sx={{ bgcolor: 'action.hover' }}>
-              <ArrowBackRounded />
-            </IconButton>
-          </Tooltip>
-          <Box>
-            <Typography 
-              variant="h4" 
-              sx={{ 
-                fontWeight: 700, 
-                letterSpacing: '-0.02em', 
-                color: 'text.primary',
-                textShadow: (theme) => theme.palette.mode === 'dark' ? '0 1px 2px rgba(0,0,0,0.5)' : '0 1px 2px rgba(0,0,0,0.05)'
-              }}
-            >
-              Payroll Details
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              ID: {employee.id}
-            </Typography>
-          </Box>
-        </Stack>
-
-        <Stack direction="row" spacing={1.5}>
-        </Stack>
-      </Box>
+    <Box sx={{ p: { xs: 2, sm: 3.5 }, maxWidth: 1400, mx: 'auto' }}>
+      <PageHeader
+        title="Payroll Details"
+        subtitle={`ID: ${employee.id} | ${employee.firstName} ${employee.lastName}`}
+        icon={<PaymentsRounded />}
+        actions={
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+            <Tooltip title="Back to Payrolls">
+              <IconButton onClick={() => navigate('/finance/payrolls')} sx={{ bgcolor: 'action.hover' }}>
+                <ArrowBackRounded />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        }
+      />
 
       {/* ── PROFILE SUMMARY CARD ────────────────────────────────────────── */}
       <Box sx={glassPanelSx}>

@@ -27,6 +27,7 @@ import {
   PersonAddRounded,
   VisibilityOutlined,
   VisibilityOffOutlined,
+  ManageAccountsRounded,
 } from '@mui/icons-material';
 import { validatePassword } from '../../utils/passwordValidation';
 import { PasswordCriteriaChecklist } from '../../components/common/PasswordCriteriaChecklist';
@@ -40,6 +41,7 @@ import type { CustomFilterValue, DataTableColumnDef } from '../../components/Dat
 import { useUsers } from './hooks/useUsers';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../store/useAuthStore';
+import { PageHeader } from '../../components/PageHeader/PageHeader';
 import { apiClient } from '../../config/apiClient';
 import type { RoleDto } from './types';
 import { useCreateUser } from './hooks/useCreateUser';
@@ -529,106 +531,96 @@ export const UsersPage = () => {
   ];
 
   return (
-    <Box sx={{ width: '100%', pb: 4 }}>
-      {/* ── HEADER AREA ────────────────────────────────────────────────────────── */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-        <Box>
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.02em', color: 'text.primary' }}>
-            System Users Directory
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Manage user accounts, system access status, and profile links.
-          </Typography>
-        </Box>
+    <Box sx={{ p: { xs: 2, sm: 3.5 }, maxWidth: 1400, mx: 'auto' }}>
+      <PageHeader
+        title="System Users Directory"
+        subtitle="Manage user accounts, system access status, and profile links."
+        icon={<ManageAccountsRounded />}
+        actions={
+          <Stack direction="row" spacing={1.5}>
+            {hasPermission('Users.Create') && (
+              <Button
+                variant="contained"
+                startIcon={<PersonAddRounded />}
+                onClick={() => setCreateDialogOpen(true)}
+                sx={{
+                  borderRadius: '10px',
+                  fontWeight: 600,
+                  textTransform: 'none'
+                }}
+              >
+                Create User
+              </Button>
+            )}
 
-        <Stack direction="row" spacing={1.5}>
-          {hasPermission('Users.Create') && (
-            <Button
-              variant="contained"
-              startIcon={<PersonAddRounded />}
-              onClick={() => setCreateDialogOpen(true)}
-              sx={{
-                borderRadius: '10px',
-                fontWeight: 600,
-                textTransform: 'none'
-              }}
-            >
-              Create User
-            </Button>
-          )}
-
-          <Tooltip title="Toggle Columns" arrow>
-            <Button
-              variant="outlined"
-              startIcon={<ViewColumnRounded />}
-              onClick={(e) => setColumnMenuAnchor(e.currentTarget)}
-              sx={{
-                borderRadius: '10px',
-                borderColor: 'divider',
-                color: 'text.primary',
-                fontWeight: 600,
-                textTransform: 'none',
-                transition: 'all 0.2s ease',
-                '&:hover': {
-                  backgroundColor: 'action.hover',
-                  borderColor: 'text.primary',
-                }
-              }}
-            >
-              Columns
-            </Button>
-          </Tooltip>
-
-          <Menu
-            anchorEl={columnMenuAnchor}
-            open={Boolean(columnMenuAnchor)}
-            onClose={() => setColumnMenuAnchor(null)}
-            slotProps={{ paper: { sx: { borderRadius: 3, minWidth: 220, mt: 1, boxShadow: '0 8px 32px rgba(0,0,0,0.1)' } } }}
-          >
-            <Box sx={{ px: 2, pt: 1.5, pb: 1 }}>
-              <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 600 }}>
-                Visible Columns
-              </Typography>
-            </Box>
-            <Box sx={{ px: 1, pb: 1, display: 'flex', gap: 1 }}>
-              <Button size="small" sx={{ flex: 1, borderRadius: 1.5 }} onClick={handleShowAll}>Show All</Button>
-              <Button size="small" color="inherit" sx={{ flex: 1, borderRadius: 1.5 }} onClick={handleHideAll}>Hide All</Button>
-            </Box>
-            <Divider sx={{ mb: 0.5 }} />
-            {Object.keys(COLUMN_NAMES).map((key) => (
-              <MenuItem key={key} onClick={() => handleColumnToggle(key)} sx={{ py: 0.5 }}>
-                <Checkbox checked={columnVisibility[key] !== false} size="small" sx={{ pointerEvents: 'none', py: 0 }} />
-                <ListItemText primary={COLUMN_NAMES[key]} slotProps={{ primary: { variant: 'body2' } }} />
-              </MenuItem>
-            ))}
-          </Menu>
-
-          <Tooltip title="Export Users to Excel" arrow>
-            <span>
+            <Tooltip title="Toggle Columns" arrow>
               <Button
                 variant="outlined"
-                startIcon={<FileDownloadRounded />}
-                onClick={handleExport}
-                disabled={!data?.items?.length}
+                startIcon={<ViewColumnRounded />}
+                onClick={(e) => setColumnMenuAnchor(e.currentTarget)}
                 sx={{
                   borderRadius: '10px',
                   borderColor: 'divider',
                   color: 'text.primary',
                   fontWeight: 600,
-                  textTransform: 'none',
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    backgroundColor: 'action.hover',
-                    borderColor: 'text.primary',
-                  }
+                  textTransform: 'none'
                 }}
               >
-                Export
+                Columns
               </Button>
-            </span>
-          </Tooltip>
-        </Stack>
-      </Box>
+            </Tooltip>
+
+            <Tooltip title="Export Users to Excel" arrow>
+              <span>
+                <Button
+                  variant="outlined"
+                  startIcon={<FileDownloadRounded />}
+                  onClick={handleExport}
+                  disabled={!data?.items?.length}
+                  sx={{
+                    borderRadius: '10px',
+                    borderColor: 'divider',
+                    color: 'text.primary',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      backgroundColor: 'action.hover',
+                      borderColor: 'text.primary',
+                    }
+                  }}
+                >
+                  Export
+                </Button>
+              </span>
+            </Tooltip>
+          </Stack>
+        }
+      />
+
+      <Menu
+        anchorEl={columnMenuAnchor}
+        open={Boolean(columnMenuAnchor)}
+        onClose={() => setColumnMenuAnchor(null)}
+        slotProps={{ paper: { sx: { borderRadius: 3, minWidth: 220, mt: 1, boxShadow: '0 8px 32px rgba(0,0,0,0.1)' } } }}
+      >
+        <Box sx={{ px: 2, pt: 1.5, pb: 1 }}>
+          <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 600 }}>
+            Visible Columns
+          </Typography>
+        </Box>
+        <Box sx={{ px: 1, pb: 1, display: 'flex', gap: 1 }}>
+          <Button size="small" sx={{ flex: 1, borderRadius: 1.5 }} onClick={handleShowAll}>Show All</Button>
+          <Button size="small" color="inherit" sx={{ flex: 1, borderRadius: 1.5 }} onClick={handleHideAll}>Hide All</Button>
+        </Box>
+        <Divider sx={{ mb: 0.5 }} />
+        {Object.keys(COLUMN_NAMES).map((key) => (
+          <MenuItem key={key} onClick={() => handleColumnToggle(key)} sx={{ py: 0.5 }}>
+            <Checkbox checked={columnVisibility[key] !== false} size="small" sx={{ pointerEvents: 'none', py: 0 }} />
+            <ListItemText primary={COLUMN_NAMES[key]} slotProps={{ primary: { variant: 'body2' } }} />
+          </MenuItem>
+        ))}
+      </Menu>
 
       {/* ── FILTER PANEL (PREMIUM GLASS EFFECT) ──────────────────────────── */}
       <Box

@@ -100,7 +100,15 @@ const premiumInputSx = {
         borderColor: 'primary.main',
         borderWidth: '1px',
       }
-    }
+    },
+    '& input[type="date"]::-webkit-calendar-picker-indicator, & input[type="datetime-local"]::-webkit-calendar-picker-indicator, & input[type="month"]::-webkit-calendar-picker-indicator': {
+      filter: (theme: any) => theme.palette.mode === 'dark' ? 'brightness(0) invert(1)' : 'none',
+      cursor: 'pointer',
+      opacity: 0.8,
+      '&:hover': {
+        opacity: 1,
+      },
+    },
   },
   // Seçim kutularındaki aşağı ok simgesini tamamen yok etme
   '& .MuiSelect-icon': { 

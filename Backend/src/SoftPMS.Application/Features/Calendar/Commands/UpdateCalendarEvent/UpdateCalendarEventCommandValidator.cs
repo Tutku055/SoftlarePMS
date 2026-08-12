@@ -18,6 +18,9 @@ public class UpdateCalendarEventCommandValidator : AbstractValidator<UpdateCalen
             .MaximumLength(2000).WithMessage("Description cannot exceed 2000 characters.")
             .When(x => !string.IsNullOrEmpty(x.Description));
 
+        RuleFor(x => x.EventType)
+            .IsInEnum().WithMessage("Invalid event type.");
+
         RuleFor(x => x.EndTime)
             .GreaterThanOrEqualTo(x => x.StartTime)
             .WithMessage("End time must be greater than or equal to start time.")

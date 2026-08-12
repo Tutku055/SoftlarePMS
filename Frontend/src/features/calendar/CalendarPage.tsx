@@ -40,6 +40,7 @@ import styles from './components/Calendar.module.css';
 export const CalendarPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const dateParam = searchParams.get('date');
+  const viewParam = searchParams.get('view') as CalendarViewMode | null;
 
   const initialDate = useMemo(() => {
     if (dateParam) {
@@ -49,21 +50,34 @@ export const CalendarPage: React.FC = () => {
     return new Date();
   }, [dateParam]);
 
+  const initialViewMode = useMemo<CalendarViewMode>(() => {
+    if (viewParam === 'agenda' || viewParam === 'day' || viewParam === 'week' || viewParam === 'month') {
+      return viewParam;
+    }
+    return dateParam ? 'day' : 'month';
+  }, [viewParam, dateParam]);
+
   const [currentDate, setCurrentDate] = useState<Date>(initialDate);
-  const [viewMode, setViewMode] = useState<CalendarViewMode>(dateParam ? 'day' : 'month');
+  const [viewMode, setViewMode] = useState<CalendarViewMode>(initialViewMode);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
-    if (dateParam) {
-      const parsed = new Date(dateParam);
-      if (!isNaN(parsed.getTime())) {
-        setCurrentDate(parsed);
-        setViewMode('day');
-        // Clear param so subsequent normal navigations don't get stuck on this date
-        setSearchParams({}, { replace: true });
+    if (dateParam || viewParam) {
+      if (dateParam) {
+        const parsed = new Date(dateParam);
+        if (!isNaN(parsed.getTime())) {
+          setCurrentDate(parsed);
+        }
       }
+      if (viewParam === 'agenda' || viewParam === 'day' || viewParam === 'week' || viewParam === 'month') {
+        setViewMode(viewParam as CalendarViewMode);
+      } else if (dateParam) {
+        setViewMode('day');
+      }
+      // Clear param so subsequent normal navigations don't get stuck on this date
+      setSearchParams({}, { replace: true });
     }
-  }, [dateParam, setSearchParams]);
+  }, [dateParam, viewParam, setSearchParams]);
 
   // Category filters
   const [filters, setFilters] = useState<CalendarFilters>({

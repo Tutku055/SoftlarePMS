@@ -58,6 +58,11 @@ public class CreateCalendarEventCommandHandler : IRequestHandler<CreateCalendarE
         var startLocal = request.StartTime.AddMinutes(tzOffsetMinutes).Date;
         var endLocal = request.EndTime.AddMinutes(tzOffsetMinutes).Date;
 
+        if ((int)eventType == 0 || !Enum.IsDefined(typeof(CalendarEventType), eventType))
+        {
+            eventType = startLocal != endLocal ? CalendarEventType.MultiDay : CalendarEventType.TimeBased;
+        }
+
         if (eventType == CalendarEventType.MultiDay && startLocal == endLocal)
         {
             eventType = CalendarEventType.AllDay;

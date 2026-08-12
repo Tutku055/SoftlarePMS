@@ -6,6 +6,7 @@ import { useDeleteUser } from './hooks/useDeleteUser';
 import { useChangePassword } from './hooks/useChangePassword';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useBreadcrumbTitle } from '../../store/useBreadcrumbStore';
 import { apiClient } from '../../config/apiClient';
 import type { RoleDto } from './types';
 import { PopupDialog } from '../../components/PopupDialog/PopupDialog';
@@ -34,6 +35,7 @@ import {
   IconButton,
   InputAdornment,
   useTheme,
+  Tooltip,
 } from '@mui/material';
 import {
   ArrowBackRounded,
@@ -44,12 +46,14 @@ import {
   OpenInNewRounded,
   CheckCircleRounded,
   CancelRounded,
-  VpnKeyRounded,
   VisibilityOutlined,
   VisibilityOffOutlined,
+  ManageAccountsRounded,
+  VpnKeyRounded,
 } from '@mui/icons-material';
 import { validatePassword } from '../../utils/passwordValidation';
 import { PasswordCriteriaChecklist } from '../../components/common/PasswordCriteriaChecklist';
+import { PageHeader } from '../../components/PageHeader/PageHeader';
 import styles from './UserDetail.module.css';
 
 // ─── PREMIUM THEME STYLES (Matching EmployeeDetail.tsx) ───────────────────
@@ -133,6 +137,7 @@ export const UserDetail = () => {
   const [activeTab, setActiveTab] = useState(isPasswordChangeRequired ? 2 : 0);
 
   const { data: user, isLoading, isError } = useUserDetail(id);
+  useBreadcrumbTitle(user?.username || user?.email || null);
   const { mutate: updateUser, isPending: isUpdating } = useUpdateUser();
   const { mutate: deleteUser, isPending: isDeleting } = useDeleteUser();
 
@@ -335,22 +340,21 @@ export const UserDetail = () => {
   const userInitials = user.username ? user.username.slice(0, 2).toUpperCase() : 'US';
 
   return (
-    <Box sx={{ width: '100%', pb: 4 }}>
-      <Box sx={{ mb: 3 }}>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-          <IconButton onClick={() => navigate(-1)} sx={{ bgcolor: 'action.hover' }}>
-            <ArrowBackRounded />
-          </IconButton>
-          <Box>
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 700, letterSpacing: '-0.02em', color: 'text.primary' }}>
-              User Profile
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Managing user account parameters and security roles.
-            </Typography>
-          </Box>
-        </Stack>
-      </Box>
+    <Box sx={{ p: { xs: 2, sm: 3.5 }, maxWidth: 1400, mx: 'auto' }}>
+      <PageHeader
+        title="User Profile"
+        subtitle={`Username: ${user.username} | Email: ${user.email}`}
+        icon={<ManageAccountsRounded />}
+        actions={
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+            <Tooltip title="Back to Users">
+              <IconButton onClick={() => navigate('/settings/users')} sx={{ bgcolor: 'action.hover' }}>
+                <ArrowBackRounded />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        }
+      />
 
       <Box sx={glassPanelSx}>
         <Box className={styles.profileSummaryGrid}>

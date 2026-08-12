@@ -11,12 +11,13 @@ import {
   IconButton,
   Chip,
 } from '@mui/material';
-import { SearchRounded, CloseRounded } from '@mui/icons-material';
+import { SearchRounded, CloseRounded, GroupsRounded } from '@mui/icons-material';
 import { DataTable } from '../../../../components/DataTable/DataTable';
 import type { DataTableColumnDef, CustomFilterValue } from '../../../../components/DataTable/DataTable';
 import { useEmployees } from '../../../employees/hooks/useEmployees';
 import { useDepartmentsLookup } from '../../hooks/useDepartmentsLookup';
 import { useProfessionsLookup } from '../../../professions/hooks/useProfessionsLookup';
+import { PageHeader } from '../../../../components/PageHeader/PageHeader';
 
 const premiumInputSx = {
   '& .MuiOutlinedInput-root': {
@@ -211,55 +212,40 @@ export const DepartmentEmployees = () => {
   ];
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1536, margin: '0 auto' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-        <Box>
-          <Typography
-            variant="h4"
-            component="h1"
-            sx={{
-              fontWeight: 700,
-              letterSpacing: '-0.02em',
-              color: 'text.primary',
-              textShadow: (theme) => theme.palette.mode === 'dark' 
-                ? '0 1px 2px rgba(0,0,0,0.5)' 
-                : '0 1px 2px rgba(0,0,0,0.05)',
-            }}
-          >
-            Department Employees
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            View and filter employees by their assigned departments.
-          </Typography>
-        </Box>
-
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-          {isDepartmentsLoading ? (
-            <CircularProgress size={24} />
-          ) : (
-            <TextField
-              select
-              label="Filter by Department"
-              size="small"
-              value={selectedDepartmentId}
-              onChange={(e) => {
-                setSelectedDepartmentId(e.target.value);
-                setPaginationModel(prev => ({ ...prev, page: 0 })); // Reset page on filter
-              }}
-              sx={premiumInputSx}
-            >
-              <MenuItem value="">
-                <em>All Departments</em>
-              </MenuItem>
-              {departmentsLookup?.map((dept) => (
-                <MenuItem key={dept.id} value={dept.id}>
-                  {dept.name}
+    <Box sx={{ p: { xs: 2, sm: 3.5 }, maxWidth: 1400, mx: 'auto' }}>
+      <PageHeader
+        title="Department Employees"
+        subtitle="View and filter employees by their assigned departments."
+        icon={<GroupsRounded />}
+        actions={
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+            {isDepartmentsLoading ? (
+              <CircularProgress size={24} />
+            ) : (
+              <TextField
+                select
+                size="small"
+                value={selectedDepartmentId}
+                onChange={(e) => {
+                  setSelectedDepartmentId(e.target.value);
+                  setPaginationModel(prev => ({ ...prev, page: 0 }));
+                }}
+                label="Department"
+                sx={premiumInputSx}
+              >
+                <MenuItem value="">
+                  <em>All Departments</em>
                 </MenuItem>
-              ))}
-            </TextField>
-          )}
-        </Stack>
-      </Box>
+                {departmentsLookup?.map((dept) => (
+                  <MenuItem key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          </Stack>
+        }
+      />
 
       {/* ── FILTER PANEL (PREMIUM GLASS EFFECT) ──────────────────────────── */}
       <Box

@@ -53,7 +53,9 @@ public class GetCalendarEventByIdQueryHandler : IRequestHandler<GetCalendarEvent
             EndTime = entity.EndTime,
             ReminderThresholdDays = entity.ReminderThresholdDays,
             SendEmailReminder = entity.SendEmailReminder,
-            EventType = entity.EventType,
+            EventType = ((int)entity.EventType == 0 || !Enum.IsDefined(typeof(CalendarEventType), entity.EventType))
+                ? (entity.StartTime.Date != entity.EndTime.Date ? CalendarEventType.MultiDay : CalendarEventType.TimeBased)
+                : entity.EventType,
             VisibilityLevel = entity.VisibilityLevel,
             DepartmentId = entity.DepartmentId,
             DepartmentName = entity.Department?.Name,

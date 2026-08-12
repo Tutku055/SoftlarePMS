@@ -20,9 +20,11 @@ import {
   SearchRounded,
   CloseRounded,
   EventBusyRounded,
+  DateRangeRounded,
 } from '@mui/icons-material';
 import { useYearEndStats } from '../../../finance/hooks/useYearEndStats';
 import { useCloseYearRollover } from '../../../finance/hooks/useCloseYearRollover';
+import { PageHeader } from '../../../../components/PageHeader/PageHeader';
 import { DataTable } from '../../../../components/DataTable/DataTable';
 import type { DataTableColumnDef, CustomFilterValue } from '../../../../components/DataTable/DataTable';
 import { PopupDialog } from '../../../../components/PopupDialog/PopupDialog';
@@ -217,50 +219,37 @@ export const YearEndOperations = () => {
   };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1536, margin: '0 auto' }}>
-      {/* ── Header ── */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-        <Box>
-          <Typography
-            variant="h4"
-            component="h1"
+    <Box sx={{ p: { xs: 2, sm: 3.5 }, maxWidth: 1400, mx: 'auto' }}>
+      <PageHeader
+        title="Year-End Operations"
+        subtitle={`Review missing timesheets and process year-end leave rollovers for ${currentYear}.`}
+        icon={<DateRangeRounded />}
+        actions={
+          <Button
+            variant="contained"
+            size="large"
+            disabled={isYearClosed || isLoading || closeYearMutation.isPending}
+            onClick={() => setIsConfirmOpen(true)}
+            startIcon={isYearClosed ? <CheckCircleRounded /> : <EventBusyRounded />}
+            color={isYearClosed ? 'inherit' : 'error'}
             sx={{
               fontWeight: 700,
-              letterSpacing: '-0.02em',
-              color: 'text.primary',
+              px: 3,
+              py: 1.2,
+              borderRadius: '10px',
+              boxShadow: 'none',
+              textTransform: 'none',
+              minWidth: 200,
             }}
           >
-            Year-End Operations
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Review missing timesheets and process year-end leave rollovers for <strong>{currentYear}</strong>.
-          </Typography>
-        </Box>
-
-        <Button
-          variant="contained"
-          size="large"
-          disabled={isYearClosed || isLoading || closeYearMutation.isPending}
-          onClick={() => setIsConfirmOpen(true)}
-          startIcon={isYearClosed ? <CheckCircleRounded /> : <EventBusyRounded />}
-          color={isYearClosed ? 'inherit' : 'error'}
-          sx={{
-            fontWeight: 700,
-            px: 3,
-            py: 1.2,
-            borderRadius: '10px',
-            boxShadow: 'none',
-            textTransform: 'none',
-            minWidth: 200,
-          }}
-        >
-          {closeYearMutation.isPending
-            ? 'Processing…'
-            : isYearClosed
-            ? `${currentYear} Already Closed`
-            : `Close Year ${currentYear}`}
-        </Button>
-      </Box>
+            {closeYearMutation.isPending
+              ? 'Processing…'
+              : isYearClosed
+              ? `${currentYear} Already Closed`
+              : `Close Year ${currentYear}`}
+          </Button>
+        }
+      />
 
       {/* ── Already Closed Banner ── */}
       {isYearClosed && (

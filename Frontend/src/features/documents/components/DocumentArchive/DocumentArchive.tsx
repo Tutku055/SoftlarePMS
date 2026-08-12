@@ -33,6 +33,7 @@ import {
   FilterAltRounded,
   WarningRounded,
   CheckCircleRounded,
+  FolderCopyRounded,
 } from '@mui/icons-material';
 import type {
   GridPaginationModel,
@@ -43,6 +44,7 @@ import type { CustomFilterValue, DataTableColumnDef } from '../../../../componen
 import { useDocuments } from '../../hooks/useDocuments';
 import { useAuthStore } from '../../../../store/useAuthStore';
 import { parseDocumentFilters } from '../../utils/filterUtils';
+import { PageHeader } from '../../../../components/PageHeader/PageHeader';
 import { formatDateDisplay } from '../../../finance/constants/currencyConstants';
 import { documentsApi } from '../../api/documentsApi';
 
@@ -349,90 +351,77 @@ export const DocumentArchive = () => {
   ];
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1536, margin: '0 auto' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-        <Box>
-          <Typography
-            variant="h4"
-            component="h1"
-            sx={{
-              fontWeight: 700,
-              letterSpacing: '-0.02em',
-              color: 'text.primary',
-              textShadow: (theme) => theme.palette.mode === 'dark' ? '0 1px 2px rgba(0,0,0,0.5)' : '0 1px 2px rgba(0,0,0,0.05)',
-            }}
-          >
-            Document Archive
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Central repository for all system documents.
-          </Typography>
-        </Box>
+    <Box sx={{ p: { xs: 2, sm: 3.5 }, maxWidth: 1400, mx: 'auto' }}>
+      <PageHeader
+        title="Document Archive"
+        subtitle="Central repository for all system documents."
+        icon={<FolderCopyRounded />}
+        actions={
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+            <FormControl size="small" sx={{ minWidth: 180 }}>
+              <InputLabel>File Owner Type</InputLabel>
+              <Select
+                value={selectedOwnerModule}
+                label="File Owner Type"
+                onChange={(e) => {
+                  setSelectedOwnerModule(e.target.value);
+                  setPaginationModel(prev => ({ ...prev, page: 0 }));
+                }}
+                sx={{ borderRadius: '10px' }}
+              >
+                <MenuItem value="">All</MenuItem>
+                <MenuItem value="1">Employee</MenuItem>
+                <MenuItem value="2">Department</MenuItem>
+              </Select>
+            </FormControl>
+            
+            {hasPermission('Documents.Update') && (
+              <Button
+                variant="contained"
+                color="secondary"
+                startIcon={<AutoAwesomeRounded />}
+                onClick={handleCheckIntegrity}
+                disabled={isCheckingIntegrity}
+                sx={{
+                  borderRadius: '10px',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  boxShadow: 'none'
+                }}
+              >
+                Check Integrity
+              </Button>
+            )}
 
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-          <FormControl size="small" sx={{ minWidth: 180 }}>
-            <InputLabel>File Owner Type</InputLabel>
-            <Select
-              value={selectedOwnerModule}
-              label="File Owner Type"
-              onChange={(e) => {
-                setSelectedOwnerModule(e.target.value);
-                setPaginationModel(prev => ({ ...prev, page: 0 }));
-              }}
-              sx={{ borderRadius: '10px' }}
-            >
-              <MenuItem value="">All</MenuItem>
-              <MenuItem value="1">Employee</MenuItem>
-              <MenuItem value="2">Department</MenuItem>
-            </Select>
-          </FormControl>
-          
-          {hasPermission('Documents.Update') && (
-            <Button
-              variant="contained"
-              color="secondary"
-              startIcon={<AutoAwesomeRounded />}
-              onClick={handleCheckIntegrity}
-              disabled={isCheckingIntegrity}
-              sx={{
-                borderRadius: '10px',
-                fontWeight: 600,
-                textTransform: 'none',
-                boxShadow: 'none'
-              }}
-            >
-              Check Integrity
-            </Button>
-          )}
-
-          <Tooltip title="Manage Columns" arrow>
-            <Button
-              variant="outlined"
-              startIcon={<ViewColumnRounded />}
-              onClick={(e) => setColumnMenuAnchor(e.currentTarget)}
-              sx={{
-                borderRadius: '10px',
-                borderColor: 'divider',
-                color: 'text.primary',
-                fontWeight: 600,
-                textTransform: 'none',
-                transition: 'all 0.2s ease',
-                '&:hover': { backgroundColor: 'action.hover', borderColor: 'text.primary' }
-              }}
-            >
-              Columns
-            </Button>
-          </Tooltip>
-          <Menu anchorEl={columnMenuAnchor} open={Boolean(columnMenuAnchor)} onClose={() => setColumnMenuAnchor(null)}>
-            {Object.keys(COLUMN_NAMES).map((key) => (
-              <MenuItem key={key} onClick={() => setColumnVisibility(prev => ({ ...prev, [key]: !prev[key] }))}>
-                <Checkbox checked={columnVisibility[key] !== false} size="small" />
-                <ListItemText primary={COLUMN_NAMES[key]} />
-              </MenuItem>
-            ))}
-          </Menu>
-        </Stack>
-      </Box>
+            <Tooltip title="Manage Columns" arrow>
+              <Button
+                variant="outlined"
+                startIcon={<ViewColumnRounded />}
+                onClick={(e) => setColumnMenuAnchor(e.currentTarget)}
+                sx={{
+                  borderRadius: '10px',
+                  borderColor: 'divider',
+                  color: 'text.primary',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  transition: 'all 0.2s ease',
+                  '&:hover': { backgroundColor: 'action.hover', borderColor: 'text.primary' }
+                }}
+              >
+                Columns
+              </Button>
+            </Tooltip>
+            <Menu anchorEl={columnMenuAnchor} open={Boolean(columnMenuAnchor)} onClose={() => setColumnMenuAnchor(null)}>
+              {Object.keys(COLUMN_NAMES).map((key) => (
+                <MenuItem key={key} onClick={() => setColumnVisibility(prev => ({ ...prev, [key]: !prev[key] }))}>
+                  <Checkbox checked={columnVisibility[key] !== false} size="small" />
+                  <ListItemText primary={COLUMN_NAMES[key]} />
+                </MenuItem>
+              ))}
+            </Menu>
+          </Stack>
+        }
+      />
 
       <Box
         sx={{

@@ -26,8 +26,10 @@ import {
   PictureAsPdfRounded,
   WarningRounded,
   LockRounded,
-  LockOpenRounded
+  LockOpenRounded,
+  AccessTimeRounded
 } from '@mui/icons-material';
+import { PageHeader } from '../../../../components/PageHeader/PageHeader';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -307,72 +309,57 @@ export const TimesheetDetailMatrix = () => {
   }
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: '100%', margin: '0 auto', overflowX: 'hidden' }}>
-      {/* HEADER */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-          <Tooltip title="Back to Timesheets">
-            <IconButton onClick={() => navigate('/finance/timesheets')} sx={{ bgcolor: 'action.hover' }}>
-              <ArrowBackRounded />
-            </IconButton>
-          </Tooltip>
-          <Box>
-            <Typography
-              variant="h4"
-              sx={{
-                fontWeight: 700,
-                letterSpacing: '-0.02em',
-                color: 'text.primary',
-                textShadow: (theme) => theme.palette.mode === 'dark' ? '0 1px 2px rgba(0,0,0,0.5)' : '0 1px 2px rgba(0,0,0,0.05)'
-              }}
-            >
-              Timesheet Matrix
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {employee?.firstName} {employee?.lastName} - {employee?.employeeNo}
-            </Typography>
-          </Box>
-        </Stack>
-
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-          {timesheet && hasPermission('Timesheets.Lock') && (
-            <Tooltip title={isLocked ? "Unlock Timesheet" : "Lock Timesheet"}>
-              <IconButton 
-                onClick={() => employeeId && toggleLock({ employeeId, year, month, lock: !isLocked })}
-                disabled={isTogglingLock}
-                sx={{ 
-                  color: isLocked ? 'error.main' : 'success.main', 
-                  bgcolor: isLocked ? 'error.50' : 'success.50' 
-                }}
-              >
-                {isLocked ? <LockRounded /> : <LockOpenRounded />}
+    <Box sx={{ p: { xs: 2, sm: 3.5 }, maxWidth: 1400, mx: 'auto' }}>
+      <PageHeader
+        title="Timesheet Matrix"
+        subtitle={`Employee: ${employee?.firstName} ${employee?.lastName} (${employee?.employeeNo})`}
+        icon={<AccessTimeRounded />}
+        actions={
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+            <Tooltip title="Back to Timesheets">
+              <IconButton onClick={() => navigate('/finance/timesheets')} sx={{ bgcolor: 'action.hover' }}>
+                <ArrowBackRounded />
               </IconButton>
             </Tooltip>
-          )}
-          <Tooltip title="Print">
-            <IconButton onClick={handlePrint} sx={{ color: 'primary.main', bgcolor: 'primary.50' }}>
-              <PrintRounded />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Download PDF">
-            <IconButton onClick={handleDownloadPdf} sx={{ color: 'error.main', bgcolor: 'error.50' }}>
-              <PictureAsPdfRounded />
-            </IconButton>
-          </Tooltip>
-          <FormControl size="small" sx={{ minWidth: 100 }}>
-            <Select value={year} onChange={(e: any) => setYear(Number(e.target.value))}>
-              {[currentYear - 1, currentYear, currentYear + 1].map(y => <MenuItem key={y} value={y}>{y}</MenuItem>)}
-            </Select>
-          </FormControl>
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <Select value={month} onChange={(e: any) => setMonth(Number(e.target.value))}>
-              {Array.from({length: 12}, (_, i) => i + 1).map(m => (
-                <MenuItem key={m} value={m}>{formatMonthName(m)}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Stack>
-      </Box>
+            {timesheet && hasPermission('Timesheets.Lock') && (
+              <Tooltip title={isLocked ? "Unlock Timesheet" : "Lock Timesheet"}>
+                <IconButton 
+                  onClick={() => employeeId && toggleLock({ employeeId, year, month, lock: !isLocked })}
+                  disabled={isTogglingLock}
+                  sx={{ 
+                    color: isLocked ? 'error.main' : 'success.main', 
+                    bgcolor: isLocked ? 'error.50' : 'success.50' 
+                  }}
+                >
+                  {isLocked ? <LockRounded /> : <LockOpenRounded />}
+                </IconButton>
+              </Tooltip>
+            )}
+            <Tooltip title="Print">
+              <IconButton onClick={handlePrint} sx={{ color: 'primary.main', bgcolor: 'primary.50' }}>
+                <PrintRounded />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Download PDF">
+              <IconButton onClick={handleDownloadPdf} sx={{ color: 'error.main', bgcolor: 'error.50' }}>
+                <PictureAsPdfRounded />
+              </IconButton>
+            </Tooltip>
+            <FormControl size="small" sx={{ minWidth: 100 }}>
+              <Select value={year} onChange={(e: any) => setYear(Number(e.target.value))}>
+                {[currentYear - 1, currentYear, currentYear + 1].map(y => <MenuItem key={y} value={y}>{y}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <Select value={month} onChange={(e: any) => setMonth(Number(e.target.value))}>
+                {Array.from({length: 12}, (_, i) => i + 1).map(m => (
+                  <MenuItem key={m} value={m}>{formatMonthName(m)}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        }
+      />
 
       {/* WARNING BANNER */}
       {isPreviousYearPendingClosure && (

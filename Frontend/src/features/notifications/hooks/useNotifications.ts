@@ -13,7 +13,7 @@ import { calculateNotificationUrgency, parseUtcDate } from '../utils/urgencyUtil
 export type NotificationStatusFilter = 'all' | 'unread' | 'read';
 export type NotificationSortOption = 'date_desc' | 'date_asc' | 'urgency' | 'remaining_days' | 'type';
 
-export function useNotifications() {
+export function useNotifications(initialType: NotificationType | 'all' = 'all') {
   const [items, setItems] = useState<UserNotificationDto[]>([]);
   const unreadCount = useNotificationStore((state) => state.unreadCount);
   const globalTotalCount = useNotificationStore((state) => state.totalCount);
@@ -31,7 +31,7 @@ export function useNotifications() {
   const [totalCount, setTotalCount] = useState<number>(0);
 
   // Filters
-  const [selectedType, setSelectedType] = useState<NotificationType | 'all'>('all');
+  const [selectedType, setSelectedType] = useState<NotificationType | 'all'>(initialType);
   const [selectedUrgency, setSelectedUrgency] = useState<NotificationUrgency | 'all'>('all');
   const [selectedStatus, setSelectedStatus] = useState<NotificationStatusFilter>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -120,6 +120,11 @@ export function useNotifications() {
       result = result.filter((n) => !n.isRead);
     } else if (selectedStatus === 'read') {
       result = result.filter((n) => n.isRead);
+    }
+
+    // Type filter fallback
+    if (selectedType !== 'all') {
+      result = result.filter((n) => n.type === selectedType);
     }
 
     // Search filter (title, message, typeName)

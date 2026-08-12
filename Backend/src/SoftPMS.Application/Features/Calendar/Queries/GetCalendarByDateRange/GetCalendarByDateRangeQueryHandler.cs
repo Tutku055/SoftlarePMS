@@ -61,7 +61,9 @@ public class GetCalendarByDateRangeQueryHandler : IRequestHandler<GetCalendarByD
             EndTime = e.EndTime,
             ReminderThresholdDays = e.ReminderThresholdDays,
             SendEmailReminder = e.SendEmailReminder,
-            EventType = e.EventType,
+            EventType = ((int)e.EventType == 0 || !Enum.IsDefined(typeof(CalendarEventType), e.EventType))
+                ? (e.StartTime.Date != e.EndTime.Date ? CalendarEventType.MultiDay : CalendarEventType.TimeBased)
+                : e.EventType,
             VisibilityLevel = e.VisibilityLevel,
             DepartmentId = e.DepartmentId,
             DepartmentName = e.Department != null ? e.Department.Name : null,

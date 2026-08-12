@@ -4,6 +4,8 @@ import { useDepartmentDetail } from '../../hooks/useDepartmentDetail';
 import { useUpdateDepartment } from '../../hooks/useUpdateDepartment';
 import { useDeleteDepartment } from '../../hooks/useDeleteDepartment';
 import { useAuthStore } from '../../../../store/useAuthStore';
+import { useBreadcrumbTitle } from '../../../../store/useBreadcrumbStore';
+import { PageHeader } from '../../../../components/PageHeader/PageHeader';
 import { useEmployees } from '../../../employees/hooks/useEmployees';
 import { useDocuments, useUploadDocument } from '../../../documents/hooks/useDocuments';
 import { DataTable } from '../../../../components/DataTable/DataTable';
@@ -106,6 +108,7 @@ export const DepartmentDetail = () => {
   const [activeTab, setActiveTab] = useState(0);
 
   const { data: department, isLoading, isError } = useDepartmentDetail(id);
+  useBreadcrumbTitle(department?.name || null);
   const { mutate: updateDepartment, isPending: isUpdatingDepartment } = useUpdateDepartment();
   const { mutate: deleteDepartment, isPending: isDeleting } = useDeleteDepartment();
 
@@ -246,53 +249,37 @@ export const DepartmentDetail = () => {
   ];
 
   return (
-    <Box className={styles.pageContainer}>
-      
-      {/* ── TOP ACTION BAR ────────────────────────────────────────────────── */}
-      <Box className={styles.headerContainer}>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-          <Tooltip title="Back to Departments">
-            <IconButton onClick={() => navigate('/departments/list')} sx={{ bgcolor: 'action.hover' }}>
-              <ArrowBackRounded />
-            </IconButton>
-          </Tooltip>
-          <Box>
-            <Typography 
-              variant="h4" 
-              sx={{ 
-                fontWeight: 700, 
-                letterSpacing: '-0.02em', 
-                color: 'text.primary',
-                textShadow: (theme) => theme.palette.mode === 'dark' ? '0 1px 2px rgba(0,0,0,0.5)' : '0 1px 2px rgba(0,0,0,0.05)'
-              }}
-            >
-              Department Profile
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              ID: {department.id}
-            </Typography>
-          </Box>
-        </Stack>
-
-        <Stack direction="row" spacing={1.5}>
-          {hasPermission('Departments.Delete') && (
-            <Button 
-              onClick={() => setIsDeleteDialogOpen(true)}
-              variant="outlined" 
-              color="error"
-              startIcon={<DeleteRounded />} 
-              sx={{ borderRadius: '10px', fontWeight: 600, textTransform: 'none' }}
-            >
-              Delete
-            </Button>
-          )}
-          {hasPermission('Departments.Update') && (
-            <Button onClick={handleSave} disabled={isUpdatingDepartment} variant="contained" startIcon={<SaveRounded />} sx={{ borderRadius: '10px', fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}>
-              {isUpdatingDepartment ? 'Saving...' : 'Save Changes'}
-            </Button>
-          )}
-        </Stack>
-      </Box>
+    <Box sx={{ p: { xs: 2, sm: 3.5 }, maxWidth: 1400, mx: 'auto' }}>
+      <PageHeader
+        title="Department Profile"
+        subtitle={`ID: ${department.id} | ${department.name}`}
+        icon={<BusinessRounded />}
+        actions={
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+            <Tooltip title="Back to Departments">
+              <IconButton onClick={() => navigate('/departments/list')} sx={{ bgcolor: 'action.hover' }}>
+                <ArrowBackRounded />
+              </IconButton>
+            </Tooltip>
+            {hasPermission('Departments.Delete') && (
+              <Button 
+                onClick={() => setIsDeleteDialogOpen(true)}
+                variant="outlined" 
+                color="error"
+                startIcon={<DeleteRounded />} 
+                sx={{ borderRadius: '10px', fontWeight: 600, textTransform: 'none' }}
+              >
+                Delete
+              </Button>
+            )}
+            {hasPermission('Departments.Update') && (
+              <Button onClick={handleSave} disabled={isUpdatingDepartment} variant="contained" startIcon={<SaveRounded />} sx={{ borderRadius: '10px', fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}>
+                {isUpdatingDepartment ? 'Saving...' : 'Save Changes'}
+              </Button>
+            )}
+          </Stack>
+        }
+      />
 
       {/* ── PROFILE SUMMARY CARD ────────────────────────────────────────── */}
       <Box sx={glassPanelSx}>
