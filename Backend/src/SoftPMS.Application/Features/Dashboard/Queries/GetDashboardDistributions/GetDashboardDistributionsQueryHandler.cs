@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Application.Features.Dashboard.DTOs;
+using SoftPMS.Domain.Enums;
 
 namespace SoftPMS.Application.Features.Dashboard.Queries.GetDashboardDistributions;
 
@@ -20,7 +21,7 @@ public class GetDashboardDistributionsQueryHandler : IRequestHandler<GetDashboar
 
         // 1. Department Distribution (Top 5 + Other)
         var deptStats = await _context.Employees
-            .Where(e => !e.IsDeleted)
+            .Where(e => !e.IsDeleted && e.EmploymentStatus == EmploymentStatus.Active)
             .GroupBy(e => e.Department != null ? e.Department.Name : "Unassigned")
             .Select(g => new { Name = g.Key, Count = g.Count() })
             .OrderByDescending(x => x.Count)
@@ -52,7 +53,7 @@ public class GetDashboardDistributionsQueryHandler : IRequestHandler<GetDashboar
         // The user asked: "En popüler meslek grubu görsel olarak öne çıkarılmalı... diğerleri mantıklı bir "Other" grubuyla birleştirilmeli."
         // We will return Top 3 + Other, frontend can highlight the first one.
         var profStats = await _context.Employees
-            .Where(e => !e.IsDeleted)
+            .Where(e => !e.IsDeleted && e.EmploymentStatus == EmploymentStatus.Active)
             .GroupBy(e => e.Profession != null ? e.Profession.Name : "Unspecified")
             .Select(g => new { Name = g.Key, Count = g.Count() })
             .OrderByDescending(x => x.Count)

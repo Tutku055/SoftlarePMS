@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SoftPMS.Application.Features.SystemSettings.Commands.CloseYearAndRolloverLeaves;
 using SoftPMS.Application.Features.SystemSettings.Queries.CheckYearClosure;
 using SoftPMS.Application.Features.SystemSettings.Queries.GetYearEndEmployeeStats;
+using SoftPMS.Application.Features.SystemSettings.Queries.GetFilterOperators;
 using SoftPMS.WebApi.Authorization;
 
 namespace SoftPMS.WebApi.Controllers;
@@ -35,6 +36,14 @@ public class SystemSettingsController : ApiControllerBase
     {
         var isPending = await Sender.Send(new CheckYearClosureQuery(year));
         return Ok(new { isPending });
+    }
+
+    /// <summary>Get standard datatable filter operator definitions.</summary>
+    [HttpGet("filter-operators")]
+    public async Task<IActionResult> GetFilterOperators()
+    {
+        var result = await Sender.Send(new GetFilterOperatorsQuery());
+        return Ok(result);
     }
 }
 

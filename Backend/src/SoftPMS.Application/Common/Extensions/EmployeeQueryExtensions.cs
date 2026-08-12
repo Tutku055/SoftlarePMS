@@ -61,6 +61,19 @@ public static class EmployeeQueryExtensions
                     _ => query.Where(e => e.LastName.ToLower().Contains(val))
                 };
             }
+            else if (string.Equals(field, "fullName", StringComparison.OrdinalIgnoreCase))
+            {
+                query = op switch
+                {
+                    "firstname" => query.Where(e => e.FirstName.ToLower().Contains(val)),
+                    "lastname" => query.Where(e => e.LastName.ToLower().Contains(val)),
+                    "equals" => query.Where(e => (e.FirstName + " " + e.LastName).ToLower() == val),
+                    "startswith" => query.Where(e => (e.FirstName + " " + e.LastName).ToLower().StartsWith(val)),
+                    "endswith" => query.Where(e => (e.FirstName + " " + e.LastName).ToLower().EndsWith(val)),
+                    _ => query.Where(e => (e.FirstName + " " + e.LastName).ToLower().Contains(val))
+                };
+            }
+
             else if (string.Equals(field, "profession", StringComparison.OrdinalIgnoreCase) ||
                      string.Equals(field, "professionId", StringComparison.OrdinalIgnoreCase))
             {

@@ -10,6 +10,16 @@ import { useAuthStore } from '../../../store/useAuthStore';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#A9A9A9'];
 
+const calculateTotalCategories = (items: ChartDistributionItemDto[] | undefined): number => {
+  if (!items || items.length === 0) return 0;
+  return items.reduce((acc, item) => {
+    if (item.isOther || item.name === 'Other') {
+      return acc + (item.subItems ? item.subItems.length : 1);
+    }
+    return acc + 1;
+  }, 0);
+};
+
 export const DistributionChartsSection: React.FC = () => {
   const { hasPermission } = useAuthStore();
   const canReadDepartments = hasPermission('Departments.Read');
@@ -41,13 +51,19 @@ export const DistributionChartsSection: React.FC = () => {
             <Box sx={{ flex: 1, minWidth: 0, borderRight: { xs: 'none', sm: '1px solid' }, borderBottom: { xs: '1px solid', sm: 'none' }, borderColor: 'divider', p: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <Typography variant="caption" sx={{ display: 'block', fontWeight: 700, textAlign: 'center', pt: 0.5, pb: 0.5, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.65rem', color: 'text.secondary' }}>Departments</Typography>
               <Box sx={{ width: '100%', flexGrow: 1, minWidth: 0, minHeight: 0 }}>
-                <DonutChart data={processDistributionData(data?.departmentDistribution)} />
+                <DonutChart 
+                  data={processDistributionData(data?.departmentDistribution)} 
+                  totalCount={calculateTotalCategories(data?.departmentDistribution)}
+                />
               </Box>
             </Box>
             <Box sx={{ flex: 1, minWidth: 0, p: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <Typography variant="caption" sx={{ display: 'block', fontWeight: 700, textAlign: 'center', pt: 0.5, pb: 0.5, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: '0.65rem', color: 'text.secondary' }}>Professions</Typography>
               <Box sx={{ width: '100%', flexGrow: 1, minWidth: 0, minHeight: 0 }}>
-                <DonutChart data={processDistributionData(data?.professionDistribution)} />
+                <DonutChart 
+                  data={processDistributionData(data?.professionDistribution)} 
+                  totalCount={calculateTotalCategories(data?.professionDistribution)}
+                />
               </Box>
             </Box>
           </>
@@ -112,33 +128,36 @@ const processDistributionData = (data: ChartDistributionItemDto[] | undefined): 
 
 interface DonutChartProps {
   data: ChartDistributionItemDto[];
+  totalCount: number;
 }
 
-const renderCustomLegend = (props: any) => {
-  const { payload } = props;
-  if (!payload) return null;
-  
-  const actualItems = payload
-    .filter((p: any) => p.value !== 'Other' && p.payload?.name !== 'Other')
-    .sort((a: any, b: any) => (b.payload?.value || 0) - (a.payload?.value || 0));
-  const otherItem = payload.find((p: any) => p.value === 'Other' || p.payload?.name === 'Other');
+const CustomLegend: React.FC<{ data: ChartDistributionItemDto[] }> = ({ data }) => {
+  if (!data || data.length === 0) return null;
+
+  const actualItems = data
+    .filter(p => !p.isOther && p.name !== 'Other')
+    .sort((a, b) => b.value - a.value);
+  const otherItem = data.find(p => p.isOther || p.name === 'Other');
   const finalPayload = otherItem ? [...actualItems, otherItem] : actualItems;
 
   return (
     <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', columnGap: 1.5, rowGap: 0.5, pt: 1, px: 1 }}>
-      {finalPayload.map((entry: any, index: number) => (
-        <Box key={`legend-item-${index}`} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <Box sx={{ width: 10, height: 10, bgcolor: entry.color, borderRadius: '2px', flexShrink: 0 }} />
-          <Typography variant="caption" sx={{ fontSize: '11px', color: 'text.secondary', lineHeight: 1 }}>
-            {entry.value}
-          </Typography>
-        </Box>
-      ))}
+      {finalPayload.map((entry: any, index: number) => {
+        const itemColor = entry.isOther ? '#A9A9A9' : COLORS[data.findIndex(d => d.name === entry.name) % COLORS.length];
+        return (
+          <Box key={`legend-item-${index}`} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{ width: 8, height: 8, bgcolor: itemColor, borderRadius: '2px', flexShrink: 0 }} />
+            <Typography variant="caption" sx={{ fontSize: '11px', color: 'text.secondary', lineHeight: 1 }}>
+              {entry.name}
+            </Typography>
+          </Box>
+        );
+      })}
     </Box>
   );
 };
 
-const DonutChart: React.FC<DonutChartProps> = ({ data }) => {
+const DonutChart: React.FC<DonutChartProps> = ({ data, totalCount }) => {
   const theme = useTheme();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedOther, setSelectedOther] = useState<ChartDistributionItemDto | null>(null);
@@ -161,50 +180,66 @@ const DonutChart: React.FC<DonutChartProps> = ({ data }) => {
 
   return (
     <Box sx={{
-      height: '100%',
-      minHeight: 150,
       width: '100%',
-      minWidth: 0,
-      position: 'relative',
-      overflow: 'hidden',
       display: 'flex',
       flexDirection: 'column',
+      alignItems: 'center',
+      minWidth: 0,
       '& *:focus': { outline: 'none !important' },
       '& path:focus': { outline: 'none !important' },
       '& .recharts-surface': { outline: 'none !important' },
       '& .recharts-sector': { outline: 'none !important' },
     }}>
-      <ResponsiveContainer width="100%" height="100%" debounce={50}>
-        <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-          <Pie
-            data={data}
-            innerRadius="50%"
-            outerRadius="80%"
-            paddingAngle={4}
-            dataKey="value"
-            onClick={handleClick}
-            focusable={false}
-            style={{ cursor: data.some(d => d.isOther) ? 'pointer' : 'default', outline: 'none' }}
-          >
-            {data.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={entry.isOther ? '#A9A9A9' : COLORS[index % COLORS.length]}
-                stroke="none"
-                strokeWidth={0}
-                style={{ outline: 'none' }}
-                focusable={false as any}
-              />
-            ))}
-          </Pie>
-          <Tooltip
-            cursor={false}
-            contentStyle={{ borderRadius: 8, borderColor: theme.palette.divider, backgroundColor: theme.palette.background.paper, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-            itemStyle={{ color: theme.palette.text.primary, fontSize: '12px' }}
-          />
-          <Legend content={renderCustomLegend} />
-        </PieChart>
-      </ResponsiveContainer>
+      <Box sx={{ width: '100%', height: 180, position: 'relative', flexShrink: 0 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius="56%"
+              outerRadius="85%"
+              paddingAngle={4}
+              dataKey="value"
+              onClick={handleClick}
+              focusable={false}
+              style={{ cursor: data.some(d => d.isOther) ? 'pointer' : 'default', outline: 'none' }}
+            >
+              {data.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={entry.isOther ? '#A9A9A9' : COLORS[index % COLORS.length]}
+                  stroke="none"
+                  strokeWidth={0}
+                  style={{ outline: 'none' }}
+                  focusable={false as any}
+                />
+              ))}
+            </Pie>
+            <text
+              x="50%"
+              y="50%"
+              textAnchor="middle"
+              dominantBaseline="central"
+              style={{
+                fontSize: '1.65rem',
+                fontWeight: 800,
+                fill: theme.palette.text.primary,
+                pointerEvents: 'none'
+              }}
+            >
+              {totalCount}
+            </text>
+            <Tooltip
+              cursor={false}
+              contentStyle={{ borderRadius: 8, borderColor: theme.palette.divider, backgroundColor: theme.palette.background.paper, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+              itemStyle={{ color: theme.palette.text.primary, fontSize: '12px' }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </Box>
+
+      <CustomLegend data={data} />
 
       {/* Dialog for 'Other' sub-items */}
       <Dialog 
@@ -254,3 +289,4 @@ const DonutChart: React.FC<DonutChartProps> = ({ data }) => {
     </Box>
   );
 };
+

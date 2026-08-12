@@ -36,45 +36,8 @@ interface DataTableProps {
   onSelectionChange?: (ids: Set<string>) => void;
 }
 
-const STRING_OPERATORS = [
-  { value: 'contains', label: 'Contains' },
-  { value: 'equals', label: 'Equals' },
-  { value: 'startswith', label: 'Starts with' },
-  { value: 'endswith', label: 'Ends with' },
-];
-
-const FULLNAME_OPERATORS = [
-  { value: 'contains', label: 'Contains' },
-  { value: 'firstName', label: 'First Name' },
-  { value: 'lastName', label: 'Last Name' },
-];
-
-const DATE_OPERATORS = [
-  { value: 'is', label: 'Is' },
-  { value: 'after', label: 'After' },
-  { value: 'before', label: 'Before' },
-];
-
-const NUMBER_OPERATORS = [
-  { value: 'is', label: 'Is' },
-  { value: 'morethan', label: 'More than' },
-  { value: 'lessthan', label: 'Less than' },
-];
-
-const FILESIZE_OPERATORS = [
-  { value: 'biggerthan', label: 'Bigger than' },
-  { value: 'smallerthan', label: 'Smaller than' },
-];
-
-const SELECT_OPERATORS = [
-  { value: 'is', label: 'Is' },
-  { value: 'not', label: 'Is Not' },
-];
-
-const MULTI_SELECT_OPERATORS = [
-  { value: 'in', label: 'In' },
-  { value: 'notin', label: 'Not In' },
-];
+import { useFilterOperators } from '../../features/finance/hooks/useFilterOperators';
+import type { FilterOperatorsDto } from '../../features/finance/hooks/useFilterOperators';
 
 // Premium Input Stilleri
 const premiumInputSx = {
@@ -132,6 +95,7 @@ interface FilterHeaderProps {
   customFilters: Record<string, CustomFilterValue>;
   onCustomFilterChange: (field: string, value: string, operator: string) => void;
   options?: { value: string; label: string }[];
+  operatorsData?: FilterOperatorsDto;
 }
 
 const FilterHeader: React.FC<FilterHeaderProps> = ({
@@ -140,19 +104,21 @@ const FilterHeader: React.FC<FilterHeaderProps> = ({
   filterType,
   customFilters,
   onCustomFilterChange,
-  options
+  options,
+  operatorsData
 }) => {
   const filterState = customFilters[field] || { value: '', operator: (filterType === 'text' || filterType === 'fullName') ? 'contains' : filterType === 'multi-select' ? 'in' : (filterType === 'fileSize' ? 'biggerthan' : 'is') };
   const { value, operator } = filterState;
 
   const getOpList = () => {
-    if (filterType === 'date') return DATE_OPERATORS;
-    if (filterType === 'select') return SELECT_OPERATORS;
-    if (filterType === 'multi-select') return MULTI_SELECT_OPERATORS;
-    if (filterType === 'number') return NUMBER_OPERATORS;
-    if (filterType === 'fullName') return FULLNAME_OPERATORS;
-    if (filterType === 'fileSize') return FILESIZE_OPERATORS;
-    return STRING_OPERATORS;
+    if (!operatorsData) return [];
+    if (filterType === 'date') return operatorsData.dateOperators;
+    if (filterType === 'select') return operatorsData.selectOperators;
+    if (filterType === 'multi-select') return operatorsData.multiSelectOperators;
+    if (filterType === 'number') return operatorsData.numberOperators;
+    if (filterType === 'fullName') return operatorsData.fullNameOperators;
+    if (filterType === 'fileSize') return operatorsData.fileSizeOperators;
+    return operatorsData.stringOperators;
   };
   const opList = getOpList();
 
@@ -344,6 +310,8 @@ export const DataTable = ({
   customFiltersRef.current = customFilters;
   const onCustomFilterChangeRef = React.useRef(onCustomFilterChange);
   onCustomFilterChangeRef.current = onCustomFilterChange;
+  
+  const { data: operatorsData } = useFilterOperators();
 
   const mappedColumns: GridColDef[] = React.useMemo(() => columns.map((col) => {
     const gridCol: GridColDef = { ...col } as GridColDef;
@@ -357,6 +325,7 @@ export const DataTable = ({
           customFilters={customFiltersRef.current}
           onCustomFilterChange={(f, v, o) => onCustomFilterChangeRef.current(f, v, o)}
           options={col.filterOptions}
+          operatorsData={operatorsData}
         />
       );
     }

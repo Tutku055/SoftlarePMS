@@ -12,5 +12,9 @@ export const systemSettingsApi = {
   getYearEndStats: async (year: number): Promise<any> => {
     const response = await apiClient.get(`/SystemSettings/year-end-stats/${year}`);
     return response.data;
+  },
+  getFilterOperators: async (): Promise<any> => {
+    const response = await apiClient.get('/SystemSettings/filter-operators');
+    return response.data;
   }
 };

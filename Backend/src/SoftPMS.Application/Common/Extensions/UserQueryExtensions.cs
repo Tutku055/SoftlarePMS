@@ -62,6 +62,19 @@ public static class UserQueryExtensions
                     _ => query.Where(u => u.Email.ToLower().Contains(val))
                 };
             }
+            else if (string.Equals(field, "fullName", StringComparison.OrdinalIgnoreCase) || 
+                     string.Equals(field, "employeeName", StringComparison.OrdinalIgnoreCase))
+            {
+                query = op switch
+                {
+                    "firstname" => query.Where(u => u.Employee != null && u.Employee.FirstName.ToLower().Contains(val)),
+                    "lastname" => query.Where(u => u.Employee != null && u.Employee.LastName.ToLower().Contains(val)),
+                    "equals" => query.Where(u => u.Employee != null && (u.Employee.FirstName + " " + u.Employee.LastName).ToLower() == val),
+                    "startswith" => query.Where(u => u.Employee != null && (u.Employee.FirstName + " " + u.Employee.LastName).ToLower().StartsWith(val)),
+                    "endswith" => query.Where(u => u.Employee != null && (u.Employee.FirstName + " " + u.Employee.LastName).ToLower().EndsWith(val)),
+                    _ => query.Where(u => u.Employee != null && (u.Employee.FirstName + " " + u.Employee.LastName).ToLower().Contains(val))
+                };
+            }
             else if (string.Equals(field, "isActive", StringComparison.OrdinalIgnoreCase))
             {
                 bool targetStatus = val switch
