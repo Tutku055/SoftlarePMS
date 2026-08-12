@@ -59,6 +59,10 @@ public class SoftPMSDbContext : DbContext, IApplicationDbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.HasSequence<int>("EmployeeNoSequence")
+            .StartsAt(1)
+            .IncrementsBy(1);
+
         // Automatically applies all IEntityTypeConfiguration<T> classes in this assembly
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(SoftPMSDbContext).Assembly);
     }

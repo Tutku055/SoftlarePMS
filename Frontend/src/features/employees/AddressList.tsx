@@ -17,6 +17,7 @@ import {
   Chip,
 } from '@mui/material';
 import {
+  AutoAwesomeRounded,
   ViewColumnRounded,
   FileDownloadRounded,
   FilterAltRounded,
@@ -34,16 +35,20 @@ import { useProfessionsLookup } from '../professions/hooks/useProfessionsLookup'
 import ExcelJS from 'exceljs';
 import { PageHeader } from '../../components/PageHeader/PageHeader';
 
+type QuickFilter = 'all' | 'active' | 'terminated';
+
 const COLUMN_NAMES: Record<string, string> = {
   employeeNo: 'Employee No',
   fullName: 'Full Name',
   departmentId: 'Department',
   profession: 'Profession',
+  employmentStatus: 'Status',
 };
 
 export const AddressList = () => {
   const [quickSearch, setQuickSearch] = useState('');
   const [debouncedQuickSearch, setDebouncedQuickSearch] = useState('');
+  const [activeQuickFilter, setActiveQuickFilter] = useState<QuickFilter>('all');
   const [columnFilters, setColumnFilters] = useState<Record<string, CustomFilterValue>>({});
 
   const handleCustomFilterChange = useCallback((field: string, value: string, operator: string) => {
@@ -69,6 +74,7 @@ export const AddressList = () => {
     fullName: true,
     departmentId: true,
     profession: true,
+    employmentStatus: true,
   });
 
   const buildFilters = useCallback(
@@ -107,6 +113,26 @@ export const AddressList = () => {
     []
   );
 
+  const handleQuickFilterClick = (code: QuickFilter) => {
+    const newCode = activeQuickFilter === code ? 'all' : code;
+    setActiveQuickFilter(newCode);
+    
+    setColumnFilters(prev => {
+      const next = { ...prev };
+      if (newCode === 'active') {
+        next['employmentStatus'] = { operator: 'is', value: '1' };
+      } else if (newCode === 'terminated') {
+        next['employmentStatus'] = { operator: 'is', value: '3' };
+      } else {
+        if (next['employmentStatus']) next['employmentStatus'] = { ...next['employmentStatus'], value: '' };
+      }
+      return next;
+    });
+
+    setQuickSearch('');
+    setPaginationModel((prev) => ({ ...prev, page: 0 }));
+  };
+
   const [apiFilters, setApiFilters] = useState<{ field: string; operator: string; value: string }[]>([]);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -119,7 +145,7 @@ export const AddressList = () => {
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
-  }, [columnFilters, debouncedQuickSearch, buildFilters]);
+  }, [columnFilters, activeQuickFilter, debouncedQuickSearch, buildFilters]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuickSearch(quickSearch), 350);
@@ -288,6 +314,74 @@ export const AddressList = () => {
           </Typography>
         ),
       },
+      {
+        field: 'employmentStatus',
+        headerName: 'Status',
+        flex: 1,
+        minWidth: 150,
+        filterType: 'select',
+        filterOptions: [
+          { value: '1', label: 'Active' },
+          { value: '2', label: 'On Leave' },
+          { value: '3', label: 'Terminated' },
+        ],
+        renderCell: (params) => {
+          const val = params.value as number;
+          
+          const getChipStyles = (status: number) => {
+            switch(status) {
+              case 1:
+                return {
+                  bg: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(46, 125, 50, 0.15)' : 'rgba(46, 125, 50, 0.08)',
+                  color: (theme: any) => theme.palette.mode === 'dark' ? '#81c784' : '#2e7d32',
+                  border: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(129, 199, 132, 0.2)' : 'rgba(46, 125, 50, 0.15)',
+                  label: 'Active'
+                };
+              case 2:
+                return {
+                  bg: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(237, 108, 2, 0.15)' : 'rgba(237, 108, 2, 0.08)',
+                  color: (theme: any) => theme.palette.mode === 'dark' ? '#ffb74d' : '#ed6c02',
+                  border: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(255, 183, 77, 0.2)' : 'rgba(237, 108, 2, 0.15)',
+                  label: 'On Leave'
+                };
+              case 3:
+                return {
+                  bg: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(211, 47, 47, 0.15)' : 'rgba(211, 47, 47, 0.08)',
+                  color: (theme: any) => theme.palette.mode === 'dark' ? '#e57373' : '#d32f2f',
+                  border: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(229, 115, 115, 0.2)' : 'rgba(211, 47, 47, 0.15)',
+                  label: 'Terminated'
+                };
+              default:
+                return {
+                  bg: 'transparent',
+                  color: 'text.secondary',
+                  border: 'divider',
+                  label: 'Unknown'
+                };
+            }
+          };
+
+          const styles = getChipStyles(val);
+
+          return (
+            <Chip
+              label={styles.label}
+              size="small"
+              sx={{
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                backgroundColor: styles.bg,
+                color: styles.color,
+                border: '1px solid',
+                borderColor: styles.border,
+                borderRadius: '6px',
+                height: '24px',
+                '& .MuiChip-label': { px: 1.5 }
+              }}
+            />
+          );
+        }
+      },
     ],
     [departmentOptions, professionOptions]
   );
@@ -452,6 +546,46 @@ export const AddressList = () => {
               },
             }}
           />
+
+          <Divider sx={{ opacity: 0.4 }} />
+
+          <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+            <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600, color: 'text.secondary' }}>
+              <AutoAwesomeRounded fontSize="small" /> Quick Filters:
+            </Typography>
+
+            {(['all', 'active', 'terminated'] as QuickFilter[]).map((code) => {
+              const labels: Record<QuickFilter, string> = {
+                all: 'All Employees',
+                active: 'Active',
+                terminated: 'Terminated'
+              };
+              const isActive = activeQuickFilter === code;
+              
+              return (
+                <Chip
+                  key={code}
+                  label={labels[code]}
+                  onClick={() => handleQuickFilterClick(code)}
+                  sx={{
+                    fontWeight: 500,
+                    borderRadius: '8px',
+                    border: '1px solid',
+                    borderColor: isActive ? 'text.primary' : 'divider',
+                    backgroundColor: isActive ? 'text.primary' : 'transparent',
+                    color: isActive ? 'background.paper' : 'text.primary',
+                    boxShadow: isActive ? '0 2px 6px rgba(0,0,0,0.15)' : 'none',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                       backgroundColor: isActive 
+                        ? (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)'
+                        : 'action.hover',
+                    }
+                  }}
+                />
+              );
+            })}
+          </Stack>
 
           {activeColumnFilterCount > 0 && (
             <>

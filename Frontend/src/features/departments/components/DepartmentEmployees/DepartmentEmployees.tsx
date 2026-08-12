@@ -10,9 +10,12 @@ import {
   InputAdornment,
   IconButton,
   Chip,
+  Divider,
 } from '@mui/material';
-import { SearchRounded, CloseRounded, GroupsRounded } from '@mui/icons-material';
+import { SearchRounded, CloseRounded, GroupsRounded, AutoAwesomeRounded } from '@mui/icons-material';
 import { DataTable } from '../../../../components/DataTable/DataTable';
+
+type QuickFilter = 'all' | 'active' | 'terminated';
 import type { DataTableColumnDef, CustomFilterValue } from '../../../../components/DataTable/DataTable';
 import { useEmployees } from '../../../employees/hooks/useEmployees';
 import { useDepartmentsLookup } from '../../hooks/useDepartmentsLookup';
@@ -46,6 +49,7 @@ export const DepartmentEmployees = () => {
 
   const [quickSearch, setQuickSearch] = useState('');
   const [debouncedQuickSearch, setDebouncedQuickSearch] = useState('');
+  const [activeQuickFilter, setActiveQuickFilter] = useState<QuickFilter>('all');
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQuickSearch(quickSearch), 350);
@@ -64,6 +68,26 @@ export const DepartmentEmployees = () => {
       [field]: { value, operator }
     }));
     setPaginationModel(prev => ({ ...prev, page: 0 }));
+  };
+
+  const handleQuickFilterClick = (code: QuickFilter) => {
+    const newCode = activeQuickFilter === code ? 'all' : code;
+    setActiveQuickFilter(newCode);
+    
+    setCustomFilters(prev => {
+      const next = { ...prev };
+      if (newCode === 'active') {
+        next['employmentStatus'] = { operator: 'is', value: '1' };
+      } else if (newCode === 'terminated') {
+        next['employmentStatus'] = { operator: 'is', value: '3' };
+      } else {
+        if (next['employmentStatus']) next['employmentStatus'] = { ...next['employmentStatus'], value: '' };
+      }
+      return next;
+    });
+
+    setQuickSearch('');
+    setPaginationModel((prev) => ({ ...prev, page: 0 }));
   };
 
   const { data: departmentsLookup, isLoading: isDepartmentsLoading } = useDepartmentsLookup();
@@ -263,52 +287,94 @@ export const DepartmentEmployees = () => {
           transition: 'box-shadow 0.3s ease',
         }}
       >
-        <Stack spacing={2.5}>
-          <TextField
-            size="small"
-            fullWidth
-            placeholder="Quick search by first name, last name…"
-            value={quickSearch}
-            onChange={(e) => setQuickSearch(e.target.value)}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchRounded sx={{ color: 'text.secondary', fontSize: '1.1rem' }} />
-                  </InputAdornment>
-                ),
-                endAdornment: quickSearch ? (
-                  <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setQuickSearch('')} edge="end">
-                      <CloseRounded fontSize="small" />
-                    </IconButton>
-                  </InputAdornment>
-                ) : undefined,
-              },
-            }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: 'background.paper',
-                borderRadius: '10px',
-                transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
-                boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 1px 2px rgba(0,0,0,0.2)' : '0 1px 2px rgba(0,0,0,0.02)',
-                '&:hover': {
-                  boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.04)',
+        <Box sx={{ mb: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <TextField
+              size="small"
+              fullWidth
+              placeholder="Quick search by first name, last name…"
+              value={quickSearch}
+              onChange={(e) => setQuickSearch(e.target.value)}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchRounded sx={{ color: 'text.secondary', fontSize: '1.1rem' }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: quickSearch ? (
+                    <InputAdornment position="end">
+                      <IconButton size="small" onClick={() => setQuickSearch('')} edge="end">
+                        <CloseRounded fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  ) : undefined,
                 },
-                '&.Mui-focused': {
-                  boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 0 0 3px rgba(255,255,255,0.05)' : '0 0 0 3px rgba(128,128,128,0.1)',
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: 'background.paper',
+                  borderRadius: '10px',
+                  transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
+                  boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 1px 2px rgba(0,0,0,0.2)' : '0 1px 2px rgba(0,0,0,0.02)',
+                  '&:hover': {
+                    boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.04)',
+                  },
+                  '&.Mui-focused': {
+                    boxShadow: (theme) => theme.palette.mode === 'dark' ? '0 0 0 3px rgba(255,255,255,0.05)' : '0 0 0 3px rgba(128,128,128,0.1)',
+                  }
+                },
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'divider',
+                },
+                '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'primary.main',
+                  borderWidth: '1px',
                 }
-              },
-              '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'divider',
-              },
-              '& .Mui-focused .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'primary.main',
-                borderWidth: '1px',
-              }
-            }}
-          />
-        </Stack>
+              }}
+            />
+          </Box>
+
+          <Divider sx={{ opacity: 0.4 }} />
+
+          <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+            <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600, color: 'text.secondary' }}>
+              <AutoAwesomeRounded fontSize="small" /> Quick Filters:
+            </Typography>
+
+            {(['all', 'active', 'terminated'] as QuickFilter[]).map((code) => {
+              const labels: Record<QuickFilter, string> = {
+                all: 'All Employees',
+                active: 'Active',
+                terminated: 'Terminated'
+              };
+              const isActive = activeQuickFilter === code;
+              
+              return (
+                <Chip
+                  key={code}
+                  label={labels[code]}
+                  onClick={() => handleQuickFilterClick(code)}
+                  sx={{
+                    fontWeight: 500,
+                    borderRadius: '8px',
+                    border: '1px solid',
+                    borderColor: isActive ? 'text.primary' : 'divider',
+                    backgroundColor: isActive ? 'text.primary' : 'transparent',
+                    color: isActive ? 'background.paper' : 'text.primary',
+                    boxShadow: isActive ? '0 2px 6px rgba(0,0,0,0.15)' : 'none',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                       backgroundColor: isActive 
+                        ? (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)'
+                        : 'action.hover',
+                    }
+                  }}
+                />
+              );
+            })}
+          </Stack>
+        </Box>
       </Box>
 
       <Box 

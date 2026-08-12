@@ -7,7 +7,6 @@ namespace SoftPMS.Application.Features.Employees.Commands.CreateEmployee;
 /// Creates a new employee with an initial address. Compensation is managed separately via UpdateEmployeeCompensation.
 /// </summary>
 public sealed record CreateEmployeeCommand(
-    string EmployeeNo,
     string FirstName,
     string LastName,
     string Email,

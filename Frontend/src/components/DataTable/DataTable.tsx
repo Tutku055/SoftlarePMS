@@ -48,11 +48,11 @@ const premiumInputSx = {
     height: '28px',
     transition: 'all 0.2s ease',
     '& fieldset': {
-      borderColor: 'transparent',
+      borderColor: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.1)',
       transition: 'all 0.2s ease',
     },
     '&:hover fieldset': {
-      borderColor: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
+      borderColor: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.2)',
     },
     '&.Mui-focused': {
       backgroundColor: 'background.paper',
@@ -71,6 +71,14 @@ const premiumInputSx = {
       '&:hover': {
         opacity: 1,
       },
+    },
+    '& input[type="number"]::-webkit-outer-spin-button, & input[type="number"]::-webkit-inner-spin-button': {
+      WebkitAppearance: 'none',
+      display: 'none',
+      margin: 0,
+    },
+    '& input[type="number"]': {
+      MozAppearance: 'textfield',
     },
   },
   // Seçim kutularındaki aşağı ok simgesini tamamen yok etme
@@ -107,7 +115,7 @@ const FilterHeader: React.FC<FilterHeaderProps> = ({
   options,
   operatorsData
 }) => {
-  const filterState = customFilters[field] || { value: '', operator: (filterType === 'text' || filterType === 'fullName') ? 'contains' : filterType === 'multi-select' ? 'in' : (filterType === 'fileSize' ? 'biggerthan' : 'is') };
+  const filterState = customFilters[field] || { value: '', operator: (filterType === 'text' || filterType === 'fullName') ? 'contains' : filterType === 'multi-select' ? 'is' : (filterType === 'fileSize' ? 'biggerthan' : 'is') };
   const { value, operator } = filterState;
 
   const getOpList = () => {
@@ -186,11 +194,12 @@ const FilterHeader: React.FC<FilterHeaderProps> = ({
             }}
             sx={{
               flex: 1,
+              minWidth: 0,
               ...premiumInputSx,
               '& .MuiSelect-select': { py: 0.5, display: 'flex', alignItems: 'center' }
             }}
           >
-            <MenuItem value="" sx={{ fontSize: '0.75rem', fontWeight: 500 }}>All</MenuItem>
+            <MenuItem value="" sx={{ fontSize: '0.75rem', fontWeight: 500, fontStyle: 'italic', color: 'text.secondary' }}>Select option...</MenuItem>
             {options.map((opt) => (
               <MenuItem key={opt.value} value={opt.value} sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
                 {opt.label}
@@ -227,11 +236,12 @@ const FilterHeader: React.FC<FilterHeaderProps> = ({
             onKeyDown={(e) => e.stopPropagation()}
             sx={{
               flex: 1,
+              minWidth: 0,
               ...premiumInputSx,
               '& .MuiSelect-select': { py: 0.5, display: 'flex', alignItems: 'center' }
             }}
           >
-            <MenuItem value="" sx={{ fontSize: '0.75rem', fontWeight: 500 }}>All</MenuItem>
+            <MenuItem value="" sx={{ fontSize: '0.75rem', fontWeight: 500, fontStyle: 'italic', color: 'text.secondary' }}>Select options...</MenuItem>
             {options.map((opt) => (
               <MenuItem key={opt.value} value={opt.value} sx={{ fontSize: '0.75rem', fontWeight: 500 }}>
                 {opt.label}
@@ -249,6 +259,7 @@ const FilterHeader: React.FC<FilterHeaderProps> = ({
             onKeyDown={(e) => e.stopPropagation()}
             sx={{
               flex: 1,
+              minWidth: 0,
               ...premiumInputSx,
               '& input': { py: 0.5, px: 1, fontSize: '0.75rem' }
             }}
@@ -257,7 +268,7 @@ const FilterHeader: React.FC<FilterHeaderProps> = ({
           <TextField
             type="number"
             size="small"
-            placeholder={filterType === 'fileSize' ? `Value (MB)...` : `Value...`}
+            placeholder={filterType === 'fileSize' ? `Size (MB)...` : `Enter number...`}
             value={value}
             onChange={(e) => onCustomFilterChange(field, e.target.value, operator)}
             onMouseDown={(e) => e.stopPropagation()}
@@ -265,14 +276,15 @@ const FilterHeader: React.FC<FilterHeaderProps> = ({
             onKeyDown={(e) => e.stopPropagation()}
             sx={{
               flex: 1,
+              minWidth: 0,
               ...premiumInputSx,
-              '& input': { py: 0.5, px: 1, fontSize: '0.75rem' }
+              '& input': { py: 0.5, px: 1, fontSize: '0.75rem', '&::placeholder': { opacity: 0.6 } }
             }}
           />
         ) : (
           <TextField
             size="small"
-            placeholder={`Value...`}
+            placeholder={filterType === 'fullName' ? 'Search name...' : 'Search value...'}
             value={value}
             onChange={(e) => onCustomFilterChange(field, e.target.value, operator)}
             onMouseDown={(e) => e.stopPropagation()}
@@ -280,8 +292,9 @@ const FilterHeader: React.FC<FilterHeaderProps> = ({
             onKeyDown={(e) => e.stopPropagation()}
             sx={{
               flex: 1,
+              minWidth: 0,
               ...premiumInputSx,
-              '& input': { py: 0.5, px: 1, fontSize: '0.75rem', '&::placeholder': { opacity: 0.5 } }
+              '& input': { py: 0.5, px: 1, fontSize: '0.75rem', '&::placeholder': { opacity: 0.6 } }
             }}
           />
         )}
@@ -333,7 +346,7 @@ export const DataTable = ({
   }), [columns]);
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ width: '100%', overflowX: 'auto', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
       <DataGrid
         rows={data}
         columns={mappedColumns}
@@ -367,17 +380,27 @@ export const DataTable = ({
         sx={{
           border: 'none',
           backgroundColor: 'transparent',
+          '& .MuiDataGrid-main': {
+            overflow: 'visible',
+          },
           '& .MuiDataGrid-columnHeaders': {
             backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.01)',
             borderBottom: '1px solid',
             borderColor: 'divider',
+            overflow: 'visible',
+          },
+          '& .MuiDataGrid-columnHeaderTitleContainer': {
+            overflow: 'visible',
+          },
+          '& .MuiDataGrid-columnHeader': {
+            overflow: 'visible',
           },
           '& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within': {
             outline: 'none',
           },
           '& .MuiDataGrid-cell': {
             borderBottom: '1px solid',
-            borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
+            borderColor: 'divider',
             fontSize: '0.875rem',
             cursor: onRowClick ? 'pointer' : 'default',
             display: 'flex',

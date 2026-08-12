@@ -18,6 +18,7 @@ public static class PersistenceServiceRegistration
 
         //Fake Employee for testing purpose
         services.AddScoped<ApplicationDbContextInitialiser>();
+        services.AddScoped<SoftPMS.Application.Common.Interfaces.IEmployeeNumberGenerator, SoftPMS.Persistence.Services.EmployeeNumberGenerator>();
 
 
         services.AddScoped<AuditSaveChangesInterceptor>();

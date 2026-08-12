@@ -3,7 +3,7 @@ import { Typography, Box, Skeleton, Divider, Dialog, DialogTitle, DialogContent,
 
 import CloseIcon from '@mui/icons-material/Close';
 import PieChartIcon from '@mui/icons-material/PieChart';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import type { ChartDistributionItemDto } from '../api/dashboardApi';
 import { useGetDashboardDistributions } from '../api/dashboardApi';
 import { useAuthStore } from '../../../store/useAuthStore';

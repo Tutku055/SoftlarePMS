@@ -47,8 +47,8 @@ public static class FilterOperatorConstants
 
     public static readonly List<FilterOperatorItem> MultiSelectOperators = new()
     {
-        new("in", "In"),
-        new("notin", "Not In")
+        new("is", "Is"),
+        new("not", "Is Not")
     };
 }
 

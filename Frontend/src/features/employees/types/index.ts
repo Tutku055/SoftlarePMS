@@ -112,7 +112,6 @@ export interface EmployeeDto {
 }
 
 export interface CreateEmployeeDto {
-  employeeNo: string;
   firstName: string;
   lastName: string;
   email: string;

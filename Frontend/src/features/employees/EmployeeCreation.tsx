@@ -85,7 +85,6 @@ export const EmployeeCreation: React.FC = () => {
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
 
   const [formState, setFormState] = useState<CreateEmployeeDto>({
-    employeeNo: '',
     firstName: '',
     lastName: '',
     email: '',
@@ -149,9 +148,6 @@ export const EmployeeCreation: React.FC = () => {
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-
-    if (!formState.employeeNo.trim()) newErrors.employeeNo = 'Required';
-    else if (formState.employeeNo.length > 20) newErrors.employeeNo = 'Max 20 chars';
 
     if (!formState.firstName.trim()) newErrors.firstName = 'Required';
     else if (formState.firstName.length > 50) newErrors.firstName = 'Max 50 chars';
@@ -251,21 +247,6 @@ export const EmployeeCreation: React.FC = () => {
           <Divider sx={{ mb: 3, opacity: 0.5 }} />
 
           <div className={styles.formGrid}>
-            <TextField
-              label="Employee No *"
-              name="employeeNo"
-              value={formState.employeeNo}
-              onChange={handleInputChange}
-              error={!!errors.employeeNo}
-              helperText={errors.employeeNo}
-              sx={getPremiumInputSx(true, !!errors.employeeNo)}
-              fullWidth
-              slotProps={{
-                input: {
-                  startAdornment: <InputAdornment position="start"><BadgeRounded fontSize="small" /></InputAdornment>,
-                }
-              }}
-            />
             <TextField
               label="First Name *"
               name="firstName"

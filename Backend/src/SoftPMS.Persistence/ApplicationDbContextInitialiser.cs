@@ -247,15 +247,54 @@ public class ApplicationDbContextInitialiser
             // Add Departments, Professions, then Employees to the database
             await _context.Departments.AddRangeAsync(fakeDepartments);
             await _context.Professions.AddRangeAsync(fakeProfessions);
-            await _context.Employees.AddRangeAsync(fakeEmployees); //[cite: 1]
-            await _context.SaveChangesAsync(); //[cite: 1]
+            await _context.Employees.AddRangeAsync(fakeEmployees);
+            await _context.SaveChangesAsync();
 
             _logger.LogInformation("10 Departments, 27 Professions, 100 employees and all their related data successfully added.");
         }
-        catch (Exception ex) //[cite: 1]
+        catch (Exception ex)
         {
-            _logger.LogError(ex, "An unexpected error occurred while seeding the database."); //[cite: 1]
-            throw; //[cite: 1]
+            _logger.LogError(ex, "An unexpected error occurred while seeding the database.");
+            throw;
+        }
+
+        try
+        {
+            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+            {
+                var allEmployees = await _context.Employees.OrderBy(e => e.CreatedAt).ToListAsync();
+                if (allEmployees.Count > 0)
+                {
+                    _logger.LogInformation("Development environment detected. Re-seeding Employee Numbers sequentially...");
+                    int counter = 1;
+                    foreach (var emp in allEmployees)
+                    {
+                        emp.EmployeeNo = $"EMP-{counter:D6}";
+                        counter++;
+                    }
+                    await _context.SaveChangesAsync();
+
+                    // Advance the database sequence to catch up
+                    var connection = ((DbContext)_context).Database.GetDbConnection();
+                    bool wasOpen = connection.State == System.Data.ConnectionState.Open;
+                    if (!wasOpen) await connection.OpenAsync();
+                    try
+                    {
+                        using var command = connection.CreateCommand();
+                        command.CommandText = $"ALTER SEQUENCE EmployeeNoSequence RESTART WITH {counter};";
+                        await command.ExecuteNonQueryAsync();
+                        _logger.LogInformation($"EmployeeNoSequence restarted with {counter}");
+                    }
+                    finally
+                    {
+                        if (!wasOpen) await connection.CloseAsync();
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+             _logger.LogError(ex, "An error occurred while re-seeding employee numbers in development environment.");
         }
     }
 }

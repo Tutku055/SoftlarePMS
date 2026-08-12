@@ -21,6 +21,7 @@ import {
   CloseRounded,
   EventBusyRounded,
   DateRangeRounded,
+  AutoAwesomeRounded,
 } from '@mui/icons-material';
 import { useYearEndStats } from '../../../finance/hooks/useYearEndStats';
 import { useCloseYearRollover } from '../../../finance/hooks/useCloseYearRollover';
@@ -30,12 +31,13 @@ import type { DataTableColumnDef, CustomFilterValue } from '../../../../componen
 import { PopupDialog } from '../../../../components/PopupDialog/PopupDialog';
 import type { GridPaginationModel, GridColumnVisibilityModel } from '@mui/x-data-grid';
 
+type QuickFilter = 'all' | 'missing' | 'complete';
+
 export const YearEndOperations = () => {
   const currentYear = new Date().getFullYear();
   const { data: stats, isLoading, refetch, isFetching } = useYearEndStats(currentYear);
   const closeYearMutation = useCloseYearRollover();
 
-  // --- Quick Search ---
   const [quickSearch, setQuickSearch] = useState('');
   const [debouncedQuickSearch, setDebouncedQuickSearch] = useState('');
 
@@ -58,6 +60,14 @@ export const YearEndOperations = () => {
 
   // --- Column Filters (exact same logic as DepartmentList) ---
   const [columnFilters, setColumnFilters] = useState<Record<string, CustomFilterValue>>({});
+
+  const activeQuickFilter = useMemo(() => {
+    const filter = columnFilters['missingTimesheetsCount'];
+    if (!filter || (!filter.value && filter.value !== '0')) return 'all';
+    if (filter.value === '0' && filter.operator === 'morethan') return 'missing';
+    if (filter.value === '0' && (filter.operator === 'equals' || filter.operator === 'is')) return 'complete';
+    return 'all';
+  }, [columnFilters]);
 
   const handleCustomFilterChange = useCallback((field: string, value: string, operator: string) => {
     setColumnFilters((prev) => {
@@ -90,8 +100,8 @@ export const YearEndOperations = () => {
     {
       field: 'fullName',
       headerName: 'Employee',
-      flex: 1.5,
-      minWidth: 220,
+      flex: 0.7,
+      minWidth: 150,
       filterType: 'text',
       renderCell: (params: any) => (
         <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>{params.value}</Typography>
@@ -111,19 +121,19 @@ export const YearEndOperations = () => {
       field: 'expectedTimesheets',
       headerName: 'Expected',
       filterType: 'number',
-      width: 130,
+      width: 170,
     },
     {
       field: 'timesheetsCount',
       headerName: 'Submitted',
       filterType: 'number',
-      width: 130,
+      width: 170,
     },
     {
       field: 'missingTimesheetsCount',
       headerName: 'Missing',
       filterType: 'number',
-      width: 130,
+      width: 170,
       renderCell: (params: any) => (
         params.value > 0 ? (
           <Chip
@@ -157,13 +167,14 @@ export const YearEndOperations = () => {
   const filteredRows = useMemo(() => {
     let items = [...allRows];
 
-    // Quick search: fullName + departmentName
+    // Quick search: fullName + departmentName (AND logic for parts)
     if (debouncedQuickSearch.trim()) {
-      const q = debouncedQuickSearch.trim().toLowerCase();
-      items = items.filter(
-        (row) =>
-          row.fullName?.toLowerCase().includes(q) ||
-          row.departmentName?.toLowerCase().includes(q)
+      const qsParts = debouncedQuickSearch.trim().toLowerCase().split(/\s+/);
+      items = items.filter((row) => 
+        qsParts.every(part => 
+          row.fullName?.toLowerCase().includes(part) ||
+          row.departmentName?.toLowerCase().includes(part)
+        )
       );
     }
 
@@ -250,6 +261,8 @@ export const YearEndOperations = () => {
           </Button>
         }
       />
+
+
 
       {/* ── Already Closed Banner ── */}
       {isYearClosed && (
@@ -374,6 +387,55 @@ export const YearEndOperations = () => {
               '& .MuiOutlinedInput-notchedOutline': { borderColor: 'divider' },
             }}
           />
+
+          <Divider sx={{ opacity: 0.4 }} />
+
+          <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+            <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600, color: 'text.secondary' }}>
+              <AutoAwesomeRounded fontSize="small" /> Quick Filters:
+            </Typography>
+
+            {(['all', 'missing', 'complete'] as QuickFilter[]).map((code) => {
+              const labels: Record<QuickFilter, string> = {
+                all: 'All Operations',
+                missing: 'Missing Timesheets',
+                complete: 'Complete'
+              };
+              const isActive = activeQuickFilter === code;
+              
+              return (
+                <Chip
+                  key={code}
+                  label={labels[code]}
+                  onClick={() => {
+                    const newCode = activeQuickFilter === code ? 'all' : code;
+                    if (newCode === 'missing') {
+                      handleCustomFilterChange('missingTimesheetsCount', '0', 'morethan');
+                    } else if (newCode === 'complete') {
+                      handleCustomFilterChange('missingTimesheetsCount', '0', 'is');
+                    } else {
+                      handleCustomFilterChange('missingTimesheetsCount', '', 'is');
+                    }
+                  }}
+                  sx={{
+                    fontWeight: 500,
+                    borderRadius: '8px',
+                    border: '1px solid',
+                    borderColor: isActive ? 'text.primary' : 'divider',
+                    backgroundColor: isActive ? 'text.primary' : 'transparent',
+                    color: isActive ? 'background.paper' : 'text.primary',
+                    boxShadow: isActive ? '0 2px 6px rgba(0,0,0,0.15)' : 'none',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                       backgroundColor: isActive 
+                        ? (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)'
+                        : 'action.hover',
+                    }
+                  }}
+                />
+              );
+            })}
+          </Stack>
 
           {activeColumnFilterCount > 0 && (
             <>

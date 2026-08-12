@@ -28,6 +28,9 @@ builder.Services.AddPersistenceServices(
 builder.Services.Configure<SoftPMS.Application.Common.Settings.SystemSettings>(
     builder.Configuration.GetSection("SystemSettings"));
 
+builder.Services.Configure<SoftPMS.Application.Common.Settings.EmployeeSettings>(
+    builder.Configuration.GetSection(SoftPMS.Application.Common.Settings.EmployeeSettings.SectionName));
+
 // ── JWT Bearer authentication ─────────────────────────────────────────────────
 var jwtSection = builder.Configuration.GetSection("JwtSettings");
 var secretKey  = jwtSection["SecretKey"]

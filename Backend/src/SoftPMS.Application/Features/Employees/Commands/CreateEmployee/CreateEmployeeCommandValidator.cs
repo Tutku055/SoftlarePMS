@@ -8,9 +8,6 @@ public sealed class CreateEmployeeCommandValidator : AbstractValidator<CreateEmp
     public CreateEmployeeCommandValidator()
     {
         // Identity
-        RuleFor(x => x.EmployeeNo)
-            .NotEmpty().WithMessage("Employee number is required.")
-            .MaximumLength(20).WithMessage("Employee number must not exceed 20 characters.");
 
         RuleFor(x => x.FirstName)
             .NotEmpty().WithMessage("First name is required.")
