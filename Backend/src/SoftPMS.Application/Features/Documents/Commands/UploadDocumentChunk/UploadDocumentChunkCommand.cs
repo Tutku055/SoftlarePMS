@@ -3,6 +3,9 @@ using SoftPMS.Domain.Enums;
 
 namespace SoftPMS.Application.Features.Documents.Commands.UploadDocumentChunk;
 
+/// <summary>
+/// Represents the Command to upload document chunk.
+/// </summary>
 public class UploadDocumentChunkCommand : IRequest<Guid?>
 {
     public Stream ChunkStream { get; set; } = null!;
@@ -17,3 +20,5 @@ public class UploadDocumentChunkCommand : IRequest<Guid?>
     public DateTime? IssueDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
 }
+
+

@@ -5,6 +5,9 @@ using SoftPMS.Domain.Enums;
 
 namespace SoftPMS.Application.Features.Documents.Queries;
 
+/// <summary>
+/// Represents the Query to get documents.
+/// </summary>
 public class GetDocumentsQuery : IRequest<PaginatedList<DocumentDto>>
 {
     public Guid? ReferenceId { get; set; }
@@ -25,3 +28,5 @@ public class GetDocumentsQuery : IRequest<PaginatedList<DocumentDto>>
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 10;
 }
+
+

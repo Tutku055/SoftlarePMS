@@ -3,6 +3,9 @@ using SoftPMS.Domain.Enums;
 
 namespace SoftPMS.Application.Features.Documents.Commands.UpdateDocument;
 
+/// <summary>
+/// Represents the Command to update document.
+/// </summary>
 public class UpdateDocumentCommand : IRequest
 {
     public Guid Id { get; set; }
@@ -11,3 +14,5 @@ public class UpdateDocumentCommand : IRequest
     public DateTime? IssueDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
 }
+
+

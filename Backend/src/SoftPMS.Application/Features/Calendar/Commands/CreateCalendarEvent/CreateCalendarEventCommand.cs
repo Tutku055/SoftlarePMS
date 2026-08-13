@@ -7,6 +7,9 @@ using SoftPMS.Domain.Exceptions;
 
 namespace SoftPMS.Application.Features.Calendar.Commands.CreateCalendarEvent;
 
+/// <summary>
+/// Represents the Command to create calendar event.
+/// </summary>
 public record CreateCalendarEventCommand(
     string Title,
     string? Description,
@@ -18,4 +21,6 @@ public record CreateCalendarEventCommand(
     Guid? DepartmentId = null,
     VisibilityLevel VisibilityLevel = VisibilityLevel.Standard
 ) : IRequest<Guid>;
+
+
 

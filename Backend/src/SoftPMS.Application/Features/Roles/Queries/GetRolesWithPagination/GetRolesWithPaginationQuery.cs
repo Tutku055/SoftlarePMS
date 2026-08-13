@@ -4,6 +4,9 @@ using MediatR;
 
 namespace SoftPMS.Application.Features.Roles.Queries.GetRolesWithPagination;
 
+/// <summary>
+/// Represents the Query to get roles with pagination.
+/// </summary>
 public sealed record GetRolesWithPaginationQuery : IRequest<PaginatedList<RoleListDto>>
 {
     public int PageNumber { get; init; } = 1;
@@ -11,3 +14,5 @@ public sealed record GetRolesWithPaginationQuery : IRequest<PaginatedList<RoleLi
     public string? SearchTerm { get; init; }
     public List<FilterCriteria>? Filters { get; init; }
 }
+
+

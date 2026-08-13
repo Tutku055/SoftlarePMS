@@ -5,6 +5,9 @@ using SoftPMS.Domain.Entities;
 
 namespace SoftPMS.Application.Features.Calendar.Commands.UpdateCalendarSettings;
 
+/// <summary>
+/// Represents the Command to update calendar settings.
+/// </summary>
 public record UpdateCalendarSettingsCommand(
     string HolidayCountryCode,
     int HolidayReminderDays,
@@ -13,4 +16,6 @@ public record UpdateCalendarSettingsCommand(
     bool SendEmailForBirthdays,
     int CompanyTimezoneOffsetMinutes
 ) : IRequest<Unit>;
+
+
 

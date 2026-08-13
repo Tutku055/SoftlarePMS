@@ -6,8 +6,13 @@ using SoftPMS.Application.Features.SystemSettings.Queries.GetSystemParameters;
 
 namespace SoftPMS.Application.Features.SystemSettings.Commands.UploadCompanyLogo;
 
+/// <summary>
+/// Represents the Command to upload company logo.
+/// </summary>
 public record UploadCompanyLogoCommand : IRequest<string>
 {
     public Stream FileStream { get; init; } = null!;
     public string FileName { get; init; } = string.Empty;
 }
+
+

@@ -3,6 +3,9 @@ using SoftPMS.Domain.Enums;
 
 namespace SoftPMS.Application.Features.Documents.Commands.UploadDocument;
 
+/// <summary>
+/// Represents the Command to upload document.
+/// </summary>
 public class UploadDocumentCommand : IRequest<Guid>
 {
     public Stream FileStream { get; set; } = null!;
@@ -14,3 +17,5 @@ public class UploadDocumentCommand : IRequest<Guid>
     public DateTime? IssueDate { get; set; }
     public DateTime? ExpiryDate { get; set; }
 }
+
+

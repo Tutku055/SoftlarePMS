@@ -4,6 +4,9 @@ using MediatR;
 
 namespace SoftPMS.Application.Features.Departments.Queries.GetDepartmentsWithPagination;
 
+/// <summary>
+/// Represents the Query to get departments with pagination.
+/// </summary>
 public sealed record GetDepartmentsWithPaginationQuery : IRequest<PaginatedList<DepartmentDto>>
 {
     public int PageNumber { get; init; } = 1;
@@ -11,3 +14,5 @@ public sealed record GetDepartmentsWithPaginationQuery : IRequest<PaginatedList<
     public string? SearchTerm { get; init; }
     public List<FilterCriteria>? Filters { get; init; }
 }
+
+

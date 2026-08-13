@@ -8,6 +8,9 @@ using SoftPMS.Domain.Exceptions;
 
 namespace SoftPMS.Application.Features.Calendar.Commands.UpdateCalendarEvent;
 
+/// <summary>
+/// Represents the Command to update calendar event.
+/// </summary>
 public record UpdateCalendarEventCommand(
     Guid Id,
     string Title,
@@ -20,4 +23,6 @@ public record UpdateCalendarEventCommand(
     Guid? DepartmentId = null,
     VisibilityLevel VisibilityLevel = VisibilityLevel.Standard
 ) : IRequest<Unit>;
+
+
 

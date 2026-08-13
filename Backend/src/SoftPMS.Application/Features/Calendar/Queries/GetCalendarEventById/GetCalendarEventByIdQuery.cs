@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Application.Features.Calendar.DTOs;
@@ -8,5 +8,11 @@ using SoftPMS.Domain.Exceptions;
 
 namespace SoftPMS.Application.Features.Calendar.Queries.GetCalendarEventById;
 
+/// <summary>
+/// Represents the Query to get calendar event by id.
+/// </summary>
 public record GetCalendarEventByIdQuery(Guid Id) : IRequest<CalendarEventDto>;
+
+
+
 

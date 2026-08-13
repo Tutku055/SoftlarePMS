@@ -4,6 +4,9 @@ using SoftPMS.Domain.Enums;
 
 namespace SoftPMS.Application.Features.Timesheets.Commands.BulkTimesheetOperation;
 
+/// <summary>
+/// Represents the Command to bulk timesheet operation.
+/// </summary>
 public record BulkTimesheetOperationCommand(
     BulkTimesheetAction Action,
     BulkTimesheetScope Scope,
@@ -21,4 +24,6 @@ public record BulkTimesheetOperationCommand(
     decimal? PaidLeaveHours,
     decimal? UnpaidLeaveHours
 ) : IRequest<BulkOperationResultDto>;
+
+
 

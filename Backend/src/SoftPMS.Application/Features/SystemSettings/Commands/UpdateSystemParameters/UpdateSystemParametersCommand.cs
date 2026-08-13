@@ -3,6 +3,9 @@ using SoftPMS.Application.Features.SystemSettings.DTOs;
 
 namespace SoftPMS.Application.Features.SystemSettings.Commands.UpdateSystemParameters;
 
+/// <summary>
+/// Represents the Command to update system parameters.
+/// </summary>
 public record UpdateSystemParametersCommand : IRequest<SystemParametersDto>
 {
     public string CompanyName { get; init; } = string.Empty;
@@ -18,3 +21,5 @@ public record UpdateSystemParametersCommand : IRequest<SystemParametersDto>
     public string SmtpPassword { get; init; } = string.Empty;
     public bool SmtpEnableSsl { get; init; }
 }
+
+

@@ -6,5 +6,10 @@ using SoftPMS.Domain.Exceptions;
 
 namespace SoftPMS.Application.Features.Calendar.Commands.DeleteCalendarEvent;
 
+/// <summary>
+/// Represents the Command to delete calendar event.
+/// </summary>
 public record DeleteCalendarEventCommand(Guid Id) : IRequest<Unit>;
+
+
 

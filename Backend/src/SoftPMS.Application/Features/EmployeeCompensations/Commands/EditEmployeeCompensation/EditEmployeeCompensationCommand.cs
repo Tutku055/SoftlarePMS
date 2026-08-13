@@ -3,6 +3,9 @@ using SoftPMS.Domain.Enums;
 
 namespace SoftPMS.Application.Features.EmployeeCompensations.Commands.EditEmployeeCompensation;
 
+/// <summary>
+/// Represents the Command to edit employee compensation.
+/// </summary>
 public class EditEmployeeCompensationCommand : IRequest<Unit>
 {
     public Guid Id { get; set; }
@@ -12,3 +15,5 @@ public class EditEmployeeCompensationCommand : IRequest<Unit>
     public Currency Currency { get; set; }
     public DateTime EffectiveDate { get; set; }
 }
+
+

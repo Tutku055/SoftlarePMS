@@ -7,6 +7,9 @@ using SoftPMS.Domain.Exceptions;
 
 namespace SoftPMS.Application.Features.Calendar.Commands.UpdateCalendarNote;
 
+/// <summary>
+/// Represents the Command to update calendar note.
+/// </summary>
 public record UpdateCalendarNoteCommand(
     Guid Id,
     DateOnly NoteDate,
@@ -14,4 +17,6 @@ public record UpdateCalendarNoteCommand(
     string ColorCode,
     VisibilityLevel VisibilityLevel
 ) : IRequest<Unit>;
+
+
 

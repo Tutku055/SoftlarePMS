@@ -4,6 +4,9 @@ using SoftPMS.Application.Features.EmployeeAddresses.DTOs;
 
 namespace SoftPMS.Application.Features.EmployeeAddresses.Queries.GetEmployeeAddressesWithPagination;
 
+/// <summary>
+/// Represents the Query to get employee addresses with pagination.
+/// </summary>
 public sealed record GetEmployeeAddressesWithPaginationQuery : IRequest<PaginatedList<EmployeeAddressDto>>
 {
     public Guid? EmployeeId { get; init; }
@@ -12,3 +15,5 @@ public sealed record GetEmployeeAddressesWithPaginationQuery : IRequest<Paginate
     public string? SearchTerm { get; init; }
     public List<FilterCriteria>? Filters { get; init; }
 }
+
+
