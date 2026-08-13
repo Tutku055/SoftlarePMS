@@ -161,18 +161,16 @@ public class CalendarNotificationEvaluator : ICalendarNotificationEvaluator
                         {
                             Type = NotificationType.EventUpcoming,
                             Title = $"Upcoming Event: {evt.Title}",
-                            Message = string.IsNullOrWhiteSpace(evt.Description)
-                                ? (remainingDays == 0
-                                    ? $"You have an event scheduled today: '{evt.Title}' at {evt.StartTime:HH:mm} UTC."
-                                    : $"You have an upcoming event scheduled: '{evt.Title}' in {remainingDays} day(s) on {evt.StartTime:yyyy-MM-dd HH:mm} UTC.")
-                                : $"You have an upcoming event: '{evt.Title}'. Details: {evt.Description}",
+                            Message = remainingDays == 0
+                                ? $"You have an event scheduled today: '{evt.Title}' at {evt.StartTime:HH:mm} UTC."
+                                : $"You have an upcoming event scheduled: '{evt.Title}' in {remainingDays} day(s) on {evt.StartTime:yyyy-MM-dd HH:mm} UTC.",
                             TargetDate = evt.StartTime.UtcDateTime.Date,
                             RemainingDays = remainingDays
                         };
 
                         foreach (var recipient in targetRecipients)
                         {
-                            var htmlBody = _templateBuilder.BuildNotificationEmailHtml(sampleNotification, recipient.Name);
+                            var htmlBody = _templateBuilder.BuildNotificationEmailHtml(sampleNotification, recipient.Name, evt.Description);
                             _context.NotificationOutboxes.Add(new NotificationOutbox
                             {
                                 RecipientEmail = recipient.Email,

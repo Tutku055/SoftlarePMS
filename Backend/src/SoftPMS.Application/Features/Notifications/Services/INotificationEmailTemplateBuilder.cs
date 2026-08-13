@@ -12,8 +12,9 @@ public interface INotificationEmailTemplateBuilder
     /// </summary>
     /// <param name="notification">The user notification entity.</param>
     /// <param name="recipientName">The recipient's display name or username.</param>
+    /// <param name="details">Optional detailed description to be displayed in a separate box.</param>
     /// <returns>Rendered HTML markup.</returns>
-    string BuildNotificationEmailHtml(UserNotification notification, string recipientName);
+    string BuildNotificationEmailHtml(UserNotification notification, string recipientName, string? details = null);
 
     /// <summary>
     /// Generates a festive, warm celebratory birthday card email addressed directly to the birthday celebrant.

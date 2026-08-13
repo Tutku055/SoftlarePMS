@@ -43,6 +43,7 @@ public class SoftPMSDbContext : DbContext, IApplicationDbContext
     #region Audit & Settings
     public DbSet<AuditLog> AuditLogs { get; set; }
     public DbSet<YearlyRolloverLog> YearlyRolloverLogs { get; set; }
+    public DbSet<SystemSetting> SystemSettings { get; set; }
     #endregion
 
     #region Notifications & Calendar

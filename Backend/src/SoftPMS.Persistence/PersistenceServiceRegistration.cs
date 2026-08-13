@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SoftPMS.Application.Common.Interfaces;
-using SoftPMS.Infrastructure.Persistence;
+
 using SoftPMS.Persistence.Context;
 using SoftPMS.Persistence.Interceptors;
 

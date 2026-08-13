@@ -54,6 +54,8 @@ import {
   formatMonthName,
   formatDateDisplay
 } from '../../constants/currencyConstants';
+import { useSystemParameters } from '../../../settings/api/GeneralSettingsApi';
+import { apiClient } from '../../../../config/apiClient';
 
 const glassPanelSx = {
   background: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(24, 24, 24, 0.85)' : 'rgba(255, 255, 255, 0.85)',
@@ -169,6 +171,7 @@ export const PayrollDetail = () => {
   const { mutate: deleteCompensation } = useDeleteCompensation();
 
   const hasPermission = useAuthStore((state) => state.hasPermission);
+  const { data: systemParams } = useSystemParameters();
 
   const compensation = employee?.compensation || null;
 
@@ -184,7 +187,7 @@ export const PayrollDetail = () => {
 
   const slipRef = useRef<HTMLDivElement>(null);
 
-  const generatePdfDoc = () => {
+  const generatePdfDoc = async () => {
     if (!selectedSlip) return null;
 
     const doc = new jsPDF();
@@ -194,6 +197,41 @@ export const PayrollDetail = () => {
     doc.setFontSize(22);
     doc.setFont("helvetica", "bold");
     doc.text("PAYROLL SLIP", pageWidth / 2, 22, { align: "center" });
+    
+    if (systemParams?.companyLogoPath) {
+      try {
+        const logoUrl = `${apiClient.defaults.baseURL}/vault/${systemParams.companyLogoPath}`;
+        const response = await fetch(logoUrl);
+        if (response.ok) {
+          const blob = await response.blob();
+          const base64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+          
+          const dimensions = await new Promise<{w: number, h: number}>((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+              const maxW = 24; // smaller max width
+              const maxH = 12; // smaller max height
+              let w = maxW;
+              let h = (w * img.height) / img.width;
+              if (h > maxH) {
+                h = maxH;
+                w = (h * img.width) / img.height;
+              }
+              resolve({w, h});
+            };
+            img.src = base64;
+          });
+          
+          doc.addImage(base64, 'PNG', 14, 10, dimensions.w, dimensions.h);
+        }
+      } catch (e) {
+        console.error("Failed to load logo for PDF", e);
+      }
+    }
 
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
@@ -273,16 +311,16 @@ export const PayrollDetail = () => {
     return doc;
   };
 
-  const handlePrint = () => {
-    const doc = generatePdfDoc();
+  const handlePrint = async () => {
+    const doc = await generatePdfDoc();
     if (doc) {
       doc.autoPrint();
       window.open(doc.output('bloburl'), '_blank');
     }
   };
 
-  const handleDownloadPdf = () => {
-    const doc = generatePdfDoc();
+  const handleDownloadPdf = async () => {
+    const doc = await generatePdfDoc();
     if (doc) {
       doc.save(`Payroll_Slip_${selectedSlip?.year}_${selectedSlip?.month}.pdf`);
     }

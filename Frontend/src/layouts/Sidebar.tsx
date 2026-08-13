@@ -90,6 +90,7 @@ const menuConfig: MenuItem[] = [
     title: 'System Settings', 
     icon: <Settings />,
     children: [
+      { title: 'General Settings', path: '/settings/general', permission: 'SystemSettings.Manage' },
       { title: 'Users', path: '/settings/users', permission: 'Users.Read' },
       { title: 'Roles & Permissions', path: '/settings/roles', permission: 'Roles.Read' },
       { title: 'System Logs', path: '/settings/system-logs', permission: 'AuditLogs.Read' },

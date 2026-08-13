@@ -44,6 +44,8 @@ import { PopupDialog } from '../../../../components/PopupDialog/PopupDialog';
 import type { TimesheetEntry } from '../../types';
 import { useAuthStore } from '../../../../store/useAuthStore';
 import { sanitizeForPdf, formatPeriodForPdf, formatMonthName, formatDateDisplay } from '../../constants/currencyConstants';
+import { useSystemParameters } from '../../../settings/api/GeneralSettingsApi';
+import { apiClient } from '../../../../config/apiClient';
 
 // Status values match backend TimesheetStatus enum (1-based)
 const STATUS_CONFIG: Record<number, { label: string; color: string; bgDark: string; bgLight: string }> = {
@@ -90,6 +92,7 @@ export const TimesheetDetailMatrix = () => {
   const { mutate: generateTimesheet, isPending: isGenerating } = useGenerateTimesheet();
   const { mutate: updateEntry, isPending: isUpdating } = useUpdateTimesheetEntry();
   const { mutate: toggleLock, isPending: isTogglingLock } = useToggleTimesheetLock();
+  const { data: systemParams } = useSystemParameters();
 
   const isPreviousYearPendingClosure = timesheet?.isPreviousYearPendingClosure || closureStatus?.isPending || false;
   const isLocked = timesheet?.isLocked || false;
@@ -129,7 +132,7 @@ export const TimesheetDetailMatrix = () => {
     generateTimesheet({ employeeId, year, month });
   };
 
-  const generatePdfDoc = () => {
+  const generatePdfDoc = async () => {
     if (!employee || !timesheet) return null;
     const doc = new jsPDF('l'); // landscape
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -138,6 +141,41 @@ export const TimesheetDetailMatrix = () => {
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
     doc.text("MONTHLY TIMESHEET", pageWidth / 2, 15, { align: "center" });
+    
+    if (systemParams?.companyLogoPath) {
+      try {
+        const logoUrl = `${apiClient.defaults.baseURL}/vault/${systemParams.companyLogoPath}`;
+        const response = await fetch(logoUrl);
+        if (response.ok) {
+          const blob = await response.blob();
+          const base64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+          
+          const dimensions = await new Promise<{w: number, h: number}>((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+              const maxW = 24; // smaller max width
+              const maxH = 12; // smaller max height
+              let w = maxW;
+              let h = (w * img.height) / img.width;
+              if (h > maxH) {
+                h = maxH;
+                w = (h * img.width) / img.height;
+              }
+              resolve({w, h});
+            };
+            img.src = base64;
+          });
+          
+          doc.addImage(base64, 'PNG', 14, 8, dimensions.w, dimensions.h);
+        }
+      } catch (e) {
+        console.error("Failed to load logo for PDF", e);
+      }
+    }
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
@@ -211,16 +249,16 @@ export const TimesheetDetailMatrix = () => {
     return doc;
   };
 
-  const handlePrint = () => {
-    const doc = generatePdfDoc();
+  const handlePrint = async () => {
+    const doc = await generatePdfDoc();
     if (doc) {
       doc.autoPrint();
       window.open(doc.output('bloburl'), '_blank');
     }
   };
 
-  const handleDownloadPdf = () => {
-    const doc = generatePdfDoc();
+  const handleDownloadPdf = async () => {
+    const doc = await generatePdfDoc();
     if (doc) {
       doc.save(`Timesheet_${employee?.firstName}_${employee?.lastName}_${year}_${month}.pdf`);
     }

@@ -27,6 +27,9 @@ public static class ApplicationServiceRegistration
         // FluentValidation — registers all AbstractValidator<T> implementations
         services.AddValidatorsFromAssembly(assembly);
 
+        // Memory Cache
+        services.AddMemoryCache();
+
         return services;
     }
 }

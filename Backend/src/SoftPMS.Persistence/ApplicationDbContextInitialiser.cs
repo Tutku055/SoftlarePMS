@@ -5,7 +5,7 @@ using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Domain.Entities;
 using SoftPMS.Domain.Enums;
 
-namespace SoftPMS.Infrastructure.Persistence;
+namespace SoftPMS.Persistence;
 
 public class ApplicationDbContextInitialiser
 {

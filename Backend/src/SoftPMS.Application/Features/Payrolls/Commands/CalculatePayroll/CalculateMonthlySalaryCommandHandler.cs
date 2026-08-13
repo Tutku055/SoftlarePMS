@@ -6,11 +6,13 @@ using SoftPMS.Application.Common.Exceptions;
 using FluentValidation.Results;
 using SoftPMS.Domain.Exceptions;
 
+using SoftPMS.Application.Features.SystemSettings.Queries.GetSystemParameters;
+
 namespace SoftPMS.Application.Features.Payrolls.Commands.CalculatePayroll;
 
 public sealed class CalculateMonthlySalaryCommandHandler(
     IApplicationDbContext context,
-    Microsoft.Extensions.Configuration.IConfiguration configuration) : IRequestHandler<CalculateMonthlySalaryCommand, Guid>
+    IMediator mediator) : IRequestHandler<CalculateMonthlySalaryCommand, Guid>
 {
     public async Task<Guid> Handle(CalculateMonthlySalaryCommand request, CancellationToken cancellationToken)
     {
@@ -35,12 +37,12 @@ public sealed class CalculateMonthlySalaryCommandHandler(
 
         var lineItems = new List<PayrollSlipLineItem>();
         
-        decimal monthlyWorkingHours = 225m;
-        var configStr = configuration["PayrollSettings:MonthlyWorkingHours"];
-        if (!string.IsNullOrEmpty(configStr) && decimal.TryParse(configStr, out var parsed))
+        var systemParams = await mediator.Send(new GetSystemParametersQuery(), cancellationToken);
+        if (systemParams.MonthlyWorkingHours <= 0)
         {
-            monthlyWorkingHours = parsed;
+            throw new SoftPMS.Application.Common.Exceptions.BusinessRuleException("Monthly working hours system parameter is not configured properly. Please configure it in System Settings before calculating payroll.");
         }
+        decimal monthlyWorkingHours = systemParams.MonthlyWorkingHours;
 
         int daysInMonth = DateTime.DaysInMonth(request.Year, request.Month);
         

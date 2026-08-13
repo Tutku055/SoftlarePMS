@@ -67,40 +67,13 @@ public sealed class ForgotPasswordCommandHandler(
     private static string BuildResetEmailHtml(string username, string resetLink)
     {
         return $$"""
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Password Reset</title>
-                <style>
-                    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f8; margin: 0; padding: 24px; color: #1e293b; }
-                    .container { max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 8px; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-                    .header { text-align: center; margin-bottom: 24px; }
-                    .logo { font-size: 24px; font-weight: 700; color: #4f46e5; }
-                    .button { display: inline-block; background-color: #4f46e5; color: #ffffff !important; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-weight: 600; margin: 24px 0; text-align: center; }
-                    .button:hover { background-color: #4338ca; }
-                    .footer { font-size: 12px; color: #64748b; margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 16px; text-align: center; }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <div class="header">
-                        <div class="logo">SoftPMS</div>
-                    </div>
-                    <h2>Password Reset Request</h2>
-                    <p>Hello <strong>{{username}}</strong>,</p>
-                    <p>We received a request to reset your password for your SoftPMS account. Click the button below to set a new password:</p>
-                    <div style="text-align: center;">
-                        <a href="{{resetLink}}" class="button" target="_blank">Reset Password</a>
-                    </div>
-                    <p>This password reset link is valid for <strong>1 hour</strong>. If you did not request a password reset, you can safely ignore this email.</p>
-                    <div class="footer">
-                        <p>&copy; 2026 SoftPMS. All rights reserved.</p>
-                    </div>
-                </div>
-            </body>
-            </html>
+            <h2>Password Reset Request</h2>
+            <p>Hello <strong>{{username}}</strong>,</p>
+            <p>We received a request to reset your password for your SoftPMS account. Click the button below to set a new password:</p>
+            <div style="text-align: center;">
+                <a href="{{resetLink}}" style="display: inline-block; background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-weight: 600; margin: 24px 0; text-align: center;" target="_blank">Reset Password</a>
+            </div>
+            <p>This password reset link is valid for <strong>1 hour</strong>. If you did not request a password reset, you can safely ignore this email.</p>
             """;
     }
 }

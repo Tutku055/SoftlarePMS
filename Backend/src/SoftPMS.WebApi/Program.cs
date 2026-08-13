@@ -5,7 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using SoftPMS.Application;
 using SoftPMS.Infrastructure;
-using SoftPMS.Infrastructure.Persistence;
+
 using SoftPMS.Persistence;
 using SoftPMS.WebApi.Common;
 using SoftPMS.WebApi.Middleware;
@@ -148,11 +148,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-using (var scope = app.Services.CreateScope())
-{
-    var initialiser = scope.ServiceProvider.GetRequiredService<ApplicationDbContextInitialiser>();
-    await initialiser.SeedAsync();
-}
+// using (var scope = app.Services.CreateScope())
+// {
+//     var initialiser = scope.ServiceProvider.GetRequiredService<ApplicationDbContextInitialiser>();
+//     await initialiser.SeedAsync();
+// }
 
 
 app.Run();

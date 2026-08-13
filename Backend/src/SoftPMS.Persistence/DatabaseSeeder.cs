@@ -65,6 +65,7 @@ public static class DatabaseSeeder
         ("Users.ChangePassword", "Change user password"),
         ("Permissions.Read", "View available permissions"),
         ("SystemSettings.YearEndOperations", "Manage year-end operations and leave rollovers"),
+        ("SystemSettings.Manage", "View and update system parameters and configurations"),
         ("OvertimeTypes.Read", "View overtime types"),
         ("OvertimeTypes.Create", "Create new overtime types"),
         ("OvertimeTypes.Update", "Edit overtime types"),
@@ -163,6 +164,26 @@ public static class DatabaseSeeder
                 });
                 await db.SaveChangesAsync(ct);
                 logger.LogInformation("Seeded default CalendarSetting.");
+            }
+
+            // ── 5. Seed default System Settings ───────────────────────────────
+            if (!await db.SystemSettings.AnyAsync(ct))
+            {
+                db.SystemSettings.Add(new SystemSetting
+                {
+                    CompanyName = "SoftPMS",
+                    EmployeeNoPrefix = "EMP",
+                    GoLiveYear = 2026,
+                    MonthlyWorkingHours = 225m,
+                    DailyWorkingHours = 8m,
+                    SmtpHost = "localhost",
+                    SmtpPort = 1025,
+                    SenderName = "SoftPMS",
+                    SenderEmail = "no-reply@softpms.com",
+                    CreatedAt = DateTime.UtcNow
+                });
+                await db.SaveChangesAsync(ct);
+                logger.LogInformation("Seeded default SystemSetting.");
             }
 
             // ── 6. Seed SuperAdmin role ────────────────────────────────────────────

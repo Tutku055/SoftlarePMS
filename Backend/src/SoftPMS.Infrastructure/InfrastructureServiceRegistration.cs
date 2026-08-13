@@ -20,12 +20,7 @@ public static class InfrastructureServiceRegistration
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        // Bind and eagerly validate EmailSettings at startup via DataAnnotations
-        services
-            .AddOptions<EmailSettings>()
-            .Bind(configuration.GetSection(nameof(EmailSettings)))
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
+
 
         services.AddHttpContextAccessor();
 

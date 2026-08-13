@@ -29,6 +29,7 @@ public interface IApplicationDbContext
     DbSet<RolePermission> RolePermissions { get; }
     DbSet<AuditLog> AuditLogs { get; }
     DbSet<YearlyRolloverLog> YearlyRolloverLogs { get; }
+    DbSet<SystemSetting> SystemSettings { get; }
     DbSet<UserNotification> UserNotifications { get; }
     DbSet<NotificationTypeSetting> NotificationTypeSettings { get; }
     DbSet<NotificationOutbox> NotificationOutboxes { get; }

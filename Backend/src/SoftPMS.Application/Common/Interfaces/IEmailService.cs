@@ -15,4 +15,7 @@ public interface IEmailService
 
     /// <summary>Sends multiple email messages in batch asynchronously using an optimized connection session.</summary>
     Task SendEmailsAsync(IEnumerable<EmailMessage> messages, CancellationToken cancellationToken = default);
+
+    /// <summary>Tests the SMTP connection by sending a real email using provided explicit settings.</summary>
+    Task TestConnectionAsync(string host, int port, string? userName, string? password, bool enableSsl, string senderName, string senderEmail, EmailMessage message, CancellationToken cancellationToken = default);
 }

@@ -26,6 +26,7 @@ import { PayrollDetail } from '../features/finance/components/Payrolls/PayrollDe
 import { OvertimeTypeList } from '../features/finance/components/OvertimeTypes/OvertimeTypeList';
 import { ProfessionList } from '../features/professions/components/ProfessionList';
 import { SystemLogsPage } from '../features/settings/components/SystemLogs/SystemLogsPage';
+import { GeneralSettingsPage } from '../features/settings/pages/GeneralSettingsPage';
 import { NotificationsPage } from '../features/notifications/NotificationsPage';
 import { CalendarPage } from '../features/calendar/CalendarPage';
 import { DashboardView } from '../features/dashboard/components/DashboardView';
@@ -316,6 +317,14 @@ export const router = createBrowserRouter([
             element: (
               <ProtectedRoute permission="SystemSettings.YearEndOperations">
                 <YearEndOperations />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'settings/general',
+            element: (
+              <ProtectedRoute permission="SystemSettings.Manage">
+                <GeneralSettingsPage />
               </ProtectedRoute>
             ),
           },

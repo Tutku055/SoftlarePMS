@@ -7,13 +7,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using SoftPMS.Application.Common.Exceptions;
 using SoftPMS.Domain.Exceptions;
+using SoftPMS.Application.Features.SystemSettings.Queries.GetSystemParameters;
 
 namespace SoftPMS.Application.Features.Timesheets.Commands.GenerateMonthlyTimesheet;
 
 public sealed class GenerateMonthlyTimesheetCommandHandler(
     IApplicationDbContext context,
-    IConfiguration configuration,
-    IOptions<SoftPMS.Application.Common.Settings.SystemSettings> options) : IRequestHandler<GenerateMonthlyTimesheetCommand, Guid>
+    IMediator mediator) : IRequestHandler<GenerateMonthlyTimesheetCommand, Guid>
 {
     public async Task<Guid> Handle(GenerateMonthlyTimesheetCommand request, CancellationToken cancellationToken)
     {
@@ -35,7 +35,9 @@ public sealed class GenerateMonthlyTimesheetCommandHandler(
             throw new BusinessRuleException("Cannot generate timesheets for months before the employee's hire date.");
         }
 
-        if (request.Year > options.Value.GoLiveYear)
+        var systemParams = await mediator.Send(new GetSystemParametersQuery(), cancellationToken);
+
+        if (request.Year > systemParams.GoLiveYear)
         {
             var isPrevYearClosed = await context.YearlyRolloverLogs
                 .AnyAsync(r => r.YearClosed == request.Year - 1, cancellationToken);
@@ -57,12 +59,11 @@ public sealed class GenerateMonthlyTimesheetCommandHandler(
         };
 
         int daysInMonth = DateTime.DaysInMonth(request.Year, request.Month);
-        decimal dailyWorkingHours = 8m;
-        var configValue = configuration["PayrollSettings:DailyWorkingHours"];
-        if (!string.IsNullOrEmpty(configValue) && decimal.TryParse(configValue, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+        if (systemParams.DailyWorkingHours <= 0)
         {
-            dailyWorkingHours = parsed;
+            throw new SoftPMS.Application.Common.Exceptions.BusinessRuleException("Daily working hours system parameter is not configured properly. Please configure it in System Settings before generating timesheets.");
         }
+        decimal dailyWorkingHours = systemParams.DailyWorkingHours;
 
         for (int i = 1; i <= daysInMonth; i++)
         {

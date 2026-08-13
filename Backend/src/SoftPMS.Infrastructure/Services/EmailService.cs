@@ -4,6 +4,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using MimeKit.Text;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Caching.Memory;
 using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Application.Common.Models.Email;
 using SoftPMS.Infrastructure.Settings;
@@ -12,20 +14,126 @@ namespace SoftPMS.Infrastructure.Services;
 
 public class EmailService : IEmailService
 {
-    private readonly EmailSettings _settings;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IMemoryCache _memoryCache;
     private readonly ILogger<EmailService> _logger;
+    private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration;
 
-    public EmailService(IOptions<EmailSettings> settings, ILogger<EmailService> logger)
+    public EmailService(IServiceScopeFactory scopeFactory, IMemoryCache memoryCache, ILogger<EmailService> logger, Microsoft.Extensions.Configuration.IConfiguration configuration)
     {
-        _settings = settings.Value;
+        _scopeFactory = scopeFactory;
+        _memoryCache = memoryCache;
         _logger = logger;
+        _configuration = configuration;
+    }
+
+    private async Task<SoftPMS.Application.Features.SystemSettings.DTOs.SystemParametersDto> GetSystemParametersAsync(CancellationToken ct)
+    {
+        // Try cache first
+        if (_memoryCache.TryGetValue("SystemSettings_CacheKey", out SoftPMS.Application.Features.SystemSettings.DTOs.SystemParametersDto? cached) && cached != null)
+        {
+            return cached;
+        }
+
+        // Fallback to DB
+        using var scope = _scopeFactory.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        var settings = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(dbContext.SystemSettings, ct);
+        
+        if (settings == null)
+            return new SoftPMS.Application.Features.SystemSettings.DTOs.SystemParametersDto(); // Defaults
+
+        return new SoftPMS.Application.Features.SystemSettings.DTOs.SystemParametersDto 
+        { 
+            CompanyName = settings.CompanyName ?? string.Empty,
+            CompanyLogoPath = settings.CompanyLogoPath ?? string.Empty,
+            SmtpHost = settings.SmtpHost ?? "localhost", 
+            SmtpPort = settings.SmtpPort, 
+            SenderName = settings.SenderName ?? string.Empty, 
+            SenderEmail = settings.SenderEmail ?? string.Empty, 
+            SmtpUserName = settings.SmtpUserName ?? string.Empty, 
+            SmtpPassword = settings.SmtpPassword ?? string.Empty, 
+            SmtpEnableSsl = settings.SmtpEnableSsl 
+        };
+    }
+
+    private string GetHtmlTemplate(string body, string companyName, string companyLogoPath, string subject)
+    {
+        var safeCompanyName = string.IsNullOrWhiteSpace(companyName) ? "Softlare PMS" : companyName;
+        
+        string logoUrl = "";
+        if (!string.IsNullOrWhiteSpace(companyLogoPath))
+        {
+            if (companyLogoPath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            {
+                logoUrl = companyLogoPath;
+            }
+            else
+            {
+                var apiUrl = _configuration["ApiUrl"]?.TrimEnd('/') ?? "https://localhost:7219";
+                logoUrl = $"{apiUrl}/api/Vault/{companyLogoPath.TrimStart('/')}";
+            }
+        }
+
+        var logoHtml = !string.IsNullOrWhiteSpace(logoUrl) 
+            ? $"<img src=\"{logoUrl}\" alt=\"{safeCompanyName} Logo\" style=\"max-height: 40px; display: block; margin: 0 auto;\" />"
+            : "";
+
+        var template = @"
+<!DOCTYPE html>
+<html lang=""en"">
+<head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <title>{{SUBJECT}}</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0; }
+        .body-content { padding: 36px; }
+        .footer { background-color: #f1f5f9; padding: 24px 36px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; }
+    </style>
+</head>
+<body>
+    <div class=""container"">
+        <table width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);"">
+            <tr>
+                <td style=""padding: 24px 36px; text-align: left; vertical-align: middle; width: 60%;"">
+                    <h1 style=""color: #ffffff; font-size: 22px; font-weight: 700; margin: 0; font-family: sans-serif;"">SoftPMS</h1>
+                    <div style=""color: #94a3b8; font-size: 13px; margin-top: 6px; text-transform: uppercase; font-family: sans-serif; letter-spacing: 1px;"">System Notification</div>
+                </td>
+                <td style=""padding: 24px 36px; text-align: right; vertical-align: middle; width: 40%;"">
+                    <div style=""display: inline-block; text-align: center; max-width: 160px;"">
+                        {{LOGO_HTML}}
+                        <div style=""color: #cbd5e1; font-size: 11px; margin-top: 6px; font-weight: 600; font-family: sans-serif; line-height: 1.4; max-height: 31px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-overflow: ellipsis; word-break: break-word;"">
+                            {{COMPANY_NAME}}
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+        <div class=""body-content"">
+            {{BODY}}
+        </div>
+        <div class=""footer"">
+            &copy; {{YEAR}} {{COMPANY_NAME}}. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>";
+
+        return template
+            .Replace("{{SUBJECT}}", subject)
+            .Replace("{{LOGO_HTML}}", logoHtml)
+            .Replace("{{COMPANY_NAME}}", safeCompanyName)
+            .Replace("{{BODY}}", body)
+            .Replace("{{YEAR}}", DateTime.UtcNow.Year.ToString());
     }
 
     public async Task SendEmailAsync(EmailMessage message, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(message);
 
-        var mimeMessage = BuildMimeMessage(message);
+        var mimeMessage = await BuildMimeMessageAsync(message, cancellationToken);
 
         using var client = await CreateConnectedSmtpClientAsync(cancellationToken);
         try
@@ -65,7 +173,7 @@ public class EmailService : IEmailService
 
                 try
                 {
-                    var mimeMessage = BuildMimeMessage(message);
+                    var mimeMessage = await BuildMimeMessageAsync(message, cancellationToken);
                     await client.SendAsync(mimeMessage, cancellationToken);
                     _logger.LogInformation("Batch email sent to {Recipients}. Subject: {Subject}",
                         string.Join(", ", message.To), message.Subject);
@@ -86,23 +194,25 @@ public class EmailService : IEmailService
 
     private async Task<SmtpClient> CreateConnectedSmtpClientAsync(CancellationToken cancellationToken)
     {
+        var settings = await GetSystemParametersAsync(cancellationToken);
         var client = new SmtpClient();
-        var socketOptions = _settings.EnableSsl ? SecureSocketOptions.Auto : SecureSocketOptions.None;
+        var socketOptions = settings.SmtpEnableSsl ? SecureSocketOptions.Auto : SecureSocketOptions.None;
 
-        await client.ConnectAsync(_settings.Host, _settings.Port, socketOptions, cancellationToken);
+        await client.ConnectAsync(settings.SmtpHost, settings.SmtpPort, socketOptions, cancellationToken);
 
-        if (!string.IsNullOrWhiteSpace(_settings.UserName) && !string.IsNullOrWhiteSpace(_settings.Password))
+        if (!string.IsNullOrWhiteSpace(settings.SmtpUserName) && !string.IsNullOrWhiteSpace(settings.SmtpPassword))
         {
-            await client.AuthenticateAsync(_settings.UserName, _settings.Password, cancellationToken);
+            await client.AuthenticateAsync(settings.SmtpUserName, settings.SmtpPassword, cancellationToken);
         }
 
         return client;
     }
 
-    private MimeMessage BuildMimeMessage(EmailMessage message)
+    private async Task<MimeMessage> BuildMimeMessageAsync(EmailMessage message, CancellationToken cancellationToken)
     {
+        var settings = await GetSystemParametersAsync(cancellationToken);
         var mimeMessage = new MimeMessage();
-        mimeMessage.From.Add(new MailboxAddress(_settings.FromName, _settings.FromEmail));
+        mimeMessage.From.Add(new MailboxAddress(settings.SenderName, settings.SenderEmail));
 
         foreach (var to in message.To.Where(t => !string.IsNullOrWhiteSpace(t)))
         {
@@ -124,7 +234,7 @@ public class EmailService : IEmailService
         var builder = new BodyBuilder();
         if (message.IsHtml)
         {
-            builder.HtmlBody = message.Body;
+            builder.HtmlBody = GetHtmlTemplate(message.Body, settings.CompanyName, settings.CompanyLogoPath, message.Subject);
         }
         else
         {
@@ -141,5 +251,44 @@ public class EmailService : IEmailService
 
         mimeMessage.Body = builder.ToMessageBody();
         return mimeMessage;
+    }
+
+    public async Task TestConnectionAsync(string host, int port, string? userName, string? password, bool enableSsl, string senderName, string senderEmail, EmailMessage message, CancellationToken cancellationToken = default)
+    {
+        using var client = new SmtpClient();
+        var socketOptions = enableSsl ? SecureSocketOptions.Auto : SecureSocketOptions.None;
+
+        await client.ConnectAsync(host, port, socketOptions, cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(userName) && !string.IsNullOrWhiteSpace(password))
+        {
+            await client.AuthenticateAsync(userName, password, cancellationToken);
+        }
+
+        var mimeMessage = new MimeMessage();
+        mimeMessage.From.Add(new MailboxAddress(senderName, senderEmail));
+        
+        foreach (var to in message.To.Where(t => !string.IsNullOrWhiteSpace(t)))
+        {
+            mimeMessage.To.Add(MailboxAddress.Parse(to));
+        }
+
+        mimeMessage.Subject = message.Subject;
+
+        var builder = new BodyBuilder();
+        if (message.IsHtml)
+        {
+            var settings = await GetSystemParametersAsync(cancellationToken);
+            builder.HtmlBody = GetHtmlTemplate(message.Body, settings.CompanyName, settings.CompanyLogoPath, message.Subject);
+        }
+        else
+        {
+            builder.TextBody = message.Body;
+        }
+        
+        mimeMessage.Body = builder.ToMessageBody();
+
+        await client.SendAsync(mimeMessage, cancellationToken);
+        await client.DisconnectAsync(true, cancellationToken);
     }
 }

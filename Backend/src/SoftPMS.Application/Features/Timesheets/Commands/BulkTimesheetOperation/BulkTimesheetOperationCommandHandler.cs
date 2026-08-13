@@ -7,13 +7,13 @@ using SoftPMS.Application.Common.Interfaces;
 using SoftPMS.Application.Features.Timesheets.DTOs;
 using SoftPMS.Domain.Entities;
 using SoftPMS.Domain.Enums;
+using SoftPMS.Application.Features.SystemSettings.Queries.GetSystemParameters;
 
 namespace SoftPMS.Application.Features.Timesheets.Commands.BulkTimesheetOperation;
 
 public sealed class BulkTimesheetOperationCommandHandler(
     IApplicationDbContext context,
-    IConfiguration configuration,
-    IOptions<SoftPMS.Application.Common.Settings.SystemSettings> options) : IRequestHandler<BulkTimesheetOperationCommand, BulkOperationResultDto>
+    IMediator mediator) : IRequestHandler<BulkTimesheetOperationCommand, BulkOperationResultDto>
 {
     public async Task<BulkOperationResultDto> Handle(BulkTimesheetOperationCommand request, CancellationToken cancellationToken)
     {
@@ -100,8 +100,10 @@ public sealed class BulkTimesheetOperationCommandHandler(
             .Select(t => t.EmployeeId)
             .ToHashSetAsync(cancellationToken);
 
+        var systemParams = await mediator.Send(new GetSystemParametersQuery(), cancellationToken);
+
         // Check year-end closure
-        if (request.Year > options.Value.GoLiveYear)
+        if (request.Year > systemParams.GoLiveYear)
         {
             var isPrevYearClosed = await context.YearlyRolloverLogs
                 .AnyAsync(r => r.YearClosed == request.Year - 1, cancellationToken);
@@ -109,10 +111,11 @@ public sealed class BulkTimesheetOperationCommandHandler(
                 throw new BusinessRuleException($"Cannot generate timesheets for {request.Year} because the previous year ({request.Year - 1}) has not been closed yet.");
         }
 
-        decimal dailyWorkingHours = 8m;
-        var configValue = configuration["PayrollSettings:DailyWorkingHours"];
-        if (!string.IsNullOrEmpty(configValue) && decimal.TryParse(configValue, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsed))
-            dailyWorkingHours = parsed;
+        if (systemParams.DailyWorkingHours <= 0)
+        {
+            throw new SoftPMS.Application.Common.Exceptions.BusinessRuleException("Daily working hours system parameter is not configured properly. Please configure it in System Settings before performing bulk timesheet operations.");
+        }
+        decimal dailyWorkingHours = systemParams.DailyWorkingHours;
 
         int daysInMonth = DateTime.DaysInMonth(request.Year, request.Month);
 
