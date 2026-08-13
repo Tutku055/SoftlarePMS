@@ -11,6 +11,7 @@ import { useDeleteRole } from '../../hooks/useDeleteRole';
 import { useAssignRolePermissions } from '../../hooks/useAssignRolePermissions';
 import { usePermissionsList } from '../../hooks/usePermissionsList';
 import { useToggleRoleActive } from '../../hooks/useToggleRoleActive';
+import { PermissionSelector } from '../PermissionSelector';
 
 import {
   Box,
@@ -33,9 +34,6 @@ import {
   Select,
   IconButton,
   useTheme,
-  FormGroup,
-  FormControlLabel,
-  Checkbox,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -268,6 +266,18 @@ export const RoleDetail = () => {
       } else {
         return [...prev, permissionId];
       }
+    });
+  };
+
+  const handleGroupToggle = (permissionIds: string[], isChecked: boolean) => {
+    setRolePermissions((prev) => {
+      const current = new Set(prev);
+      if (isChecked) {
+        permissionIds.forEach((id) => current.add(id));
+      } else {
+        permissionIds.forEach((id) => current.delete(id));
+      }
+      return Array.from(current);
     });
   };
 
@@ -583,43 +593,20 @@ export const RoleDetail = () => {
           <Divider sx={{ mb: 3, opacity: 0.5 }} />
 
           <Box sx={{ mb: 4, maxHeight: 500, overflowY: 'auto', pr: 2 }}>
-            {availablePermissions && availablePermissions.length > 0 ? (
-              <FormGroup>
-                {availablePermissions.map(permission => {
-                  const currentUserHasPermission = permissions.includes(permission.name);
-                  const isChecked = rolePermissions.includes(permission.id);
-                  
-                  return (
-                    <FormControlLabel
-                      key={permission.id}
-                      control={
-                        <Checkbox
-                          size="small"
-                          checked={isChecked}
-                          onChange={() => handlePermissionToggle(permission.id)}
-                          disabled={!currentUserHasPermission || !hasPermission('Roles.Update') || isOwnRole}
-                        />
-                      }
-                      label={
-                        <Box sx={{ opacity: currentUserHasPermission && !isOwnRole ? 1 : 0.6 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {permission.name} {isOwnRole ? '(Cannot edit your own role)' : !currentUserHasPermission && '(Requires Permission)'}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {permission.description}
-                          </Typography>
-                        </Box>
-                      }
-                      sx={{ mb: 1, alignItems: 'flex-start', '& .MuiCheckbox-root': { pt: 0.5 } }}
-                    />
-                  );
-                })}
-              </FormGroup>
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                Loading permissions...
-              </Typography>
-            )}
+            <PermissionSelector
+              availablePermissions={availablePermissions || []}
+              selectedPermissionIds={rolePermissions}
+              onPermissionToggle={handlePermissionToggle}
+              onGroupToggle={handleGroupToggle}
+              getDisabledState={(permission) => {
+                const currentUserHasPermission = permissions.includes(permission.name);
+                const disabled = !currentUserHasPermission || !hasPermission('Roles.Update') || isOwnRole;
+                let reason = '';
+                if (isOwnRole) reason = 'Cannot edit your own role';
+                else if (!currentUserHasPermission) reason = 'Requires Permission';
+                return { disabled, reason };
+              }}
+            />
           </Box>
 
           <Box>

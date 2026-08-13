@@ -22,9 +22,7 @@ import {
   useTheme,
   Accordion,
   AccordionSummary,
-  AccordionDetails,
-  FormGroup,
-  FormControlLabel
+  AccordionDetails
 } from '@mui/material';
 import {
   ViewColumnRounded,
@@ -53,6 +51,7 @@ import { useAuthStore } from '../../../../store/useAuthStore';
 import ExcelJS from 'exceljs';
 import { getAdaptedRoleColor } from '../../../../theme/colorUtils';
 import { PageHeader } from '../../../../components/PageHeader/PageHeader';
+import { PermissionSelector } from '../PermissionSelector';
 
 const COLUMN_NAMES: Record<string, string> = {
   name: 'Role Name',
@@ -121,6 +120,18 @@ export const RoleList = () => {
       } else {
         return { ...prev, permissionIds: [...current, permissionId] };
       }
+    });
+  };
+
+  const handleGroupToggle = (permissionIds: string[], isChecked: boolean) => {
+    setCreateFormState(prev => {
+      const current = new Set(prev.permissionIds);
+      if (isChecked) {
+        permissionIds.forEach(id => current.add(id));
+      } else {
+        permissionIds.forEach(id => current.delete(id));
+      }
+      return { ...prev, permissionIds: Array.from(current) };
     });
   };
 
@@ -835,34 +846,13 @@ export const RoleList = () => {
                   Assign Permissions (Optional)
                 </Typography>
               </AccordionSummary>
-              <AccordionDetails sx={{ pt: 0, maxHeight: 250, overflowY: 'auto' }}>
-                {availablePermissions && availablePermissions.length > 0 ? (
-                  <FormGroup>
-                    {availablePermissions.map(permission => (
-                      <FormControlLabel
-                        key={permission.id}
-                        control={
-                          <Checkbox
-                            size="small"
-                            checked={createFormState.permissionIds.includes(permission.id)}
-                            onChange={() => handlePermissionToggle(permission.id)}
-                          />
-                        }
-                        label={
-                          <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>{permission.name}</Typography>
-                            <Typography variant="caption" color="text.secondary">{permission.description}</Typography>
-                          </Box>
-                        }
-                        sx={{ mb: 1, alignItems: 'flex-start', '& .MuiCheckbox-root': { pt: 0.5 } }}
-                      />
-                    ))}
-                  </FormGroup>
-                ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    No assignable permissions found.
-                  </Typography>
-                )}
+              <AccordionDetails sx={{ pt: 0, maxHeight: 400, overflowY: 'auto' }}>
+                <PermissionSelector 
+                  availablePermissions={availablePermissions || []} 
+                  selectedPermissionIds={createFormState.permissionIds} 
+                  onPermissionToggle={handlePermissionToggle} 
+                  onGroupToggle={handleGroupToggle} 
+                />
               </AccordionDetails>
             </Accordion>
           )}
