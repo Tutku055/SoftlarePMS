@@ -1,5 +1,5 @@
 import { apiClient } from '../../../config/apiClient';
-import type { DepartmentDto, PaginatedList } from '../../employees/types';
+import type { DepartmentDto, PaginatedList } from '../../employees';;
 import type { GetDepartmentsParams, UpdateDepartmentDto } from '../types';
 
 export const getDepartmentsList = async (params: GetDepartmentsParams): Promise<PaginatedList<DepartmentDto>> => {

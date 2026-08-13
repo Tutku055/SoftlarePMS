@@ -24,7 +24,7 @@ import { Close, DeleteOutlined, Event as EventIcon, Public, Lock } from '@mui/ic
 import { VisibilityLevel, CalendarEventType, type CalendarEventDto, type CreateCalendarEventPayload, type UpdateCalendarEventPayload } from '../../types/calendar.types';
 import { toLocalISOStringWithOffset } from '../../utils/calendarDateUtils';
 import { useAuthStore } from '../../../../store/useAuthStore';
-import { useDepartmentsLookup } from '../../../departments/hooks/useDepartmentsLookup';
+import { useDepartmentsLookup } from '../../../departments';;
 
 interface EventDialogProps {
   open: boolean;

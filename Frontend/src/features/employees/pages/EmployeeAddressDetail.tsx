@@ -2,48 +2,17 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Box,
-  Typography,
-  Stack,
-  Button,
-  Avatar,
-  Chip,
-  Divider,
-  TextField,
-  IconButton,
-  Tooltip,
-  CircularProgress,
-  Alert,
-  ToggleButtonGroup,
-  ToggleButton,
-} from '@mui/material';
+  Box, Typography, Stack, Button, Avatar, Chip, Divider, TextField, IconButton, Tooltip, CircularProgress, Alert, ToggleButtonGroup, ToggleButton, } from '@mui/material';
 import {
-  ArrowBackRounded,
-  AddRounded,
-  EditRounded,
-  DeleteOutlineRounded,
-  BusinessRounded,
-  LocationOnRounded,
-  SaveRounded,
-  CloseRounded,
-  HomeRounded,
-  ContactMailRounded,
-  CheckCircleRounded,
-  SwapHorizRounded,
-  HistoryRounded,
-  PlayArrowRounded,
-} from '@mui/icons-material';
-import { useAuthStore } from '../../store/useAuthStore';
-import { useEmployeeDetail } from './hooks/useEmployeeDetail';
+  ArrowBackRounded, AddRounded, EditRounded, DeleteOutlineRounded, BusinessRounded, LocationOnRounded, SaveRounded, CloseRounded, HomeRounded, ContactMailRounded, CheckCircleRounded, SwapHorizRounded, HistoryRounded, PlayArrowRounded, } from '@mui/icons-material';
+import { useAuthStore } from '../../../store/useAuthStore';
+import { useEmployeeDetail } from '../hooks/useEmployeeDetail';
 import {
-  useEmployeeAddresses,
-  useCreateEmployeeAddress,
-  useUpdateEmployeeAddressMutation,
-  useDeleteEmployeeAddressMutation,
-} from './hooks/useEmployeeAddresses';
-import type { EmployeeAddressDto } from './types';
-import { PopupDialog } from '../../components/PopupDialog/PopupDialog';
-import { formatDateDisplay } from '../finance/constants/currencyConstants';
+  useEmployeeAddresses, useCreateEmployeeAddress, useUpdateEmployeeAddressMutation, useDeleteEmployeeAddressMutation, } from '../hooks/useEmployeeAddresses';
+import type { EmployeeAddressDto } from '../types';
+import { PopupDialog } from '../../../components/PopupDialog/PopupDialog';
+import { formatDateDisplay } from '../../../utils/dateUtils';;
+
 import * as z from 'zod';
 
 const addressSchema = z.object({
@@ -473,7 +442,6 @@ export const EmployeeAddressDetail = () => {
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1400, margin: '0 auto' }}>
-      {/* ── TOP HEADER & EMPLOYEE PROFILE CARD ─────────────────────────────── */}
       <Stack spacing={3} sx={{ mb: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Button
@@ -646,7 +614,6 @@ export const EmployeeAddressDetail = () => {
         </Alert>
       )}
 
-      {/* ── ADDRESS FORM & HISTORY CARD ────────────────────────────────────── */}
       <Box sx={glassPanelSx}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
           <Box>
@@ -671,7 +638,6 @@ export const EmployeeAddressDetail = () => {
         </Box>
         <Divider sx={{ opacity: 0.5, mb: 3 }} />
 
-        {/* ── ADDRESS TYPE SELECTOR ── */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 1 }}>
             Address Classification (Primary ↔ Secondary)
@@ -720,7 +686,6 @@ export const EmployeeAddressDetail = () => {
           </Typography>
         </Box>
 
-        {/* ── FORM INPUTS GRID ── */}
         <Box
           sx={{
             display: 'grid',
@@ -815,7 +780,6 @@ export const EmployeeAddressDetail = () => {
           />
         </Box>
 
-        {/* ── FORM ACTION BUTTONS ── */}
         <Box sx={{ mt: 3.5, display: 'flex', gap: 2, alignItems: 'center' }}>
           {(editingAddressId ? canUpdate : canCreate) && (
             <Button
@@ -854,7 +818,6 @@ export const EmployeeAddressDetail = () => {
           )}
         </Box>
 
-        {/* ── HISTORICAL ADDRESSES TABLE ─────────────────────────────────────── */}
         <Box sx={{ mt: 5 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -1090,7 +1053,6 @@ export const EmployeeAddressDetail = () => {
         </Box>
       </Box>
 
-      {/* ── DELETE CONFIRMATION POPUP ────────────────────────────────────────── */}
       <PopupDialog
         open={deleteConfirmOpen}
         title="Delete Address Record"

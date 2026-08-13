@@ -33,15 +33,15 @@ import {
   MarkEmailReadRounded,
 } from '@mui/icons-material';
 import { useSearchParams } from 'react-router-dom';
-import { useAuthStore } from '../../store/useAuthStore';
-import { useNotifications } from './hooks/useNotifications';
-import type { NotificationSortOption } from './hooks/useNotifications';
-import { NotificationCard } from './components/NotificationCard';
-import { NotificationSettingsView } from './components/NotificationSettingsView';
-import { NOTIFICATION_TYPE_CONFIG } from './utils/urgencyUtils';
-import { NotificationType } from './types';
+import { useAuthStore } from '../../../store/useAuthStore';
+import { useNotifications } from '../hooks/useNotifications';
+import type { NotificationSortOption } from '../hooks/useNotifications';
+import { NotificationCard } from '../components/NotificationCard';
+import { NotificationSettingsView } from '../components/NotificationSettingsView';
+import { NOTIFICATION_TYPE_CONFIG } from '../utils/urgencyUtils';
+import { NotificationType } from '../types';
 
-import { PageHeader } from '../../components/PageHeader/PageHeader';
+import { PageHeader } from '../../../components/PageHeader/PageHeader';
 
 export const NotificationsPage: React.FC = () => {
   const theme = useTheme();

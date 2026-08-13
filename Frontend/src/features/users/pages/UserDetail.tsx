@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useUserDetail } from './hooks/useUserDetail';
-import { useUpdateUser } from './hooks/useUpdateUser';
-import { useDeleteUser } from './hooks/useDeleteUser';
-import { useChangePassword } from './hooks/useChangePassword';
+import { useUserDetail } from '../hooks/useUserDetail';
+import { useUpdateUser } from '../hooks/useUpdateUser';
+import { useDeleteUser } from '../hooks/useDeleteUser';
+import { useChangePassword } from '../hooks/useChangePassword';
 import { useQuery } from '@tanstack/react-query';
-import { useAuthStore } from '../../store/useAuthStore';
-import { useBreadcrumbTitle } from '../../store/useBreadcrumbStore';
-import { apiClient } from '../../config/apiClient';
-import type { RoleDto } from './types';
-import { PopupDialog } from '../../components/PopupDialog/PopupDialog';
-import { getAdaptedRoleColor } from '../../theme/colorUtils';
+import { useAuthStore } from '../../../store/useAuthStore';
+import { useBreadcrumbTitle } from '../../../store/useBreadcrumbStore';
+import { apiClient } from '../../../config/apiClient';
+import type { RoleDto } from '../types';
+import { PopupDialog } from '../../../components/PopupDialog/PopupDialog';
+import { getAdaptedRoleColor } from '../../../theme/colorUtils';
 
 
 import {
@@ -51,12 +51,11 @@ import {
   ManageAccountsRounded,
   VpnKeyRounded,
 } from '@mui/icons-material';
-import { validatePassword } from '../../utils/passwordValidation';
-import { PasswordCriteriaChecklist } from '../../components/common/PasswordCriteriaChecklist';
-import { PageHeader } from '../../components/PageHeader/PageHeader';
+import { validatePassword } from '../../../utils/passwordValidation';
+import { PasswordCriteriaChecklist } from '../../../components/common/PasswordCriteriaChecklist';
+import { PageHeader } from '../../../components/PageHeader/PageHeader';
 import styles from './UserDetail.module.css';
 
-// ─── PREMIUM THEME STYLES (Matching EmployeeDetail.tsx) ───────────────────
 const glassPanelSx = {
   background: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(24, 24, 24, 0.85)' : 'rgba(255, 255, 255, 0.85)',
   backdropFilter: 'blur(12px)',
@@ -567,7 +566,6 @@ export const UserDetail = () => {
       </TabPanel>
       )}
 
-      {/* ── TAB 3: CHANGE PASSWORD ────────────────────────────────────────── */}
       <TabPanel value={activeTab} index={2}>
         <Box sx={glassPanelSx}>
           <Typography variant="h6" className={styles.sectionTitle}>
@@ -692,7 +690,6 @@ export const UserDetail = () => {
         </Box>
       </TabPanel>
 
-      {/* ── TAB 4: SYSTEM AND SECURITY ────────────────────────────────────── */}
       {(!useAuthStore.getState().currentUser?.requiresPasswordChange || useAuthStore.getState().currentUser?.id !== id) && (
       <TabPanel value={activeTab} index={3}>
         <Box sx={glassPanelSx}>
@@ -751,7 +748,6 @@ export const UserDetail = () => {
       </TabPanel>
       )}
 
-      {/* ── DIALOGS ───────────────────────────────────────────────────────── */}
       <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 700 }}>Delete User</DialogTitle>
         <DialogContent>

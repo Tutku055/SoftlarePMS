@@ -1,33 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import {
-  Box,
-  Typography,
-  Stack,
-  Button,
-  IconButton,
-  Tooltip,
-  CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TextField,
-  Alert
+  Box, Typography, Stack, Button, IconButton, Tooltip, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel, Select, MenuItem, TextField, Alert
 } from '@mui/material';
 import {
-  ArrowBackRounded,
-  AutoFixHighRounded,
-  SaveRounded,
-  PrintRounded,
-  PictureAsPdfRounded,
-  WarningRounded,
-  LockRounded,
-  LockOpenRounded,
-  AccessTimeRounded
+  ArrowBackRounded, AutoFixHighRounded, SaveRounded, PrintRounded, PictureAsPdfRounded, WarningRounded, LockRounded, LockOpenRounded, AccessTimeRounded
 } from '@mui/icons-material';
 import { PageHeader } from '../../../../components/PageHeader/PageHeader';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
@@ -36,15 +12,16 @@ import autoTable from 'jspdf-autotable';
 import { useTimesheetDetail } from '../../hooks/useTimesheetDetail';
 import { useGenerateTimesheet } from '../../hooks/useGenerateTimesheet';
 import { useUpdateTimesheetEntry } from '../../hooks/useUpdateTimesheetEntry';
-import { useEmployeeDetail } from '../../../employees/hooks/useEmployeeDetail';
+import { useEmployeeDetail } from '../../../employees';;
 import { useOvertimeTypes } from '../../hooks/useOvertimeTypes';
 import { useYearClosureStatus } from '../../hooks/useYearClosureStatus';
 import { useToggleTimesheetLock } from '../../hooks/useToggleTimesheetLock';
 import { PopupDialog } from '../../../../components/PopupDialog/PopupDialog';
 import type { TimesheetEntry } from '../../types';
 import { useAuthStore } from '../../../../store/useAuthStore';
-import { sanitizeForPdf, formatPeriodForPdf, formatMonthName, formatDateDisplay } from '../../constants/currencyConstants';
-import { useSystemParameters } from '../../../settings/api/GeneralSettingsApi';
+import { sanitizeForPdf, formatPeriodForPdf, formatMonthName } from '../../constants/currencyConstants';
+import { formatDateDisplay } from '../../../../utils/dateUtils';;
+import { useSystemParameters } from '../../../settings';;
 import { apiClient } from '../../../../config/apiClient';
 
 // Status values match backend TimesheetStatus enum (1-based)

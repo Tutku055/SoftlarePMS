@@ -14,8 +14,8 @@ import {
   FormHelperText
 } from '@mui/material';
 import { SaveRounded } from '@mui/icons-material';
-import { useUpdateCompensation } from '../../../finance/hooks/useUpdateCompensation';
-import { CURRENCY_CONFIGS, DEFAULT_CURRENCY_ID } from '../../../finance/constants/currencyConstants';
+import { useUpdateCompensation } from '../../../finance';;
+import { CURRENCY_CONFIGS, DEFAULT_CURRENCY_ID } from '../../../finance';;
 import * as z from 'zod';
 
 const compensationSchema = z.object({

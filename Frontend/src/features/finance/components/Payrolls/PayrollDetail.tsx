@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { useEmployeeDetail } from '../../../employees/hooks/useEmployeeDetail';
+import { useEmployeeDetail } from '../../../employees';;
 import { usePayrollList } from '../../hooks/usePayrollList';
 import { useCalculatePayroll } from '../../hooks/useCalculatePayroll';
 import { useUpdateCompensation } from '../../hooks/useUpdateCompensation';
@@ -12,49 +12,17 @@ import { PopupDialog } from '../../../../components/PopupDialog/PopupDialog';
 import { useAuthStore } from '../../../../store/useAuthStore';
 
 import {
-  Box,
-  Typography,
-  Stack,
-  Button,
-  Avatar,
-  Divider,
-  IconButton,
-  Tooltip,
-  CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormHelperText,
-  Tabs,
-  Tab,
-  TextField
+  Box, Typography, Stack, Button, Avatar, Divider, IconButton, Tooltip, CircularProgress, FormControl, InputLabel, Select, MenuItem, FormHelperText, Tabs, Tab, TextField
 } from '@mui/material';
 import {
-  ArrowBackRounded,
-  CalculateRounded,
-  PictureAsPdfRounded,
-  SettingsRounded,
-  ReceiptLongRounded,
-  PrintRounded,
-  WarningRounded,
-  PaymentsRounded,
-} from '@mui/icons-material';
+  ArrowBackRounded, CalculateRounded, PictureAsPdfRounded, SettingsRounded, ReceiptLongRounded, PrintRounded, WarningRounded, PaymentsRounded, } from '@mui/icons-material';
 import { PageHeader } from '../../../../components/PageHeader/PageHeader';
 import * as z from 'zod';
 import styles from './PayrollDetail.module.css';
 import { 
-  CURRENCY_CONFIGS, 
-  DEFAULT_CURRENCY_ID, 
-  formatCompensationAmount,
-  formatSlipAmount,
-  sanitizeForPdf,
-  formatPeriodForPdf,
-  formatPeriodDisplay,
-  formatMonthName,
-  formatDateDisplay
-} from '../../constants/currencyConstants';
-import { useSystemParameters } from '../../../settings/api/GeneralSettingsApi';
+  CURRENCY_CONFIGS, DEFAULT_CURRENCY_ID, formatCompensationAmount, formatSlipAmount, sanitizeForPdf, formatPeriodForPdf, formatPeriodDisplay, formatMonthName } from '../../constants/currencyConstants';
+import { formatDateDisplay } from '../../../../utils/dateUtils';;
+import { useSystemParameters } from '../../../settings';;
 import { apiClient } from '../../../../config/apiClient';
 
 const glassPanelSx = {
@@ -193,7 +161,6 @@ export const PayrollDetail = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
 
-    // --- Header ---
     doc.setFontSize(22);
     doc.setFont("helvetica", "bold");
     doc.text("PAYROLL SLIP", pageWidth / 2, 22, { align: "center" });
@@ -246,7 +213,6 @@ export const PayrollDetail = () => {
     doc.text(`Issue Date: ${issueDateText}`, 14, 49);
     doc.text(`Calculation Type: ${calcType}`, 14, 56);
 
-    // --- Earnings Table ---
     const earnings = selectedSlip.lineItems?.filter((li: any) => li.itemType === 1) || [];
     const earningsData = earnings.map((li: any) => [
       sanitizeForPdf(li.description),
@@ -269,7 +235,6 @@ export const PayrollDetail = () => {
       }
     });
 
-    // --- Deductions Table ---
     const deductions = selectedSlip.lineItems?.filter((li: any) => li.itemType === 2) || [];
     const deductionsData = deductions.map((li: any) => [
       sanitizeForPdf(li.description),
@@ -292,7 +257,6 @@ export const PayrollDetail = () => {
       }
     });
 
-    // --- Net Salary ---
     const finalY = (doc as any).lastAutoTable.finalY + 15;
     const netText = formatSlipAmount(selectedSlip.netSalary);
 
@@ -532,7 +496,6 @@ export const PayrollDetail = () => {
         }
       />
 
-      {/* ── PROFILE SUMMARY CARD ────────────────────────────────────────── */}
       <Box sx={glassPanelSx}>
         <Box className={styles.profileSummaryGrid}>
           <Avatar sx={{ width: 84, height: 84, bgcolor: 'primary.main', fontSize: '2rem', fontWeight: 600 }}>
@@ -561,7 +524,6 @@ export const PayrollDetail = () => {
         </Box>
       </Box>
 
-      {/* ── NAVIGATION TABS ───────────────────────────────────────────────── */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 1 }}>
         <Tabs 
           value={activeTab} 
@@ -573,7 +535,6 @@ export const PayrollDetail = () => {
         </Tabs>
       </Box>
 
-      {/* ── TAB 1: PAYROLL MANAGEMENT ─────────────────────────────────────── */}
       <TabPanel value={activeTab} index={0}>
         <Box sx={glassPanelSx}>
           <Typography variant="h6" className={styles.sectionTitle}>

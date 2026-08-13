@@ -52,7 +52,6 @@ import {
 } from '@mui/icons-material';
 import styles from './RoleDetail.module.css';
 
-// ─── PREMIUM THEME STYLES (Matching UserDetail.tsx) ───────────────────
 const glassPanelSx = {
   background: (theme: any) => theme.palette.mode === 'dark' ? 'rgba(24, 24, 24, 0.85)' : 'rgba(255, 255, 255, 0.85)',
   backdropFilter: 'blur(12px)',
@@ -400,7 +399,6 @@ export const RoleDetail = () => {
         </Tabs>
       </Box>
 
-      {/* ── TAB 0: ROLE DETAILS ────────────────────────────────────────── */}
       <TabPanel value={activeTab} index={0}>
         <Box sx={glassPanelSx}>
           <Typography variant="h6" className={styles.sectionTitle}>
@@ -574,7 +572,6 @@ export const RoleDetail = () => {
         </Box>
       </TabPanel>
 
-      {/* ── TAB 1: PERMISSIONS ────────────────────────────────────────── */}
       <TabPanel value={activeTab} index={1}>
         <Box sx={glassPanelSx}>
           <Typography variant="h6" className={styles.sectionTitle}>
@@ -640,7 +637,6 @@ export const RoleDetail = () => {
         </Box>
       </TabPanel>
 
-      {/* ── DIALOGS ───────────────────────────────────────────────────────── */}
       <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 700 }}>Delete Role</DialogTitle>
         <DialogContent>

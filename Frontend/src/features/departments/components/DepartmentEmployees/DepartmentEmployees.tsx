@@ -17,9 +17,9 @@ import { DataTable } from '../../../../components/DataTable/DataTable';
 
 type QuickFilter = 'all' | 'active' | 'terminated';
 import type { DataTableColumnDef, CustomFilterValue } from '../../../../components/DataTable/DataTable';
-import { useEmployees } from '../../../employees/hooks/useEmployees';
+import { useEmployees } from '../../../employees';;
 import { useDepartmentsLookup } from '../../hooks/useDepartmentsLookup';
-import { useProfessionsLookup } from '../../../professions/hooks/useProfessionsLookup';
+import { useProfessionsLookup } from '../../../professions';;
 import { PageHeader } from '../../../../components/PageHeader/PageHeader';
 
 const premiumInputSx = {
@@ -271,7 +271,6 @@ export const DepartmentEmployees = () => {
         }
       />
 
-      {/* ── FILTER PANEL (PREMIUM GLASS EFFECT) ──────────────────────────── */}
       <Box
         sx={{
           background: (theme) => theme.palette.mode === 'dark' ? 'rgba(24, 24, 24, 0.85)' : 'rgba(255, 255, 255, 0.85)',

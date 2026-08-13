@@ -32,7 +32,7 @@ import {
   BulkTimesheetScope,
   BulkTimesheetPeriodType,
 } from '../../types';
-import { useDepartmentsLookup } from '../../../departments/hooks/useDepartmentsLookup';
+import { useDepartmentsLookup } from '../../../departments';;
 import { useBulkTimesheetOperation } from '../../hooks/useBulkTimesheetOperation';
 import { useOvertimeTypes } from '../../hooks/useOvertimeTypes';
 import { PopupDialog } from '../../../../components/PopupDialog/PopupDialog';

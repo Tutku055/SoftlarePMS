@@ -1,43 +1,20 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  Box,
-  Typography,
-  Stack,
-  Chip,
-  Button,
-  Tooltip,
-  Divider,
-  Menu,
-  MenuItem,
-  Checkbox,
-  ListItemText,
-  Badge,
-  TextField,
-  InputAdornment,
-  IconButton,
-} from '@mui/material';
+  Box, Typography, Stack, Chip, Button, Tooltip, Divider, Menu, MenuItem, Checkbox, ListItemText, Badge, TextField, InputAdornment, IconButton, } from '@mui/material';
 import {
-  ViewColumnRounded,
-  FileDownloadRounded,
-  AutoAwesomeRounded,
-  FilterAltRounded,
-  SearchRounded,
-  CloseRounded,
-  PeopleAltRounded,
-} from '@mui/icons-material';
+  ViewColumnRounded, FileDownloadRounded, AutoAwesomeRounded, FilterAltRounded, SearchRounded, CloseRounded, PeopleAltRounded, } from '@mui/icons-material';
 import type {
-  GridPaginationModel,
-  GridColumnVisibilityModel,
-} from '@mui/x-data-grid';
+  GridPaginationModel, GridColumnVisibilityModel, } from '@mui/x-data-grid';
 import { useNavigate } from 'react-router-dom';
-import { DataTable } from '../../components/DataTable/DataTable';
-import type { CustomFilterValue, DataTableColumnDef } from '../../components/DataTable/DataTable';
-import { useEmployees } from './hooks/useEmployees';
-import { useDepartments } from './hooks/useDepartments';
-import { useProfessionsLookup } from '../professions/hooks/useProfessionsLookup';
+import { DataTable } from '../../../components/DataTable/DataTable';
+import type { CustomFilterValue, DataTableColumnDef } from '../../../components/DataTable/DataTable';
+import { useEmployees } from '../hooks/useEmployees';
+import { useDepartments } from '../hooks/useDepartments';
+import { useProfessionsLookup } from '../../professions';;
 import ExcelJS from 'exceljs';
-import { formatDateDisplay } from '../finance/constants/currencyConstants';
-import { PageHeader } from '../../components/PageHeader/PageHeader';
+import { formatDateDisplay } from '../../../utils/dateUtils';;
+
+import { PageHeader } from '../../../components/PageHeader/PageHeader';
 
 const COLUMN_NAMES: Record<string, string> = {
   employeeNo: 'Employee No',
@@ -51,14 +28,11 @@ const COLUMN_NAMES: Record<string, string> = {
 type QuickFilter = 'all' | 'active' | 'terminated' | 'new_hires';
 
 export const Roster = () => {
-  // ─── QUICK TEXT SEARCH ───────────────────────────────────────────────────
   const [quickSearch, setQuickSearch] = useState('');
   const [debouncedQuickSearch, setDebouncedQuickSearch] = useState('');
 
-  // ─── SMART FILTER CHIPS ───────────────────────────────────────────────────
   const [activeQuickFilter, setActiveQuickFilter] = useState<QuickFilter>('active');
 
-  // ─── CUSTOM COLUMN FILTERS (Bypasses DataGrid Free limits) ────────────────
   const [columnFilters, setColumnFilters] = useState<Record<string, CustomFilterValue>>({
     employmentStatus: { operator: 'is', value: '1' }
   });
@@ -85,13 +59,11 @@ export const Roster = () => {
     setColumnFilters({});
   }, []);
 
-  // ─── PAGINATION ───────────────────────────────────────────────────────────
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
     pageSize: 10,
   });
 
-  // ─── COLUMN VISIBILITY ────────────────────────────────────────────────────
   const [columnMenuAnchor, setColumnMenuAnchor] = useState<null | HTMLElement>(null);
   const [columnVisibility, setColumnVisibility] = useState<GridColumnVisibilityModel>({
     employeeNo: true,
@@ -102,7 +74,6 @@ export const Roster = () => {
     hireDate: true,
   });
 
-  // ─── BUILD API FILTER LIST ────────────────────────────────────────────────
   const buildFilters = useCallback(
     (cols: Record<string, CustomFilterValue>, qs: string) => {
       const filters: { field: string; operator: string; value: string }[] = [];
@@ -142,7 +113,6 @@ export const Roster = () => {
     []
   );
 
-  // ─── DEBOUNCED API FILTERS ────────────────────────────────────────────────
   const [apiFilters, setApiFilters] = useState<{ field: string; operator: string; value: string }[]>([]);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -200,7 +170,6 @@ export const Roster = () => {
   const handleHideAll = () =>
     setColumnVisibility(Object.keys(COLUMN_NAMES).reduce((a, k) => ({ ...a, [k]: false }), {}));
 
-  // ─── API DATA ─────────────────────────────────────────────────────────────
   const { data, isLoading, isFetching } = useEmployees({
     pageNumber: paginationModel.page + 1,
     pageSize: paginationModel.pageSize,
@@ -213,7 +182,6 @@ export const Roster = () => {
   const { data: profData } = useProfessionsLookup();
   const professionOptions = useMemo(() => profData?.map((p: any) => ({ value: p.name, label: p.name })) || [], [profData]);
 
-  // ─── PREMIUM EXPORT (REAL EXCEL & AUTO-DESIGN) ───────────────────────────
   const handleExport = async () => {
     // NOT: Eğer tüm sayfaları indirmek istersen, backend'indeki useEmployees hook'una 
     // limitsiz (örn: pageSize: 9999) bir istek atan ayrı bir fonksiyon bağlamak gerekir.
@@ -551,7 +519,6 @@ export const Roster = () => {
         ))}
       </Menu>
 
-      {/* ── FILTER PANEL (PREMIUM GLASS EFFECT) ──────────────────────────── */}
       <Box
         sx={{
           background: (theme) => theme.palette.mode === 'dark' ? 'rgba(24, 24, 24, 0.85)' : 'rgba(255, 255, 255, 0.85)',
@@ -673,7 +640,6 @@ export const Roster = () => {
         </Stack>
       </Box>
 
-      {/* ── DATA TABLE ─────────────────────────────────────────────────────── */}
       <Box 
         sx={{
           borderRadius: 4,

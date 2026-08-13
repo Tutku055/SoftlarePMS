@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../../config/apiClient';
-import type { DepartmentDto } from '../../employees/types';
+import type { DepartmentDto } from '../../employees';;
 
 export interface CreateDepartmentDto {
   name: string;

@@ -1027,7 +1027,6 @@ export const SystemLogsPage: React.FC = () => {
         }
       />
 
-      {/* ── 2. Filters & Search Bar ───────────────────────────────────── */}
       <Paper
         elevation={0}
         sx={{
@@ -1115,7 +1114,6 @@ export const SystemLogsPage: React.FC = () => {
         </Box>
       </Paper>
 
-      {/* ── 3. Logs List Table Container ─────────────────────────────── */}
       <Paper
         elevation={0}
         sx={{
@@ -1418,7 +1416,6 @@ export const SystemLogsPage: React.FC = () => {
                       </Box>
                     </Box>
 
-                    {/* ── 4. Accordion Expanded Details ── */}
                     <Collapse in={isExpanded} timeout="auto" unmountOnExit>
                       <Box
                         sx={{
@@ -1555,7 +1552,6 @@ export const SystemLogsPage: React.FC = () => {
           </Box>
         )}
 
-        {/* ── 5. Pagination Footer ────────────────────────────────────── */}
         <Box
           sx={{
             py: 2,

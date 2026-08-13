@@ -1,7 +1,7 @@
 import { apiClient } from '../../../config/apiClient';
-import type { PaginatedList } from '../../users/types';
+import type { PaginatedList } from '../../users';;
 import type { GetRolesParams, RoleListDto, CreateRoleDto, UpdateRoleDto } from '../types';
-import type { RoleDto } from '../../users/types';
+import type { RoleDto } from '../../users';;
 
 export const getRolesList = async (params: GetRolesParams): Promise<PaginatedList<RoleListDto>> => {
   const { data } = await apiClient.post<PaginatedList<RoleListDto>>('/Roles/search', params);

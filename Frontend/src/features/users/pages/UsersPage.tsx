@@ -29,25 +29,25 @@ import {
   VisibilityOffOutlined,
   ManageAccountsRounded,
 } from '@mui/icons-material';
-import { validatePassword } from '../../utils/passwordValidation';
-import { PasswordCriteriaChecklist } from '../../components/common/PasswordCriteriaChecklist';
+import { validatePassword } from '../../../utils/passwordValidation';
+import { PasswordCriteriaChecklist } from '../../../components/common/PasswordCriteriaChecklist';
 import type {
   GridPaginationModel,
   GridColumnVisibilityModel,
 } from '@mui/x-data-grid';
 import { useNavigate } from 'react-router-dom';
-import { DataTable } from '../../components/DataTable/DataTable';
-import type { CustomFilterValue, DataTableColumnDef } from '../../components/DataTable/DataTable';
-import { useUsers } from './hooks/useUsers';
+import { DataTable } from '../../../components/DataTable/DataTable';
+import type { CustomFilterValue, DataTableColumnDef } from '../../../components/DataTable/DataTable';
+import { useUsers } from '../hooks/useUsers';
 import { useQuery } from '@tanstack/react-query';
-import { useAuthStore } from '../../store/useAuthStore';
-import { PageHeader } from '../../components/PageHeader/PageHeader';
-import { apiClient } from '../../config/apiClient';
-import type { RoleDto } from './types';
-import { useCreateUser } from './hooks/useCreateUser';
-import { getUsers } from './api/users';
+import { useAuthStore } from '../../../store/useAuthStore';
+import { PageHeader } from '../../../components/PageHeader/PageHeader';
+import { apiClient } from '../../../config/apiClient';
+import type { RoleDto } from '../types';
+import { useCreateUser } from '../hooks/useCreateUser';
+import { getUsers } from '../api/users';
 import ExcelJS from 'exceljs';
-import { getAdaptedRoleColor } from '../../theme/colorUtils';
+import { getAdaptedRoleColor } from '../../../theme/colorUtils';
 
 import {
   Dialog,
@@ -74,14 +74,11 @@ const COLUMN_NAMES: Record<string, string> = {
 type QuickFilter = 'all' | 'active' | 'inactive';
 
 export const UsersPage = () => {
-  // ─── QUICK TEXT SEARCH ───────────────────────────────────────────────────
   const [quickSearch, setQuickSearch] = useState('');
   const [debouncedQuickSearch, setDebouncedQuickSearch] = useState('');
 
-  // ─── SMART FILTER CHIPS ───────────────────────────────────────────────────
   const [activeQuickFilter, setActiveQuickFilter] = useState<QuickFilter>('all');
 
-  // ─── CUSTOM COLUMN FILTERS ────────────────────────────────────────────────
   const [columnFilters, setColumnFilters] = useState<Record<string, CustomFilterValue>>({});
 
   const handleCustomFilterChange = useCallback((field: string, value: string, operator: string) => {
@@ -103,13 +100,11 @@ export const UsersPage = () => {
     setActiveQuickFilter('all');
   }, []);
 
-  // ─── PAGINATION ───────────────────────────────────────────────────────────
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
     pageSize: 10,
   });
 
-  // ─── COLUMN VISIBILITY ────────────────────────────────────────────────────
   const [columnMenuAnchor, setColumnMenuAnchor] = useState<null | HTMLElement>(null);
   const [columnVisibility, setColumnVisibility] = useState<GridColumnVisibilityModel>({
     employeeId: true,
@@ -119,7 +114,6 @@ export const UsersPage = () => {
     isActive: true,
   });
 
-  // ─── CREATE USER DIALOG ───────────────────────────────────────────────────
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [showCreatePassword, setShowCreatePassword] = useState(false);
   const [createForm, setCreateForm] = useState({
@@ -221,7 +215,6 @@ export const UsersPage = () => {
     });
   };
 
-  // ─── BUILD API FILTER LIST ────────────────────────────────────────────────
   const buildFilters = useCallback(
     (cols: Record<string, CustomFilterValue>, qs: string) => {
       const filters: { field: string; operator: string; value: string }[] = [];
@@ -244,7 +237,6 @@ export const UsersPage = () => {
     []
   );
 
-  // ─── DEBOUNCED API FILTERS ────────────────────────────────────────────────
   const [apiFilters, setApiFilters] = useState<{ field: string; operator: string; value: string }[]>([]);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -291,7 +283,6 @@ export const UsersPage = () => {
   const handleHideAll = () =>
     setColumnVisibility(Object.keys(COLUMN_NAMES).reduce((a, k) => ({ ...a, [k]: false }), {}));
 
-  // ─── API DATA ─────────────────────────────────────────────────────────────
   const { data, isLoading, isFetching } = useUsers({
     pageNumber: paginationModel.page + 1,
     pageSize: paginationModel.pageSize,
@@ -316,7 +307,6 @@ export const UsersPage = () => {
     enabled: hasPermission('Roles.Read') && !isPasswordChangeRequired,
   });
 
-  // ─── PREMIUM EXPORT (REAL EXCEL & AUTO-DESIGN) ───────────────────────────
   const handleExport = async () => {
     if (!data?.items?.length) return;
 
@@ -622,7 +612,6 @@ export const UsersPage = () => {
         ))}
       </Menu>
 
-      {/* ── FILTER PANEL (PREMIUM GLASS EFFECT) ──────────────────────────── */}
       <Box
         sx={{
           background: (theme) => theme.palette.mode === 'dark' ? 'rgba(24, 24, 24, 0.85)' : 'rgba(255, 255, 255, 0.85)',
@@ -743,7 +732,6 @@ export const UsersPage = () => {
         </Stack>
       </Box>
 
-      {/* ── DATA TABLE ─────────────────────────────────────────────────────── */}
       <Box 
         sx={{
           borderRadius: 4,
@@ -769,7 +757,6 @@ export const UsersPage = () => {
         />
       </Box>
 
-      {/* ── CREATE USER DIALOG ──────────────────────────────────────────────── */}
       <Dialog 
         open={createDialogOpen} 
         onClose={() => setCreateDialogOpen(false)}

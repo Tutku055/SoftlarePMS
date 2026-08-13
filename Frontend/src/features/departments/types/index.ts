@@ -1,4 +1,4 @@
-import type { FilterCriteria } from '../../employees/types';
+import type { FilterCriteria } from '../../employees';;
 
 export interface GetDepartmentsParams {
   pageNumber: number;

@@ -1,24 +1,25 @@
 // EmployeeDetail.tsx
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useEmployeeDetail } from './hooks/useEmployeeDetail';
-import { useUpdateEmployee } from './hooks/useUpdateEmployee';
-import { useUpdateEmployeeAddressMutation } from './hooks/useEmployeeAddresses';
-import { useDepartments } from './hooks/useDepartments';
-import { useProfessionsLookup } from '../professions/hooks/useProfessionsLookup';
-import { useDocuments } from '../documents/hooks/useDocuments';
-import { useAuthStore } from '../../store/useAuthStore';
-import { useBreadcrumbTitle } from '../../store/useBreadcrumbStore';
-import { PageHeader } from '../../components/PageHeader/PageHeader';
-import { documentsApi } from '../documents/api/documentsApi';
+import { useEmployeeDetail } from '../hooks/useEmployeeDetail';
+import { useUpdateEmployee } from '../hooks/useUpdateEmployee';
+import { useUpdateEmployeeAddressMutation } from '../hooks/useEmployeeAddresses';
+import { useDepartments } from '../hooks/useDepartments';
+import { useProfessionsLookup } from '../../professions';;
+import { useDocuments } from '../../documents/hooks/useDocuments';
+import { useAuthStore } from '../../../store/useAuthStore';
+import { useBreadcrumbTitle } from '../../../store/useBreadcrumbStore';
+import { PageHeader } from '../../../components/PageHeader/PageHeader';
+import { documentsApi } from '../../documents/api/documentsApi';
 import type { GridPaginationModel } from '@mui/x-data-grid';
-import { DataTable } from '../../components/DataTable/DataTable';
-import type { CustomFilterValue } from '../../components/DataTable/DataTable';
-import { parseDocumentFilters } from '../documents/utils/filterUtils';
-import { PopupDialog } from '../../components/PopupDialog/PopupDialog';
-import { NotesAndReferences } from './components/NotesAndReferences/NotesAndReferences';
-import { CompensationModal } from './components/Compensation/CompensationModal';
-import { getCurrencyCode, formatDateDisplay } from '../finance/constants/currencyConstants';
+import { DataTable } from '../../../components/DataTable/DataTable';
+import type { CustomFilterValue } from '../../../components/DataTable/DataTable';
+import { parseDocumentFilters } from '../../documents/utils/filterUtils';
+import { PopupDialog } from '../../../components/PopupDialog/PopupDialog';
+import { NotesAndReferences } from '../components/NotesAndReferences/NotesAndReferences';
+import { CompensationModal } from '../components/Compensation/CompensationModal';
+import { getCurrencyCode } from '../../finance';;
+import { formatDateDisplay } from '../../../utils/dateUtils';;
 
 import {
   Box,
@@ -63,7 +64,6 @@ import {
 } from '@mui/icons-material';
 import styles from './EmployeeDetail.module.css';
 
-// ─── PREMIUM TEMA OBJELERİ (Kaynak CSS ile Birebir Aynı) ──────────────
 
 // .glassPanel sınıfının birebir sx karşılığı[cite: 9]
 const glassPanelSx = {
@@ -117,7 +117,6 @@ const actionButtonSx = {
   }
 };
 
-// ──────────────────────────────────────────────────────────────────────────
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -497,7 +496,6 @@ export const EmployeeDetail = () => {
         }
       />
 
-      {/* ── PROFILE SUMMARY CARD ────────────────────────────────────────── */}
       <Box sx={glassPanelSx}>
         <Box className={styles.profileSummaryGrid}>
           <Avatar sx={{ width: 84, height: 84, bgcolor: 'primary.main', fontSize: '2rem', fontWeight: 600 }}>
@@ -536,7 +534,6 @@ export const EmployeeDetail = () => {
         </Box>
       </Box>
 
-      {/* ── NAVIGATION TABS ───────────────────────────────────────────────── */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 1 }}>
         <Tabs 
           value={activeTab} 
@@ -552,7 +549,6 @@ export const EmployeeDetail = () => {
         </Tabs>
       </Box>
 
-      {/* ── TAB 1: GENERAL INFO (Employee Entity Form) ────────────────────── */}
       <TabPanel value={activeTab} index={0}>
         <Box sx={glassPanelSx}>
           <Typography variant="h6" className={styles.sectionTitle}>
@@ -789,7 +785,6 @@ export const EmployeeDetail = () => {
         </Box>
       </TabPanel>
 
-      {/* ── TAB 2: FINANCIAL & COMPENSATION ───────────────────────────────── */}
       <TabPanel value={activeTab} index={1}>
         <Box className={styles.actionCardsGrid}>
           <Box sx={{ ...glassPanelSx, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -826,7 +821,6 @@ export const EmployeeDetail = () => {
         </Box>
       </TabPanel>
 
-      {/* ── TAB 3: DOCUMENTS ──────────────────────────────────────────────── */}
       <TabPanel value={activeTab} index={2}>
         <Box sx={glassPanelSx}>
           <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -1008,7 +1002,6 @@ export const EmployeeDetail = () => {
         </Box>
       </TabPanel>
 
-      {/* ── TAB 4: NOTES & REFERENCES ─────────────────────────────────────── */}
       <TabPanel value={activeTab} index={3}>
         {id && <NotesAndReferences employeeId={id} />}
       </TabPanel>

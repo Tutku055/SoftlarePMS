@@ -4,19 +4,19 @@ import { DashboardLayout } from '../layouts/DashboardLayout';
 import { Login } from '../features/auth/components/Login/Login';
 import { ResetPassword } from '../features/auth/components/ResetPassword/ResetPassword';
 
-import { Roster } from '../features/employees/Roster';
-import { EmployeeDetail } from '../features/employees/EmployeeDetail';
-import { EmployeeCreation } from '../features/employees/EmployeeCreation';
-import { AddressList } from '../features/employees/AddressList';
-import { EmployeeAddressDetail } from '../features/employees/EmployeeAddressDetail';
+import { Roster } from '../features/employees/pages/Roster';
+import { EmployeeDetail } from '../features/employees/pages/EmployeeDetail';
+import { EmployeeCreation } from '../features/employees/pages/EmployeeCreation';
+import { AddressList } from '../features/employees/components/AddressList';
+import { EmployeeAddressDetail } from '../features/employees/pages/EmployeeAddressDetail';
 import { DepartmentList } from '../features/departments/components/DepartmentList/DepartmentList';
 import { DepartmentDetail } from '../features/departments/components/DepartmentDetail/DepartmentDetail';
 import { YearEndOperations } from '../features/settings/components/YearEndOperations/YearEndOperations';
 import { DepartmentEmployees } from '../features/departments/components/DepartmentEmployees/DepartmentEmployees';
 import { DocumentArchive } from '../features/documents/components/DocumentArchive/DocumentArchive';
 import { DocumentDetail } from '../features/documents/components/DocumentDetail/DocumentDetail';
-import { UsersPage } from '../features/users/UsersPage';
-import { UserDetail } from '../features/users/UserDetail';
+import { UsersPage } from '../features/users/pages/UsersPage';
+import { UserDetail } from '../features/users/pages/UserDetail';
 import { RoleList } from '../features/roles/components/RoleList/RoleList';
 import { RoleDetail } from '../features/roles/components/RoleDetail/RoleDetail';
 import { TimesheetList } from '../features/finance/components/Timesheets/TimesheetList';
@@ -27,7 +27,7 @@ import { OvertimeTypeList } from '../features/finance/components/OvertimeTypes/O
 import { ProfessionList } from '../features/professions/components/ProfessionList';
 import { SystemLogsPage } from '../features/settings/components/SystemLogs/SystemLogsPage';
 import { GeneralSettingsPage } from '../features/settings/pages/GeneralSettingsPage';
-import { NotificationsPage } from '../features/notifications/NotificationsPage';
+import { NotificationsPage } from '../features/notifications/pages/NotificationsPage';
 import { CalendarPage } from '../features/calendar/CalendarPage';
 import { DashboardView } from '../features/dashboard/components/DashboardView';
 

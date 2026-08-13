@@ -2,50 +2,19 @@ import React from 'react';
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Box,
-  Typography,
-  Stack,
-  Chip,
-  Button,
-  Tooltip,
-  Divider,
-  Menu,
-  MenuItem,
-  Checkbox,
-  ListItemText,
-  TextField,
-  InputAdornment,
-  IconButton,
-  FormControl,
-  InputLabel,
-  Select,
-  Badge,
-  Backdrop,
-  CircularProgress,
-  Snackbar,
-  Alert,
-} from '@mui/material';
+  Box, Typography, Stack, Chip, Button, Tooltip, Divider, Menu, MenuItem, Checkbox, ListItemText, TextField, InputAdornment, IconButton, FormControl, InputLabel, Select, Badge, Backdrop, CircularProgress, Snackbar, Alert, } from '@mui/material';
 import {
-  ViewColumnRounded,
-  SearchRounded,
-  CloseRounded,
-  AutoAwesomeRounded,
-  FilterAltRounded,
-  WarningRounded,
-  CheckCircleRounded,
-  FolderCopyRounded,
-} from '@mui/icons-material';
+  ViewColumnRounded, SearchRounded, CloseRounded, AutoAwesomeRounded, FilterAltRounded, WarningRounded, CheckCircleRounded, FolderCopyRounded, } from '@mui/icons-material';
 import type {
-  GridPaginationModel,
-  GridColumnVisibilityModel,
-} from '@mui/x-data-grid';
+  GridPaginationModel, GridColumnVisibilityModel, } from '@mui/x-data-grid';
 import { DataTable } from '../../../../components/DataTable/DataTable';
 import type { CustomFilterValue, DataTableColumnDef } from '../../../../components/DataTable/DataTable';
 import { useDocuments } from '../../hooks/useDocuments';
 import { useAuthStore } from '../../../../store/useAuthStore';
 import { parseDocumentFilters } from '../../utils/filterUtils';
 import { PageHeader } from '../../../../components/PageHeader/PageHeader';
-import { formatDateDisplay } from '../../../finance/constants/currencyConstants';
+import { formatDateDisplay } from '../../../../utils/dateUtils';;
+
 import { documentsApi } from '../../api/documentsApi';
 
 const COLUMN_NAMES: Record<string, string> = {

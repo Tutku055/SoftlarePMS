@@ -13,7 +13,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import styles from './Sidebar.module.css';
 import logoImg from '../assets/images/SoftPMSLogo.png';
 
-// --- TypeScript Arayüzleri (Interfaces) ---
 
 interface SubMenuItem {
   title: string;
@@ -29,7 +28,6 @@ interface MenuItem {
   permission?: string;
 }
 
-// -----------------------------------------
 
 const drawerWidth = 280;
 

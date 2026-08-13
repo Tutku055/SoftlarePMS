@@ -23,8 +23,8 @@ import {
   DateRangeRounded,
   AutoAwesomeRounded,
 } from '@mui/icons-material';
-import { useYearEndStats } from '../../../finance/hooks/useYearEndStats';
-import { useCloseYearRollover } from '../../../finance/hooks/useCloseYearRollover';
+import { useYearEndStats } from '../../../finance';;
+import { useCloseYearRollover } from '../../../finance';;
 import { PageHeader } from '../../../../components/PageHeader/PageHeader';
 import { DataTable } from '../../../../components/DataTable/DataTable';
 import type { DataTableColumnDef, CustomFilterValue } from '../../../../components/DataTable/DataTable';
@@ -46,10 +46,8 @@ export const YearEndOperations = () => {
     return () => clearTimeout(t);
   }, [quickSearch]);
 
-  // --- Pagination ---
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({ page: 0, pageSize: 25 });
 
-  // --- Column Visibility ---
   const [columnVisibility, setColumnVisibility] = useState<GridColumnVisibilityModel>({
     fullName: true,
     departmentName: true,
@@ -58,7 +56,6 @@ export const YearEndOperations = () => {
     missingTimesheetsCount: true,
   });
 
-  // --- Column Filters (exact same logic as DepartmentList) ---
   const [columnFilters, setColumnFilters] = useState<Record<string, CustomFilterValue>>({});
 
   const activeQuickFilter = useMemo(() => {
@@ -91,11 +88,9 @@ export const YearEndOperations = () => {
     return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
   }, [columnFilters, debouncedQuickSearch]);
 
-  // --- Dialogs ---
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [resultPopup, setResultPopup] = useState<{ open: boolean; message: string; title: string }>({ open: false, message: '', title: '' });
 
-  // --- Columns ---
   const columns: DataTableColumnDef[] = [
     {
       field: 'fullName',
@@ -157,13 +152,11 @@ export const YearEndOperations = () => {
     },
   ];
 
-  // --- Data mapping: backend returns employeeId, DataGrid needs id ---
   const allRows = useMemo(() => {
     if (!stats?.employees) return [];
     return stats.employees.map((emp: any) => ({ ...emp, id: emp.employeeId }));
   }, [stats]);
 
-  // --- Apply quick search + column filters client-side ---
   const filteredRows = useMemo(() => {
     let items = [...allRows];
 
@@ -198,7 +191,6 @@ export const YearEndOperations = () => {
     return items;
   }, [allRows, debouncedQuickSearch, columnFilters]);
 
-  // --- Client-side pagination ---
   const pagedRows = useMemo(() => {
     const start = paginationModel.page * paginationModel.pageSize;
     return filteredRows.slice(start, start + paginationModel.pageSize);
@@ -264,7 +256,6 @@ export const YearEndOperations = () => {
 
 
 
-      {/* ── Already Closed Banner ── */}
       {isYearClosed && (
         <Card
           sx={{
@@ -299,7 +290,6 @@ export const YearEndOperations = () => {
         </Card>
       )}
 
-      {/* ── Stat Cards ── */}
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 3 }}>
         <Card sx={{ flex: 1, borderRadius: 3, border: '1px solid', borderColor: 'divider', boxShadow: 'none' }}>
           <CardContent>
@@ -333,7 +323,6 @@ export const YearEndOperations = () => {
         </Card>
       </Stack>
 
-      {/* ── Search & Filter toolbar (same pattern as Departments) ── */}
       <Box
         sx={{
           background: (theme) => theme.palette.mode === 'dark' ? 'rgba(24, 24, 24, 0.85)' : 'rgba(255,255,255,0.85)',
@@ -458,7 +447,6 @@ export const YearEndOperations = () => {
         </Stack>
       </Box>
 
-      {/* ── DataTable ── */}
       <Box
         sx={{
           borderRadius: 4,
@@ -483,7 +471,6 @@ export const YearEndOperations = () => {
         />
       </Box>
 
-      {/* ── Confirm Dialog ── */}
       <PopupDialog
         open={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
@@ -539,7 +526,6 @@ export const YearEndOperations = () => {
         confirmColor="error"
       />
 
-      {/* ── Result Dialog ── */}
       <PopupDialog
         open={resultPopup.open}
         onClose={() => setResultPopup({ ...resultPopup, open: false })}

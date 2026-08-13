@@ -27,13 +27,13 @@ import {
 } from '@mui/icons-material';
 import type { GridPaginationModel, GridColumnVisibilityModel } from '@mui/x-data-grid';
 import { useNavigate } from 'react-router-dom';
-import { DataTable } from '../../components/DataTable/DataTable';
-import type { CustomFilterValue, DataTableColumnDef } from '../../components/DataTable/DataTable';
-import { useEmployees } from './hooks/useEmployees';
-import { useDepartments } from './hooks/useDepartments';
-import { useProfessionsLookup } from '../professions/hooks/useProfessionsLookup';
+import { DataTable } from '../../../components/DataTable/DataTable';
+import type { CustomFilterValue, DataTableColumnDef } from '../../../components/DataTable/DataTable';
+import { useEmployees } from '../hooks/useEmployees';
+import { useDepartments } from '../hooks/useDepartments';
+import { useProfessionsLookup } from '../../professions';;
 import ExcelJS from 'exceljs';
-import { PageHeader } from '../../components/PageHeader/PageHeader';
+import { PageHeader } from '../../../components/PageHeader/PageHeader';
 
 type QuickFilter = 'all' | 'active' | 'terminated';
 

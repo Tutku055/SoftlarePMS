@@ -1,4 +1,4 @@
-import type { FilterCriteria } from '../../users/types';
+import type { FilterCriteria } from '../../users';;
 
 export interface GetRolesParams {
   pageNumber: number;

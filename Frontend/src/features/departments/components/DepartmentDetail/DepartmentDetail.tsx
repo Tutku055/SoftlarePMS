@@ -6,12 +6,13 @@ import { useDeleteDepartment } from '../../hooks/useDeleteDepartment';
 import { useAuthStore } from '../../../../store/useAuthStore';
 import { useBreadcrumbTitle } from '../../../../store/useBreadcrumbStore';
 import { PageHeader } from '../../../../components/PageHeader/PageHeader';
-import { useEmployees } from '../../../employees/hooks/useEmployees';
+import { useEmployees } from '../../../employees';;
 import { useDocuments, useUploadDocument } from '../../../documents/hooks/useDocuments';
 import { DataTable } from '../../../../components/DataTable/DataTable';
 import type { DataTableColumnDef } from '../../../../components/DataTable/DataTable';
 import { parseDocumentFilters } from '../../../documents/utils/filterUtils';
-import { formatDateDisplay } from '../../../finance/constants/currencyConstants';
+import { formatDateDisplay } from '../../../../utils/dateUtils';;
+
 import {
   Box,
   Typography,
@@ -281,7 +282,6 @@ export const DepartmentDetail = () => {
         }
       />
 
-      {/* ── PROFILE SUMMARY CARD ────────────────────────────────────────── */}
       <Box sx={glassPanelSx}>
         <Box className={styles.profileSummaryGrid}>
           <Avatar sx={{ width: 84, height: 84, bgcolor: 'primary.main', fontSize: '2rem', fontWeight: 600 }}>
@@ -303,7 +303,6 @@ export const DepartmentDetail = () => {
         </Box>
       </Box>
 
-      {/* ── NAVIGATION TABS ───────────────────────────────────────────────── */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 1 }}>
         <Tabs 
           value={activeTab} 
@@ -318,7 +317,6 @@ export const DepartmentDetail = () => {
         </Tabs>
       </Box>
 
-      {/* ── TAB 1: GENERAL INFO ────────────────────── */}
       <TabPanel value={activeTab} index={0}>
         <Box sx={glassPanelSx}>
           <Typography variant="h6" className={styles.sectionTitle}>
@@ -333,7 +331,6 @@ export const DepartmentDetail = () => {
         </Box>
       </TabPanel>
 
-      {/* ── TAB 2: EMPLOYEES ───────────────────────────────── */}
       <TabPanel value={activeTab} index={1}>
         <Box sx={glassPanelSx}>
           <Typography variant="h6" className={styles.sectionTitle}>
@@ -370,7 +367,6 @@ export const DepartmentDetail = () => {
         </Box>
       </TabPanel>
 
-      {/* ── TAB 3: DOCUMENTS ──────────────────────────────────────────────── */}
       <TabPanel value={activeTab} index={2}>
         <Box sx={glassPanelSx}>
           <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>

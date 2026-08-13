@@ -125,15 +125,7 @@ export const formatPeriodDisplay = (year: number, month: number, locale: string 
   }
 };
 
-/**
- * Returns localized date string in English by default (e.g. "Aug 4, 2026" or "08/04/2026").
- */
-export const formatDateDisplay = (date: Date | string | null | undefined, locale: string = DEFAULT_LOCALE): string => {
-  if (!date) return '';
-  const d = typeof date === 'string' ? new Date(date) : date;
-  if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
-};
+
 
 /**
  * Broadly sanitizes unicode and international characters (accents, umlauts, cedillas, ogoneks, carons, strokes, ligatures)

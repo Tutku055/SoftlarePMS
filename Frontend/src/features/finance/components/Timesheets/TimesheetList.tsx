@@ -30,9 +30,9 @@ import type { GridPaginationModel, GridColumnVisibilityModel } from '@mui/x-data
 import { useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../../components/DataTable/DataTable';
 import type { CustomFilterValue, DataTableColumnDef } from '../../../../components/DataTable/DataTable';
-import { useEmployees } from '../../../employees/hooks/useEmployees';
-import { useDepartments } from '../../../employees/hooks/useDepartments';
-import { useProfessionsLookup } from '../../../professions/hooks/useProfessionsLookup';
+import { useEmployees } from '../../../employees';;
+import { useDepartments } from '../../../employees';;
+import { useProfessionsLookup } from '../../../professions';;
 import { BulkOperationsPanel } from './BulkOperationsPanel';
 import { PageHeader } from '../../../../components/PageHeader/PageHeader';
 import ExcelJS from 'exceljs';

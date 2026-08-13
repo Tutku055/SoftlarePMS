@@ -36,8 +36,8 @@ import {
   ArrowForwardRounded
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { financeApi } from '../../finance/api/financeApi';
-import type { MissingFinanceRecordDto, PaginatedList } from '../../finance/types';
+import { financeApi } from '../../finance';;
+import type { MissingFinanceRecordDto, PaginatedList } from '../../finance';;
 
 export interface FinanceAlertMissingRecordsModalProps {
   open: boolean;

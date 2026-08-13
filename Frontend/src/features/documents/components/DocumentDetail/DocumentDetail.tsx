@@ -6,7 +6,8 @@ import { useDeleteDocument } from '../../hooks/useDocuments';
 import { documentsApi } from '../../api/documentsApi';
 import { useAuthStore } from '../../../../store/useAuthStore';
 import { useBreadcrumbTitle } from '../../../../store/useBreadcrumbStore';
-import { formatDateDisplay } from '../../../finance/constants/currencyConstants';
+import { formatDateDisplay } from '../../../../utils/dateUtils';;
+
 
 import {
   Box,
@@ -222,7 +223,6 @@ export const DocumentDetail = () => {
 
   return (
     <Box className={styles.pageContainer}>
-      {/* ── TOP ACTION BAR ────────────────────────────────────────────────── */}
       <Box className={styles.headerContainer}>
         <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
           <Tooltip title="Back to Archive">
@@ -287,7 +287,6 @@ export const DocumentDetail = () => {
         </Stack>
       </Box>
 
-      {/* ── PROFILE SUMMARY CARD ────────────────────────────────────────── */}
       <Box sx={glassPanelSx}>
         <Box className={styles.profileSummaryGrid}>
           <Avatar sx={{ width: 84, height: 84, bgcolor: 'secondary.main', fontSize: '1.5rem', fontWeight: 600 }}>
@@ -334,7 +333,6 @@ export const DocumentDetail = () => {
         </Box>
       </Box>
 
-      {/* ── NAVIGATION TABS ───────────────────────────────────────────────── */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 1 }}>
         <Tabs 
           value={activeTab} 
@@ -348,7 +346,6 @@ export const DocumentDetail = () => {
         </Tabs>
       </Box>
 
-      {/* ── TAB 1: GENERAL INFO ─────────────────────────────────────────── */}
       <TabPanel value={activeTab} index={0}>
         <Box sx={glassPanelSx}>
           <Typography variant="h6" className={styles.sectionTitle}>
@@ -380,7 +377,6 @@ export const DocumentDetail = () => {
         </Box>
       </TabPanel>
 
-      {/* ── TAB 2: FILE DETAILS ─────────────────────────────────────────── */}
       <TabPanel value={activeTab} index={1}>
         <Box className={styles.actionCardsGrid}>
           <Box sx={{ ...glassPanelSx, display: 'flex', flexDirection: 'column', gap: 2 }}>

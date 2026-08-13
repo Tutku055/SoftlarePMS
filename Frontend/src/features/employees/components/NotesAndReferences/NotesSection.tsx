@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, Typography, Button, Card, CardContent, Grid, 
-  Chip, IconButton, Dialog, DialogTitle, DialogContent, 
-  DialogActions, TextField, MenuItem, Select, FormControl, 
-  InputLabel, Switch, FormControlLabel, useTheme
+import { Box, Typography, Button, Card, CardContent, Grid, Chip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Select, FormControl, InputLabel, Switch, FormControlLabel, useTheme
 } from '@mui/material';
 import { Add, Edit, Delete, Lock, ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { useAuthStore } from '../../../../store/useAuthStore';
@@ -13,7 +9,8 @@ import {
 } from '../../api/notesApi';
 import type { EmployeeNoteDto } from '../../types';
 import { NoteCategory } from '../../types';
-import { formatDateDisplay } from '../../../finance/constants/currencyConstants';
+import { formatDateDisplay } from '../../../../utils/dateUtils';;
+
 
 interface NotesSectionProps {
   employeeId: string;

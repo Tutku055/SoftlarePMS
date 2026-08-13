@@ -11,12 +11,12 @@ import {
   HomeRounded, LocationCityRounded, MapRounded, MarkunreadMailboxRounded
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useCreateEmployee } from './hooks/useCreateEmployee';
-import { useDepartments } from './hooks/useDepartments';
-import { useProfessionsLookup } from '../professions/hooks/useProfessionsLookup';
+import { useCreateEmployee } from '../hooks/useCreateEmployee';
+import { useDepartments } from '../hooks/useDepartments';
+import { useProfessionsLookup } from '../../professions';;
 import styles from './EmployeeCreation.module.css';
-import type { CreateEmployeeDto, DepartmentDto } from './types';
-import { PageHeader } from '../../components/PageHeader/PageHeader';
+import type { CreateEmployeeDto, DepartmentDto } from '../types';
+import { PageHeader } from '../../../components/PageHeader/PageHeader';
 
 // Theme-compatible glass panel
 const glassPanelSx = {
